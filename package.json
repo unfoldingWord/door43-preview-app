@@ -19,6 +19,7 @@
     "@mui/styled-engine-sc": "^5.14.8",
     "@mui/styles": "^5.14.7",
     "@oce-editor-tools/core": "0.1.17-beta.1",
+    "base-64": "^1.0.0",
     "browser-fs-access": "^0.34.1",
     "dompurify": "^3.0.5",
     "prop-types": "^15.8.1",
@@ -30,10 +31,10 @@
     "utf8": "^3.0.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react-swc": "^3.3.2",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.4",
+    "@vitejs/plugin-react-swc": "^3.3.2",
     "eslint": "^8.49.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
