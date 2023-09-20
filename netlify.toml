@@ -1,4 +1,9 @@
 # example netlify.toml
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  
 [build]
   command = "vite build"
   functions = "netlify/functions"
