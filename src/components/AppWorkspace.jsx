@@ -57,7 +57,16 @@ export default function AppWorkspace() {
     const info = {
       owner: "unfoldingWord",
       repo: "en_ult",
+      ref: "master",
       supportedBooks: [],
+      refType: "branch",
+      language: "en",
+      textDirection: "ltr",
+      supportedBooks: [],
+      resource: "",
+      subject: "",
+      title: "",
+      commitID: "",
       bibleReference: {
         book: "tit",
         chapter: "1",
@@ -65,9 +74,12 @@ export default function AppWorkspace() {
       }
     };
 
-    const urlParts = new URL(window.location.href).pathname.split('/').slice(1);
+    const url = new URL(window.location.href)
+    console.log(url.pathname)
+    const urlParts = url.pathname.replace(/^\/u\//,"").split('/');
+    console.log(urlParts)
     if (urlParts[0])
-      info.owner = urlParts[0] || info.owner
+      info.owner = urlParts[0]
     if (urlParts[1])
       info.repo = urlParts[1]
     if (urlParts[2])
@@ -78,10 +90,12 @@ export default function AppWorkspace() {
       info.bibleReference.chapter = urlParts[4]
     if (urlParts[5])
       info.bibleReference.verse = urlParts[5]
+
+    window.history.pushState({ id: "100" }, "Page", `/u/${info.owner}/${info.repo}/${info.ref}/${info.bibleReference.book}/${info.bibleReference.chapter!=="1"||info.bibleReference.verse!=="1"?`${info.bibleReference.chapter}/${info.bibleReference.verse}/`:""}`);
     
     setResourceInfo(info);
     const _filename = usfmFilename(info.bibleReference.book)
-    const filePath = `https://git.door43.org/api/v1/repos/${info.repo}/${info.ref}/contents/${_filename}`
+    const filePath = `https://git.door43.org/api/v1/repos/${info.owner}/${info.repo}/contents/${_filename}?ref=${info.ref}`
     console.log(filePath)
     handleInitialLoad(filePath)
   }, []);
