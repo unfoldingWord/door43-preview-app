@@ -56,7 +56,6 @@ export default function AppWorkspace() {
       refType: "branch",
       language: "en",
       textDirection: "ltr",
-      supportedBooks: [],
       resource: "",
       subject: "",
       title: "",
