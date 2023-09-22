@@ -1,26 +1,22 @@
 import { useState, useEffect } from 'react'
-import { useTheme } from '@mui/material/styles'
+
+import IconButton from '@mui/joy/IconButton'
+import Sheet from '@mui/joy/Sheet'
+import Typography from '@mui/joy/Typography'
+import PrintIcon from '@mui/icons-material/Print'
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'
 import { PrintModal, useUsfmPreviewRenderer } from '@oce-editor-tools/core'
 import DOMPurify from 'dompurify'
 import markup from '../lib/drawdown'
 import { decodeBase64ToUtf8 } from '../utils/base64Decode'
 import { usfmFilename } from '../common/BooksOfTheBible'
-import CircularProgress from './CircularProgress'
+import CircularProgressUI from '@mui/joy/CircularProgress'
 import { fileOpen } from 'browser-fs-access'
-import AppBar from '@mui/material/AppBar'
-import Box from '@mui/material/Box'
-import Toolbar from '@mui/material/Toolbar'
-import IconButton from '@mui/material/IconButton'
-import Typography from '@mui/material/Typography'
-import PrintIcon from '@mui/icons-material/Print'
-import Paper from '@mui/material/Paper'
-import { ThemeProvider } from '@mui/material/styles'
-import FolderOpenIcon from '@mui/icons-material/FolderOpen'
+
 
 export default function AppWorkspace() {
-  const theme = useTheme()
-  const [markupHtmlStr, setMarkupHtmlStr] = useState("")
   const [isOpen,setIsOpen] = useState(false)
+  const [markupHtmlStr, setMarkupHtmlStr] = useState("")
   const [mdFileLoaded, setMdFileLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState()
@@ -38,7 +34,6 @@ export default function AppWorkspace() {
         }
         
         const jsonResponse = await response.json();
-        console.log(jsonResponse)
         if (jsonResponse?.content) {
           const _usfmText = decodeBase64ToUtf8(jsonResponse.content)
           setUsfmText(_usfmText)
@@ -57,7 +52,14 @@ export default function AppWorkspace() {
     const info = {
       owner: "unfoldingWord",
       repo: "en_ult",
-      supportedBooks: [],
+      ref: "master",
+      refType: "branch",
+      language: "en",
+      textDirection: "ltr",
+      resource: "",
+      subject: "",
+      title: "",
+      commitID: "",
       bibleReference: {
         book: "tit",
         chapter: "1",
@@ -65,9 +67,10 @@ export default function AppWorkspace() {
       }
     };
 
-    const urlParts = new URL(window.location.href).pathname.split('/').slice(1);
+    const url = new URL(window.location.href)
+    const urlParts = url.pathname.replace(/^\/u\//,"").split('/');
     if (urlParts[0])
-      info.owner = urlParts[0] || info.owner
+      info.owner = urlParts[0]
     if (urlParts[1])
       info.repo = urlParts[1]
     if (urlParts[2])
@@ -78,11 +81,12 @@ export default function AppWorkspace() {
       info.bibleReference.chapter = urlParts[4]
     if (urlParts[5])
       info.bibleReference.verse = urlParts[5]
+
+    window.history.pushState({ id: "100" }, "Page", `/u/${info.owner}/${info.repo}/${info.ref}/${info.bibleReference.book}/${info.bibleReference.chapter!=="1"||info.bibleReference.verse!=="1"?`${info.bibleReference.chapter}/${info.bibleReference.verse}/`:""}`);
     
     setResourceInfo(info);
     const _filename = usfmFilename(info.bibleReference.book)
-    const filePath = `https://git.door43.org/api/v1/repos/${info.repo}/${info.ref}/contents/${_filename}`
-    console.log(filePath)
+    const filePath = `https://git.door43.org/api/v1/repos/${info.owner}/${info.repo}/contents/${_filename}?ref=${info.ref}`
     handleInitialLoad(filePath)
   }, []);
 
@@ -145,63 +149,59 @@ export default function AppWorkspace() {
     canChangeColumns: true,
   }
 
-  const appBarAndWorkSpace = 
-    <div style={{paddingTop: '100px'}}>
-        { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
-        { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markupHtmlStr)}}/>)}
-        { usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
-        { usfmFileLoaded && (htmlReady ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>: "Loading") }
-        { loading && <CircularProgress size={180} />}
-        { !usfmFileLoaded && (
-          <>
-            {errorMessage}
-            {JSON.stringify(resourceInfo)}
-          </>
-        )}
-    </div>
-
   const enabledPrintPreview = (usfmFileLoaded || mdFileLoaded)
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Paper sx={{ position: 'fixed', top: 0, left: 0, right: 0 }} elevation={3}>
-        <AppBar position="static">
-          <Toolbar>
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}
+    <>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0 }}>
+        <Sheet
+          variant="outlined"
+          sx={{ borderRadius: 'md', display: 'flex', gap: 2, p: 0.5 }}
+        >
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            sx={{ flexGrow: 1, ml: 2, display: { xs: 'none', sm: 'block' } }}
+          >
+            Door43 Preview
+          </Typography>
+          <IconButton
+              size="large"
+              edge="start"
+              color="inherit"
+              onClick={handleOpen}
+              aria-label="folder open"
+              sx={{ mr: 2 }}
             >
-              Door43 Preview
-            </Typography>
-            <ThemeProvider theme={theme}>
-              <IconButton
-                size="large"
-                edge="start"
-                color="inherit"
-                onClick={handleOpen}
-                aria-label="print preview"
-                sx={{ mr: 2 }}
-              >
-                <FolderOpenIcon/>
-              </IconButton>
-              <IconButton
-                size="large"
-                edge="start"
-                color="inherit"
-                onClick={handlePrintPreviewClick} 
-                disabled={!enabledPrintPreview}
-                aria-label="print preview"
-                sx={{ mr: 2 }}
-              >
-                <PrintIcon/>
-              </IconButton>
-            </ThemeProvider>
-          </Toolbar>
-        </AppBar>
-      </Paper>
-      {appBarAndWorkSpace}
-    </Box>
+            <FolderOpenIcon/>
+          </IconButton>
+          <IconButton
+              size="large"
+              edge="start"
+              color="inherit"
+              onClick={handlePrintPreviewClick}
+              disabled={!enabledPrintPreview}
+              aria-label="print preview"
+              sx={{ mr: 2 }}
+            >
+            <PrintIcon/>
+          </IconButton>
+        </Sheet>
+        <>
+          { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
+          { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markupHtmlStr)}}/>)}
+          { usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
+          { usfmFileLoaded && (htmlReady ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>: "Loading") }
+          { loading && <CircularProgressUI/>}
+          { !usfmFileLoaded && (
+            <>
+              {errorMessage}
+              {JSON.stringify(resourceInfo)}
+            </>
+          )}
+        </>
+      </div>
+    </>
   )
 }
