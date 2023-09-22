@@ -1,7 +1,7 @@
 {
-  "name": "oce-oak-render",
+  "name": "door43-preview-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,11 +14,9 @@
     "@emotion/styled": "^11.11.0",
     "@material-ui/lab": "4.0.0-alpha.61",
     "@mui/icons-material": "^5.14.9",
+    "@mui/joy": "5.0.0-beta.7",
     "@mui/lab": "5.0.0-alpha.143",
-    "@mui/material": "^5.14.10",
-    "@mui/styled-engine-sc": "^5.14.10",
-    "@mui/styles": "^5.14.10",
-    "@oce-editor-tools/core": "0.1.17-beta.1",
+    "@oce-editor-tools/core": "0.1.19",
     "base-64": "^1.0.0",
     "browser-fs-access": "^0.34.1",
     "dompurify": "^3.0.5",
