@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 
 import IconButton from '@mui/joy/IconButton'
 import Sheet from '@mui/joy/Sheet'
+import Card from '@mui/joy/Card'
 import Typography from '@mui/joy/Typography'
 import PrintIcon from '@mui/icons-material/Print'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
@@ -152,56 +153,54 @@ export default function AppWorkspace() {
   const enabledPrintPreview = (usfmFileLoaded || mdFileLoaded)
 
   return (
-    <>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0 }}>
-        <Sheet
-          variant="outlined"
-          sx={{ borderRadius: 'md', display: 'flex', gap: 2, p: 0.5 }}
+    <Sheet>
+      <Sheet
+        variant="outlined"
+        sx={{ borderRadius: 'md', display: 'flex', gap: 2, p: 0.5 }}
+      >
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          sx={{ flexGrow: 1, ml: 2, display: { xs: 'none', sm: 'block' } }}
         >
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ flexGrow: 1, ml: 2, display: { xs: 'none', sm: 'block' } }}
+          Door43 Preview
+        </Typography>
+        <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            onClick={handleOpen}
+            aria-label="folder open"
+            sx={{ mr: 2 }}
           >
-            Door43 Preview
-          </Typography>
-          <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              onClick={handleOpen}
-              aria-label="folder open"
-              sx={{ mr: 2 }}
-            >
-            <FolderOpenIcon/>
-          </IconButton>
-          <IconButton
-              size="large"
-              edge="start"
-              color="inherit"
-              onClick={handlePrintPreviewClick}
-              disabled={!enabledPrintPreview}
-              aria-label="print preview"
-              sx={{ mr: 2 }}
-            >
-            <PrintIcon/>
-          </IconButton>
-        </Sheet>
-        <>
-          { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
-          { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markupHtmlStr)}}/>)}
-          { usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
-          { usfmFileLoaded && (htmlReady ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>: "Loading") }
-          { loading && <CircularProgressUI/>}
-          { !usfmFileLoaded && (
-            <>
-              {errorMessage}
-              {JSON.stringify(resourceInfo)}
-            </>
-          )}
-        </>
-      </div>
-    </>
+          <FolderOpenIcon/>
+        </IconButton>
+        <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            onClick={handlePrintPreviewClick}
+            disabled={!enabledPrintPreview}
+            aria-label="print preview"
+            sx={{ mr: 2 }}
+          >
+          <PrintIcon/>
+        </IconButton>
+      </Sheet>
+      <Card>
+        { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
+        { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markupHtmlStr)}}/>)}
+        { usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
+        { usfmFileLoaded && (htmlReady ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>: "Loading") }
+        { loading && <CircularProgressUI/>}
+        { !usfmFileLoaded && (
+          <>
+            {errorMessage}
+            {JSON.stringify(resourceInfo)}
+          </>
+        )}
+      </Card>
+    </Sheet>
   )
 }
