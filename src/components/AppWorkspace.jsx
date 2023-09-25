@@ -7,17 +7,15 @@ import Card from '@mui/joy/Card'
 import Typography from '@mui/joy/Typography'
 import PrintIcon from '@mui/icons-material/Print'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
-import { 
-  PrintModal, 
-  useUsfmPreviewRenderer, 
-  renderStyles,
-  renderStylesRtl } from '@oce-editor-tools/core'
+import { PrintModal, useUsfmPreviewRenderer } from '@oce-editor-tools/core'
 import DOMPurify from 'dompurify'
 import markup from '../lib/drawdown'
 import { decodeBase64ToUtf8 } from '../utils/base64Decode'
 import { usfmFilename } from '../common/BooksOfTheBible'
 import CircularProgressUI from '@mui/joy/CircularProgress'
 import { fileOpen } from 'browser-fs-access'
+import {getLtrPreviewStyle, getRtlPreviewStyle} from "../lib/previewStyling.js";
+import useLanguages from "../lib/useLanguages.js";
 
 
 export default function AppWorkspace() {
@@ -29,9 +27,10 @@ export default function AppWorkspace() {
   const [usfmText, setUsfmText] = useState()
   const [usfmFileLoaded, setUsfmFileLoaded] = useState(false)
   const [resourceInfo, setResourceInfo] = useState(null);
+  const [currentLangId, setCurrentLangId] = useState('hbo')
 
   useEffect(() => {
-    const handleInitialLoad = async (url) => {
+    const handleInitialLoad = async (url, info) => {
       try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -45,6 +44,7 @@ export default function AppWorkspace() {
           setUsfmText(_usfmText)
           setUsfmFileLoaded(true)
           setMdFileLoaded(false)
+          setCurrentLangId(info.language)
         }
         setLoading(false)
           
@@ -61,6 +61,7 @@ export default function AppWorkspace() {
       ref: "master",
       refType: "branch",
       language: "en",
+      resourceId: "ult",
       textDirection: "ltr",
       resource: "",
       subject: "",
@@ -77,8 +78,12 @@ export default function AppWorkspace() {
     const urlParts = url.pathname.replace(/^\/u\//,"").split('/');
     if (urlParts[0])
       info.owner = urlParts[0]
-    if (urlParts[1])
+    if (urlParts[1]) {
       info.repo = urlParts[1]
+      const [languageId, resourceId] = info.repo?.split('_') || []
+      info.language = languageId
+      info.resourceId = resourceId
+    }
     if (urlParts[2])
       info.ref = urlParts[2]
     if (urlParts[3])
@@ -93,7 +98,7 @@ export default function AppWorkspace() {
     setResourceInfo(info);
     const _filename = usfmFilename(info.bibleReference.book)
     const filePath = `https://git.door43.org/api/v1/repos/${info.owner}/${info.repo}/contents/${_filename}?ref=${info.ref}`
-    handleInitialLoad(filePath)
+    handleInitialLoad(filePath, info)
   }, []);
 
   const handleOpen = async () => {
@@ -136,8 +141,12 @@ export default function AppWorkspace() {
     onRenderContent: () => markupHtmlStr,
   }
 
-  // const renderStyles = renderStylesRtl
+  const { state: langState, actions: langActions } = useLanguages();
 
+  const language = langActions.getLanguage(currentLangId)
+  const direction = language?.ld || 'ltr'
+  const renderStyles = (direction === 'rtl') ? getRtlPreviewStyle() : getLtrPreviewStyle()
+  
   const { 
     renderedData, 
     ready: htmlReady 
