@@ -9,7 +9,7 @@ export function getRtlPreviewStyle() {
   const _renderStyles = cloneDeep(renderStylesRtl) // make clone to allow for modification without breaking original
   _renderStyles.marks.chapter_label.textIndent = 0
   _renderStyles.paras['usfm:mt'].textAlign = 'right' // move title to right
-  _renderStyles.paras.default.fontFamily = 'Ezra, CharisSIL'
+  _renderStyles.paras.default.fontFamily = 'Ezra, CharisSIL' // use Ezra font for Hebrew characters and then falls back to Charis for other characters
   return _renderStyles
 }
 
