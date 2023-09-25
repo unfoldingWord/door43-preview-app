@@ -36,25 +36,25 @@ code {
 
 @font-face {
   font-family: Noto Sans;
-  src: url("/public/font/NotoSans-Regular.ttf");
+  src: url("/font/NotoSans-Regular.ttf");
   font-weight: normal;
 }
 @font-face {
   font-family: Noto Sans;
   font-style: italic;
-  src: url("/public/font/NotoSans-Italic.ttf");
+  src: url("/font/NotoSans-Italic.ttf");
 }
 @font-face {
   font-family: Noto Sans;
   font-weight: bold;
-  src: url("/public/font/NotoSans-Bold.ttf");
+  src: url("/font/NotoSans-Bold.ttf");
 }
 
 @font-face {
   font-family: Noto Sans;
   font-style: italic;
   font-weight: bold;
-  src: url("/public/font/NotoSans-BoldItalic.ttf");
+  src: url("/font/NotoSans-BoldItalic.ttf");
 }
 
 /*
@@ -62,7 +62,7 @@ code {
 */
 @font-face {
   font-family: Ezra;
-  src: url("/public/font/SILEOTSR.ttf");
+  src: url("/font/SILEOTSR.ttf");
   font-weight: normal;
   unicode-range: U+0590-05FF;
   font-display: swap;
@@ -72,25 +72,25 @@ code {
 /* set up Charis SIL font */
 @font-face {
   font-family: CharisSIL;
-  src: url(/public/font/CharisSIL-Regular.ttf);
+  src: url(/font/CharisSIL-Regular.ttf);
   font-weight: normal;
 }
 @font-face {
   font-family: CharisSIL;
   font-style: italic;
-  src: url(/public/font/CharisSIL-Italic.ttf);
+  src: url(/font/CharisSIL-Italic.ttf);
 }
 @font-face {
   font-family: CharisSIL;
   font-weight: bold;
-  src: url(/public/font/CharisSIL-Bold.ttf);
+  src: url(/font/CharisSIL-Bold.ttf);
 }
 
 @font-face {
   font-family: CharisSIL;
   font-style: italic;
   font-weight: bold;
-  src: url(/public/font/CharisSIL-BoldItalic.ttf);
+  src: url(/font/CharisSIL-BoldItalic.ttf);
 }
 
 .CharisSIL-text {
