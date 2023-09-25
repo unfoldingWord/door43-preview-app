@@ -136,7 +136,7 @@ export default function AppWorkspace() {
     onRenderContent: () => markupHtmlStr,
   }
 
-  // const renderStyles = renderStylesRtl 
+  // const renderStyles = renderStylesRtl
 
   const { 
     renderedData, 
