@@ -56,6 +56,9 @@ dependencies:
   styled-components:
     specifier: ^6.0.8
     version: 6.0.8(react-dom@18.2.0)(react@18.2.0)
+  use-deep-compare-effect:
+    specifier: 1.8.1
+    version: 1.8.1(react@18.2.0)
   utf8:
     specifier: ^3.0.0
     version: 3.0.0

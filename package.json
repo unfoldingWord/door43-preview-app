@@ -27,6 +27,7 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0",
     "styled-components": "^6.0.8",
+    "use-deep-compare-effect": "1.8.1",
     "utf8": "^3.0.0"
   },
   "devDependencies": {

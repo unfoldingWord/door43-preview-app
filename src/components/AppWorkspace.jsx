@@ -80,8 +80,8 @@ export default function AppWorkspace() {
       info.owner = urlParts[0]
     if (urlParts[1]) {
       info.repo = urlParts[1]
-      const [languageId, bibleId] = info.repo?.split('_') || []
-      info.language = resourceId
+      const [languageId, resourceId] = info.repo?.split('_') || []
+      info.language = languageId
       info.resourceId = resourceId
     }
     if (urlParts[2])

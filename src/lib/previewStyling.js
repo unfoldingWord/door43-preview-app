@@ -14,5 +14,6 @@ export function getRtlPreviewStyle() {
 
 export function getLtrPreviewStyle() {
   const _renderStyles = cloneDeep(renderStyles) // make clone to allow for modification without breaking original
+  _renderStyles.marks.chapter_label.textIndent = 0
   return _renderStyles
 }
