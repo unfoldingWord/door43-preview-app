@@ -16,7 +16,7 @@
     "@mui/icons-material": "^5.14.9",
     "@mui/joy": "5.0.0-beta.7",
     "@mui/lab": "5.0.0-alpha.143",
-    "@oce-editor-tools/core": "0.1.19",
+    "@oce-editor-tools/core": "0.1.20-beta",
     "base-64": "^1.0.0",
     "browser-fs-access": "^0.34.1",
     "dompurify": "^3.0.5",
