@@ -6,7 +6,7 @@ import Card from '@mui/joy/Card'
 import Typography from '@mui/joy/Typography'
 import PrintIcon from '@mui/icons-material/Print'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
-import { PrintModal, useUsfmPreviewRenderer } from '@oce-editor-tools/core'
+import { PrintModal, useUsfmPreviewRenderer, renderStylesRtl } from '@oce-editor-tools/core'
 import DOMPurify from 'dompurify'
 import markup from '../lib/drawdown'
 import { decodeBase64ToUtf8 } from '../utils/base64Decode'
@@ -131,11 +131,14 @@ export default function AppWorkspace() {
     onRenderContent: () => markupHtmlStr,
   }
 
+  const renderStyles = renderStylesRtl
+
   const { 
     renderedData, 
     ready: htmlReady 
   } = useUsfmPreviewRenderer({ 
     usfmText, 
+    renderStyles,
     htmlRender: true
   })
 
