@@ -27,7 +27,7 @@ export default function AppWorkspace() {
   const [usfmText, setUsfmText] = useState()
   const [usfmFileLoaded, setUsfmFileLoaded] = useState(false)
   const [resourceInfo, setResourceInfo] = useState(null);
-  const [currentLangId, setCurrentLangId] = useState('hbo')
+  const [currentLangId, setCurrentLangId] = useState('en')
 
   useEffect(() => {
     const handleInitialLoad = async (url, info) => {
