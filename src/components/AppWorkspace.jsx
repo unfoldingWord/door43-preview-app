@@ -1,34 +1,61 @@
 /* eslint-disable no-unused-vars */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 
 import IconButton from '@mui/joy/IconButton'
 import Sheet from '@mui/joy/Sheet'
 import Card from '@mui/joy/Card'
+import CardContent from "@mui/joy/CardContent";
 import Typography from '@mui/joy/Typography'
 import PrintIcon from '@mui/icons-material/Print'
 import FolderOpenIcon from '@mui/icons-material/FolderOpen'
-import { 
-  PrintModal, 
-  useUsfmPreviewRenderer, 
-  renderStyles,
-  renderStylesRtl } from '@oce-editor-tools/core'
+import { PrintModal, useUsfmPreviewRenderer } from '@oce-editor-tools/core'
 import DOMPurify from 'dompurify'
 import markup from '../lib/drawdown'
 import { decodeBase64ToUtf8 } from '../utils/base64Decode'
-import { usfmFilename } from '../common/BooksOfTheBible'
 import CircularProgressUI from '@mui/joy/CircularProgress'
 import { fileOpen } from 'browser-fs-access'
+import {getLtrPreviewStyle, getRtlPreviewStyle} from "../lib/previewStyling.js";
+import { AppContext } from './App.context';
+import { API_PATH, APP_NAME, BASE_DCS_URL } from '../common/constants';
+import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 
 
 export default function AppWorkspace() {
   const [isOpen,setIsOpen] = useState(false)
-  const [markupHtmlStr, setMarkupHtmlStr] = useState("")
   const [mdFileLoaded, setMdFileLoaded] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState()
   const [usfmText, setUsfmText] = useState()
   const [usfmFileLoaded, setUsfmFileLoaded] = useState(false)
-  const [resourceInfo, setResourceInfo] = useState(null);
+
+  // app context
+  const {
+    state: {
+      urlInfo,
+      catalogEntry,
+      bibleReference,
+      html,
+      errorMessage,
+    },
+    actions: {
+      setBibleReference,
+      setHtml,
+      setErrorMessage,
+    },
+  } = useContext(AppContext)
+
+  const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
+    initialBook: bibleReference.book,
+    initialChapter: bibleReference.chapter,
+    initialVerse: bibleReference.verse,
+    onChange: (book, chapter, verse) => {
+      console.log("CHANGE: ", book, chapter, verse)
+      if (book != bibleReference.book) {
+        window.location.href = `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${book}`
+      } else {
+        document.getElementById(`chapter-${chapter}-verse-${verse}`).scrollIntoView();        
+      }
+    }
+  });
 
   useEffect(() => {
     const handleInitialLoad = async (url) => {
@@ -54,47 +81,32 @@ export default function AppWorkspace() {
         setLoading(false)
       }      
     }
-  
-    const info = {
-      owner: "unfoldingWord",
-      repo: "en_ult",
-      ref: "master",
-      refType: "branch",
-      language: "en",
-      textDirection: "ltr",
-      resource: "",
-      subject: "",
-      title: "",
-      commitID: "",
-      bibleReference: {
-        book: "tit",
-        chapter: "1",
-        verse: "1",
+
+    const loadFile = async () => {
+      let filePath = null
+      for(let i = 0; i < catalogEntry.ingredients.length; ++i) {
+        const ingredient = catalogEntry.ingredients[i]
+        console.log("HERE: "+bibleReference.book)
+        if (ingredient.identifier == bibleReference.book) {
+          filePath = ingredient.path
+          break
+        }
       }
-    };
+      if (! filePath) {
+        setErrorMessage("Book not supported")
+        setLoading(false)
+      } else {
+        const fileURL = `${BASE_DCS_URL}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
+        console.log(fileURL)
+        handleInitialLoad(fileURL)
+      }
+    }
 
-    const url = new URL(window.location.href)
-    const urlParts = url.pathname.replace(/^\/u\//,"").split('/');
-    if (urlParts[0])
-      info.owner = urlParts[0]
-    if (urlParts[1])
-      info.repo = urlParts[1]
-    if (urlParts[2])
-      info.ref = urlParts[2]
-    if (urlParts[3])
-      info.bibleReference.book = urlParts[3].toLowerCase()
-    if (urlParts[4])
-      info.bibleReference.chapter = urlParts[4]
-    if (urlParts[5])
-      info.bibleReference.verse = urlParts[5]
-
-    window.history.pushState({ id: "100" }, "Page", `/u/${info.owner}/${info.repo}/${info.ref}/${info.bibleReference.book}/${info.bibleReference.chapter!=="1"||info.bibleReference.verse!=="1"?`${info.bibleReference.chapter}/${info.bibleReference.verse}/`:""}`);
-    
-    setResourceInfo(info);
-    const _filename = usfmFilename(info.bibleReference.book)
-    const filePath = `https://git.door43.org/api/v1/repos/${info.owner}/${info.repo}/contents/${_filename}?ref=${info.ref}`
-    handleInitialLoad(filePath)
-  }, []);
+    console.log("catalogEntry2", catalogEntry, "bibleReference2", bibleReference)
+    if (catalogEntry && bibleReference) {
+      loadFile()
+    }
+  }, [catalogEntry, bibleReference]);
 
   const handleOpen = async () => {
     const file = await fileOpen([
@@ -109,11 +121,11 @@ export default function AppWorkspace() {
       const extStr = filePath?.substring(filePath?.lastIndexOf("."))
       if (extStr === ".md") {
         const contents = await file.text()
-        setMarkupHtmlStr(markup(contents))
+        setHtml(markup(contents))
         setUsfmFileLoaded(false)
         setMdFileLoaded(true)
       } else if (extStr === ".usfm") {
-        const contents = await await file.text()
+        const contents = await file.text()
         setUsfmText(contents)
         setUsfmFileLoaded(true)
         setMdFileLoaded(false)
@@ -133,17 +145,15 @@ export default function AppWorkspace() {
       console.log('closePrintModal')
       setIsOpen(false)
     },
-    onRenderContent: () => markupHtmlStr,
+    onRenderContent: () => html,
   }
-
-  // const renderStyles = renderStylesRtl
 
   const { 
     renderedData, 
     ready: htmlReady 
   } = useUsfmPreviewRenderer({ 
     usfmText, 
-    renderStyles,
+    renderStyles: catalogEntry ? (catalogEntry.language_direction === 'rtl' ? getRtlPreviewStyle() : getLtrPreviewStyle()) : getLtrPreviewStyle(),
     htmlRender: true
   })
 
@@ -172,8 +182,9 @@ export default function AppWorkspace() {
           component="div"
           sx={{ flexGrow: 1, ml: 2, display: { xs: 'none', sm: 'block' } }}
         >
-          Door43 Preview
+          <b>{APP_NAME}</b>
         </Typography>
+
         <IconButton
             size="large"
             edge="start"
@@ -196,16 +207,42 @@ export default function AppWorkspace() {
           <PrintIcon/>
         </IconButton>
       </Sheet>
+
+      {catalogEntry ?
+      <Card variant="outlined">
+        <CardContent>
+          <Typography
+            color="textPrimary"
+            gutterBottom
+            display="inline"
+          >
+              <><b>{catalogEntry.owner}/{catalogEntry.name}</b> / {catalogEntry.branch_or_tag_name} ({catalogEntry.ref_type}){(catalogEntry.ref_type !== "tag" ? " (" + catalogEntry.commit_sha.substring(0,10) + ")" : "")} / {catalogEntry.language_title} ({catalogEntry.language}) / <a href={`https://qa.door43.org/${catalogEntry.owner}/${catalogEntry.repo.name}/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px" }}>{"See on DCS"}</a></>
+          </Typography>
+        </CardContent>
+      </Card>
+      : <></>}
+
       <Card>
         { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
-        { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markupHtmlStr)}}/>)}
+        { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(html)}}/>)}
         { usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
-        { usfmFileLoaded && (htmlReady ? <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>: "Loading") }
+        { usfmFileLoaded && (htmlReady ? 
+          (<>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                // justifyContent: "center"
+              }}
+            >
+              <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
+            </div>
+            <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(renderedData)}}/>
+          </>): "Loading...") }
         { loading && <CircularProgressUI/>}
         { !usfmFileLoaded && (
           <>
             {errorMessage}
-            {JSON.stringify(resourceInfo)}
           </>
         )}
       </Card>
