@@ -1,4 +1,4 @@
-import * as cloneDeep from 'lodash/cloneDeep' // cherry pick just the function we need so webpack can strip unneeded parts
+import { cloneDeep } from 'lodash' // cherry pick just the function we need so webpack can strip unneeded parts
 
 import {
   renderStyles,
