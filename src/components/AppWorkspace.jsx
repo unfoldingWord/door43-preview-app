@@ -216,7 +216,7 @@ export default function AppWorkspace() {
             gutterBottom
             display="inline"
           >
-              <><b>{catalogEntry.owner}/{catalogEntry.name}</b> / {catalogEntry.branch_or_tag_name} ({catalogEntry.ref_type}){(catalogEntry.ref_type !== "tag" ? " (" + catalogEntry.commit_sha.substring(0,10) + ")" : "")} / {catalogEntry.language_title} ({catalogEntry.language}) / <a href={`https://qa.door43.org/${catalogEntry.owner}/${catalogEntry.repo.name}/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px" }}>{"See on DCS"}</a></>
+              <><b>{catalogEntry.owner}/{catalogEntry.name}</b> / {catalogEntry.branch_or_tag_name} ({catalogEntry.ref_type}){(catalogEntry.ref_type !== "tag" ? " (" + catalogEntry.commit_sha.substring(0,10) + ")" : "")} / {catalogEntry.language_title} ({catalogEntry.language}) / <a href={`${BASE_DCS_URL}/${catalogEntry.owner}/${catalogEntry.repo.name}/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px" }}>{"See on DCS"}</a></>
           </Typography>
         </CardContent>
       </Card>
