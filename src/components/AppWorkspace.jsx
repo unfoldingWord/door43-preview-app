@@ -106,7 +106,7 @@ export default function AppWorkspace() {
     if (catalogEntry && bibleReference) {
       loadFile()
     }
-  }, [catalogEntry, bibleReference]);
+  }, [catalogEntry, bibleReference, setErrorMessage]);
 
   const handleOpen = async () => {
     const file = await fileOpen([
