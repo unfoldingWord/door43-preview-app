@@ -13,6 +13,7 @@
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@material-ui/lab": "4.0.0-alpha.61",
+    "@mui/base": "5.0.0-beta.24",
     "@mui/icons-material": "^5.14.12",
     "@mui/joy": "5.0.0-beta.7",
     "@mui/lab": "5.0.0-alpha.143",
@@ -20,6 +21,7 @@
     "base-64": "^1.0.0",
     "bible-reference-rcl": "^1.2.2",
     "browser-fs-access": "^0.34.1",
+    "dcs-js": "^1.4.1",
     "dompurify": "^3.0.6",
     "lodash": "4.17.21",
     "prop-types": "^15.8.1",
@@ -27,6 +29,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0",
+    "react-window": "^1.8.9",
     "styled-components": "^6.0.8",
     "use-deep-compare-effect": "1.8.1",
     "utf8": "^3.0.0"
