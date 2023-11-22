@@ -112,9 +112,8 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const getBranches = async () => {
       const _branches = await repoClient.repoListBranches({owner: urlInfo?.owner, repo: urlInfo?.repo}).then(({data}) => data).catch(console.error)
-      console.log("BRANCHES", _branches)
       if (_branches?.length)
-        setBranches(_branches.map(branch => {return {id: branch.name, name: branch.name}}))
+        setBranches(_branches.map(branch => {return {label: branch.name, value: branch}}))
       else
         setBranches(null)
     }
@@ -128,9 +127,8 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const getTags = async () => {
       const _tags = await repoClient.repoListTags({owner: urlInfo?.owner, repo: urlInfo?.repo}).then(({data}) => data).catch(console.error)
-      console.log("TAGS", _tags)
       if (_tags?.length)
-        setTags(_tags.map(tag => {return {id: tag.name, name: tag.name}}))
+        setTags(_tags.map(tag => {return {label: tag.name, value: tag}}))
       else
         setTags(null)
 
@@ -150,7 +148,6 @@ export function AppContextProvider({ children }) {
       })
       .then(({data}) => {
         setLanguages(data)
-        console.log("LANGUAGES",data)
       }).catch(() => {
         setErrorMessage("No languages found")
       })
@@ -173,7 +170,6 @@ export function AppContextProvider({ children }) {
       const response  = await organizationClient.orgGetAll()
       if (response.status === 200) {
         const orgs = response?.data.filter((org) => org.repo_subjects && org?.repo_subjects.some((subject) => bibleSubjects?.includes(subject))).map(org => org.username)
-        console.log("Organisations",orgs)
         setOrganizations(orgs)
       }
     }
