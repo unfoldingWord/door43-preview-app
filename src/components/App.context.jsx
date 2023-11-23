@@ -17,6 +17,7 @@ export function AppContextProvider({ children }) {
   const [organizations, setOrganizations] = useState()
   const [branches,setBranches] = useState()
   const [tags,setTags] = useState()
+  const [repos,setRepos] = useState()
   const [languages,setLanguages] = useState()
   const [loading, setLoading] = useState(true)
   const [usfmText, setUsfmText] = useState()
@@ -80,12 +81,10 @@ export function AppContextProvider({ children }) {
         setLoading(false)
       } else {
         const fileURL = `${BASE_DCS_URL}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
-        console.log(fileURL)
         handleInitialLoad(fileURL)
       }
     }
 
-    console.log("catalogEntry2", catalogEntry)
     if (catalogEntry) {
       loadFile()
     }
@@ -98,6 +97,7 @@ export function AppContextProvider({ children }) {
         return response.json();
       })
       .then(data => {
+        console.log(data)
         setCatalogEntry(data)
       }).catch(() => {
         setErrorMessage("Not found")
@@ -117,7 +117,6 @@ export function AppContextProvider({ children }) {
       else
         setBranches(null)
     }
-    // if (!branches && urlInfo?.owner && urlInfo?.repo && html) { // Wait until html is loaded
     if (!loading && !branches && urlInfo?.owner && urlInfo?.repo) { 
         getBranches()
     }
@@ -133,7 +132,6 @@ export function AppContextProvider({ children }) {
         setTags(null)
 
     }
-    // if (!tags && urlInfo?.owner && urlInfo?.repo && html) { // Wait until html is loaded
     if (!loading && !tags && urlInfo?.owner && urlInfo?.repo) {
       getTags()
     }
@@ -142,7 +140,7 @@ export function AppContextProvider({ children }) {
   
   useEffect(() => {
     const getLanguages = async () => {
-      fetch(`${BASE_DCS_URL}/${API_PATH}/catalog/list/languages?stage=latest`)
+      fetch(`${BASE_DCS_URL}/${API_PATH}/catalog/list/languages?stage=latest&metadataType=rc`)
       .then(response => {
         return response.json();
       })
@@ -157,6 +155,24 @@ export function AppContextProvider({ children }) {
       getLanguages()
     }
   }, [languages, loading]);
+
+  useEffect(() => {
+    const getRepos = async () => {
+      fetch(`${BASE_DCS_URL}/${API_PATH}/repos/search?owner=${urlInfo?.owner}&lang=en&metadataType=rc`)
+      .then(response => {
+        return response.json();
+      })
+      .then(({data}) => {
+        setRepos(data)
+      }).catch(() => {
+        setErrorMessage("No repositories found")
+      })
+    }
+
+    if (!loading && !repos) {
+      getRepos()
+    }
+  }, [repos, loading, urlInfo?.owner]);
 
   useEffect(() => {
     const bibleSubjects = [
@@ -190,6 +206,7 @@ export function AppContextProvider({ children }) {
       organizations,
       branches,
       tags,
+      repos,
       languages,
       loading, 
       usfmText, 

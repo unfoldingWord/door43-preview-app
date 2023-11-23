@@ -1,19 +1,61 @@
-import { useContext, useRef, Fragment } from "react"
+import { useEffect, useState, useContext, useRef, Fragment } from "react"
 import { Button, Modal, ModalDialog, Typography } from "@mui/joy"
 import { Transition } from "react-transition-group"
 import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import CloseIcon from "@mui/icons-material/Close"
 import PropTypes from "prop-types"
 import { AppContext } from "./App.context"
-import ReactWindowNavigator from "./ReactWindowNavigator"
 import Navigator from "./Navigator"
 
 export default function OpenModal({ isOpenModal, onCloseModal }) {
   const {
-    state: { languages, organizations, catalogEntry, tags, branches },
+    state: { branches, languages, organizations, repos, tags, catalogEntry },
   } = useContext(AppContext)
 
-  const langOptions =
+  const [langOptions, setLangOptions] = useState()
+  const [organiOptions, setOrganiOptions] = useState()
+  const [tagsBranchesOptions, setTagsBranchesOptions] = useState()
+  const [repoOptions, setRepoOptions] = useState()
+  const [langValue, setLangValue] = useState()
+  const [organiValue, setOrganiValue] = useState()
+  const [tagsBranchesValue, setTagsBranchesValue] = useState()
+  const [repoValue, setRepoValue] = useState()
+
+  useEffect(() => {
+    if (catalogEntry?.language && catalogEntry?.language_title) 
+      setLangValue({
+        label: catalogEntry?.language_title,
+        value: catalogEntry?.language,
+      })
+  },[catalogEntry?.language, catalogEntry?.language_title])
+
+  useEffect(() => {
+    if (catalogEntry?.owner) {
+      setOrganiValue({
+        label: catalogEntry?.owner,
+        value: catalogEntry?.owner,
+      })
+    }
+  },[catalogEntry?.owner])
+
+  useEffect(() => {
+    if (catalogEntry?.branch_or_tag_name) 
+      setTagsBranchesValue({
+        label: catalogEntry?.branch_or_tag_name,
+        value: catalogEntry?.branch_or_tag_name,
+        })
+  },[catalogEntry?.branch_or_tag_name])
+
+  useEffect(() => {
+    if (catalogEntry?.name) 
+      setRepoValue({
+        label: catalogEntry?.name,
+        value: catalogEntry?.name,
+        })
+  },[catalogEntry?.name])
+
+  useEffect(() => {
+    const _langOptions =
     languages?.map((x) => {
       const ln = x?.ln
       const ang = x?.ang
@@ -24,9 +66,30 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
         value: x?.lc,
       }
     }) || []
+    setLangOptions([..._langOptions, { label: "", value: "" }])
+  },[languages])
 
-  const orgOptions = organizations?.map((x) => ({ label: x, value: x }))
-  const tagsBranchesOptions = (branches && tags) ? [...branches, ...tags] : undefined
+  useEffect(() => {
+    if (organizations) {
+      const _organiOptions = organizations?.map((x) => ({ label: x, value: x }))
+      setOrganiOptions([..._organiOptions, { label: "", value: "" }])
+    }
+  },[organizations])
+
+  useEffect(() => {
+    if (branches && tags) {
+      const _tagsOptions = tags.map((x) => ({ label: x.label, value: x.label })) 
+      const _branchesOptions = branches.map((x) => ({ label: x.label, value: x.label })) 
+      setTagsBranchesOptions([..._tagsOptions, ..._branchesOptions, { label: "", value: "" }])
+    }
+  },[branches, tags])
+
+  useEffect(() => {
+    if (repos) {
+      const _repoOptions = repos.map((x) => ({ label: x.name, value: x.name }))  
+      setRepoOptions([..._repoOptions, { label: "", value: "" }])
+    }
+  },[repos])
 
   const nodeRef = useRef(null)
 
@@ -55,7 +118,6 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
             }}
           >
             <ModalDialog
-              ref={nodeRef}
               sx={{
                 opacity: 0,
                 transition: `opacity 300ms`,
@@ -69,42 +131,59 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
                 Open new preview
               </Typography>
               {langOptions && catalogEntry?.language_title && (
-                <ReactWindowNavigator
-                  options={langOptions}
-                  defaultValue={{
-                    label: catalogEntry?.language_title,
-                    value: "en",
+                <Navigator
+                  onChange={(_, newValue) => {
+                    setLangValue(prev => {
+                      if (prev!==newValue) {
+                        setOrganiValue({ label: "", value: "" })
+                        setRepoValue({ label: "", value: "" })
+                        setTagsBranchesValue({ label: "", value: "" })
+                      }
+                      return newValue
+                    })
                   }}
-                  onInputChange={(event, newInputValue) =>
-                    console.log(event, newInputValue)
-                  }
+                  value={langValue}
+                  options={langOptions}
                 />
               )}
-              {orgOptions && catalogEntry?.owner && (
+              {organiOptions && catalogEntry?.owner && (
                 <Navigator
-                  onInputChange={(event, newInputValue) => {
-                    console.log(event, newInputValue)
+                  onChange={(_, newValue) => {
+                    setOrganiValue(prev => {
+                      if (prev!==newValue) {
+                        setRepoValue({ label: "", value: "" })
+                        setTagsBranchesValue({ label: "", value: "" })
+                      }
+                      return newValue
+                    })
                   }}
-                  defaultValue={{
-                    label: catalogEntry?.owner,
-                    value: catalogEntry?.owner,
+                  value={organiValue}
+                  options={organiOptions}
+                />
+              )}              
+              {repoOptions && catalogEntry?.name && (
+                <Navigator
+                  onChange={(_, newValue) => {
+                    setRepoValue(prev => {
+                      if (prev!==newValue) {
+                        setTagsBranchesValue({ label: "", value: "" })
+                      }
+                      return newValue
+                    })
                   }}
-                  options={orgOptions}
+                  value={repoValue}
+                  options={repoOptions}
                 />
               )}
               {tagsBranchesOptions && catalogEntry.branch_or_tag_name && (
                 <Navigator
-                  onInputChange={(event, newInputValue) => {
-                    console.log(event, newInputValue)
+                  onChange={(_, newValue) => {
+                    setTagsBranchesValue(newValue)
                   }}
-                  defaultValue={{
-                    label: catalogEntry.branch_or_tag_name,
-                    value: tagsBranchesOptions[0].value
-                  }}
+                  value={tagsBranchesValue}
                   options={tagsBranchesOptions}
                 />
               )}
-
               <Button
                 sx={{ margin: "4%" }}
                 // onClick={onPrintClick}

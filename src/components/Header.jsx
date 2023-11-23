@@ -37,7 +37,12 @@ export default function Header({
           <div className='flex flex-1 justify-center items-center'>
           <Typography
               variant='h1'
-              sx={sx.title}
+              sx={{
+                fontWeight: 'bold',
+                m: 1,
+                flexGrow: 1,
+                color: '#ffffff',            
+              }}
             >
               {title}
             </Typography>

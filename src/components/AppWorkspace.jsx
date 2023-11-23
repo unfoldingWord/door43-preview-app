@@ -45,14 +45,14 @@ export default function AppWorkspace() {
     canChangeColumns: true,
   }
 
-  const infoLine = catalogEntry 
-    && (`${catalogEntry.owner}/${catalogEntry.name}/${catalogEntry.branch_or_tag_name}(${catalogEntry.ref_type})${(catalogEntry.ref_type !== "tag" ? "(" + catalogEntry.commit_sha.substring(0,10) + ")" : "")}/${catalogEntry.language_title}(${catalogEntry.language})/ `)
+  // const infoLine = catalogEntry 
+  //   && (`${catalogEntry.owner}/${catalogEntry.name}/${catalogEntry.branch_or_tag_name}(${catalogEntry.ref_type})${(catalogEntry.ref_type !== "tag" ? "(" + catalogEntry.commit_sha.substring(0,10) + ")" : "")}/${catalogEntry.language_title}(${catalogEntry.language})/ `)
   
   return (
     <Sheet>
       <Header 
         title={APP_NAME}
-        infoLine={infoLine}
+        // infoLine={infoLine}
         dcsRef={catalogEntry && `${BASE_DCS_URL}/${catalogEntry.owner}/${catalogEntry.repo.name}/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`} 
         ready={usfmFileLoaded}
         onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
