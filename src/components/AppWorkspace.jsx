@@ -2,7 +2,8 @@ import { useState, useContext } from 'react'
 import Sheet from '@mui/joy/Sheet'
 import Card from '@mui/joy/Card'
 import Typography from '@mui/joy/Typography'
-import { PrintModal, useUsfmPreviewRenderer } from '@oce-editor-tools/core'
+import { useUsfmPreviewRenderer } from '@oce-editor-tools/base'
+import { PrintDrawer } from '@oce-editor-tools/joy-core'
 import DOMPurify from 'dompurify'
 import CircularProgressUI from '@mui/joy/CircularProgress'
 import {getLtrPreviewStyle, getRtlPreviewStyle} from "../lib/previewStyling.js"
@@ -35,19 +36,15 @@ export default function AppWorkspace() {
   })
 
   const usfmPreviewProps = {
-    openPrintModal: isOpenPrint && usfmFileLoaded && htmlReady,
-    handleClosePrintModal: () => {
-      console.log('closePrintModal')
+    openPrintDrawer: isOpenPrint && usfmFileLoaded && htmlReady,
+    handleClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
     onRenderContent: () => renderedData,
-    canChangeAtts: true,
+    canChangeAtts: false,
     canChangeColumns: true,
   }
 
-  // const infoLine = catalogEntry 
-  //   && (`${catalogEntry.owner}/${catalogEntry.name}/${catalogEntry.branch_or_tag_name}(${catalogEntry.ref_type})${(catalogEntry.ref_type !== "tag" ? "(" + catalogEntry.commit_sha.substring(0,10) + ")" : "")}/${catalogEntry.language_title}(${catalogEntry.language})/ `)
-  
   return (
     <Sheet>
       <Header 
@@ -59,7 +56,7 @@ export default function AppWorkspace() {
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
       />
       <Card sx={{marginTop: "70px"}}>
-        {usfmFileLoaded && <PrintModal {...usfmPreviewProps} />}
+        {usfmFileLoaded && <PrintDrawer {...usfmPreviewProps} />}
         {usfmFileLoaded &&
           (htmlReady ? (
             <>

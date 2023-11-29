@@ -6,6 +6,7 @@ import Fab from '@mui/material/Fab'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import PrintIcon from '@mui/icons-material/Print'
 import SourceIcon from '@mui/icons-material/Source'
+import { DISABLE_NAVIGATION_BUTTON } from '../common/constants'
 
 const sx = {
   title: {
@@ -73,7 +74,7 @@ export default function Header({
               <SourceIcon sx={sx.extendedIcon} />
               View on DCS
             </Fab>
-            <Fab
+            {!DISABLE_NAVIGATION_BUTTON && (<Fab
               color='primary'
               aria-label='print'
               variant='extended'
@@ -81,7 +82,7 @@ export default function Header({
             >
               <OpenInNewIcon sx={sx.extendedIcon} />
               Open
-            </Fab>
+            </Fab>)}
           </>
         </Toolbar>
       </AppBar>

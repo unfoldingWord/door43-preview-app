@@ -3,7 +3,7 @@ import { cloneDeep } from 'lodash' // cherry pick just the function we need so w
 import {
   renderStyles,
   renderStylesRtl,
-} from '@oce-editor-tools/core'
+} from '@oce-editor-tools/base'
 
 export function getRtlPreviewStyle() {
   const _renderStyles = cloneDeep(renderStylesRtl) // make clone to allow for modification without breaking original

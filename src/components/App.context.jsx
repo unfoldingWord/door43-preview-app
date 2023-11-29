@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-// import Bible from "./Bible";
 import { BASE_DCS_URL, BASE_QA_URL, API_PATH } from "../common/constants";
 import { RepositoryApi, OrganizationApi } from 'dcs-js';
 import { decodeBase64ToUtf8 } from '../utils/base64Decode'
@@ -97,7 +96,6 @@ export function AppContextProvider({ children }) {
         return response.json();
       })
       .then(data => {
-        console.log(data)
         setCatalogEntry(data)
       }).catch(() => {
         setErrorMessage("Not found")
