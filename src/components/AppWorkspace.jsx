@@ -26,11 +26,25 @@ export default function AppWorkspace() {
     },
   } = useContext(AppContext)
 
+  const renderFlags = {
+    showWordAtts: false,
+    showTitles: true,
+    showHeadings: true,
+    showIntroductions: true,
+    showFootnotes: false,
+    showXrefs: false,
+    showParaStyles: true,
+    showCharacterMarkup: false,
+    showChapterLabels: true,
+    showVersesLabels: true,
+  }
+
   const { 
-    renderedData, 
+    renderedData,
     ready: htmlReady 
   } = useUsfmPreviewRenderer({ 
     usfmText, 
+    renderFlags,
     renderStyles: catalogEntry ? (catalogEntry.language_direction === 'rtl' ? getRtlPreviewStyle() : getLtrPreviewStyle()) : getLtrPreviewStyle(),
     htmlRender: true
   })

@@ -19,7 +19,7 @@
     "@mui/lab": "5.0.0-alpha.143",
     "@mui/material": "^5.14.18",
     "@oce-editor-tools/base": "0.1.26",
-    "@oce-editor-tools/joy-core": "0.1.26",
+    "@oce-editor-tools/joy-core": "0.1.27-alpha.1",
     "base-64": "^1.0.0",
     "dcs-js": "^1.4.1",
     "dompurify": "^3.0.6",
