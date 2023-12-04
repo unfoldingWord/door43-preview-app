@@ -7,6 +7,7 @@ import { PrintDrawer } from '@oce-editor-tools/joy-core'
 import DOMPurify from 'dompurify'
 import CircularProgressUI from '@mui/joy/CircularProgress'
 import {getLtrPreviewStyle, getRtlPreviewStyle} from "../lib/previewStyling.js"
+// import markdown from '../lib/drawdown'
 import { AppContext } from './App.context'
 import Header from './Header'
 import OpenModal from './OpenModal.jsx'
@@ -15,6 +16,7 @@ import { APP_NAME, BASE_DCS_URL } from '../common/constants'
 export default function AppWorkspace() {
   const [isOpenPrint,setIsOpenPrint] = useState(false)
   const [isOpenModal,setIsOpenModal] = useState(false)
+  // const [markdownHtmlStr, setMarkdownHtmlStr] = useState("")
 
   const {
     state: {
@@ -59,6 +61,16 @@ export default function AppWorkspace() {
     canChangeColumns: true,
   }
 
+  // const mdPreviewProps = {
+  //   openPrintDrawer: isOpenPrint && mdFileLoaded && mdHtmlReady,
+  //   handleClosePrintDrawer: () => {
+  //     setIsOpenPrint(false)
+  //   },
+  //   onRenderContent: () => markdownHtmlStr,
+  //   canChangeAtts: false,
+  //   canChangeColumns: false,
+  // }
+
   return (
     <Sheet>
       <Header 
@@ -70,6 +82,8 @@ export default function AppWorkspace() {
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
       />
       <Card sx={{marginTop: "70px"}}>
+        {/* { mdFileLoaded && <PrintModal {...mdPreviewProps} />}
+        { mdFileLoaded && (<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(markdownHtmlStr)}}/>)} */}
         {usfmFileLoaded && <PrintDrawer {...usfmPreviewProps} />}
         {usfmFileLoaded &&
           (htmlReady ? (
