@@ -26,6 +26,7 @@ export default function RcBible() {
         setUrlInfo,
         setErrorMessage,
         setPrintHtml,
+        setCanChangeColumns,
     },
   } = useContext(AppContext);
     
@@ -75,7 +76,7 @@ export default function RcBible() {
         setUrlInfo({...urlInfo, extraPath: [book, chapter, verse]})
         bibleReferenceActions.goToBookChapterVerse(book, chapter, verse)
     }
-  }, [catalogEntry, urlInfo?.extraPath[0]])
+  }, [bibleReferenceActions, catalogEntry, setErrorMessage, setUrlInfo, urlInfo])
 
   useEffect(() => {
     if (bibleReferenceState && urlInfo) {
@@ -83,7 +84,7 @@ export default function RcBible() {
             window.location.href = `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${bibleReferenceState.bookId}`
         }
     }
-  }, [bibleReferenceState?.bookId, urlInfo?.extraPath[0]])
+  }, [bibleReferenceState, bibleReferenceState.bookId, urlInfo])
 
   useEffect(() => {
     const handleInitialLoad = async (url) => {
@@ -97,7 +98,8 @@ export default function RcBible() {
         const jsonResponse = await response.json();
         if (jsonResponse?.content) {
           const _usfmText = decodeBase64ToUtf8(jsonResponse.content);
-          setUsfmText(_usfmText);
+          setUsfmText(_usfmText)
+          setCanChangeColumns(true)
         }
         setLoading(false);
       } catch (error) {
@@ -127,13 +129,13 @@ export default function RcBible() {
     if (loading && catalogEntry && bibleReferenceState?.bookId) {
       loadFile();
     }
-  }, [loading, catalogEntry, bibleReferenceState?.bookId, setErrorMessage]);
+  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns]);
 
   useEffect(() => {
     if (htmlReady) {
       setPrintHtml(renderedData);
     }
-  }, [htmlReady, renderedData]);
+  }, [htmlReady, renderedData, setPrintHtml]);
 
   return (
     <>

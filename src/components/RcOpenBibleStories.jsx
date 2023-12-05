@@ -70,7 +70,7 @@ export default function RcOpenBibleStories() {
         setHtml(_html)
         setPrintHtml(_html)
     }
-  }, [storiesMarkdown])
+  }, [setPrintHtml, storiesMarkdown])
 
   return (
     <>

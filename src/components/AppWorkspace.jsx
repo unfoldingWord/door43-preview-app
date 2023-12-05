@@ -12,7 +12,6 @@ import { APP_NAME, BASE_DCS_URL } from '../common/constants'
 export default function AppWorkspace() {
   const [isOpenPrint,setIsOpenPrint] = useState(false)
   const [isOpenModal,setIsOpenModal] = useState(false)
-  // const [markdownHtmlStr, setMarkdownHtmlStr] = useState("")
 
   const {
     state: {
@@ -21,6 +20,7 @@ export default function AppWorkspace() {
       resourceComponent,
       errorMessage,
       printHtml,
+      canChangeColumns,
     },
   } = useContext(AppContext)
 
@@ -31,20 +31,7 @@ export default function AppWorkspace() {
     },
     onRenderContent: () => printHtml,
     canChangeAtts: false,
-    canChangeColumns: true,
-  }
-
-  const renderFlags = {
-    showWordAtts: false,
-    showTitles: true,
-    showHeadings: true,
-    showIntroductions: true,
-    showFootnotes: false,
-    showXrefs: false,
-    showParaStyles: true,
-    showCharacterMarkup: false,
-    showChapterLabels: true,
-    showVersesLabels: true,
+    canChangeColumns,
   }
 
   return (

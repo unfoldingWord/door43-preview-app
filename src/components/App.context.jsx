@@ -5,12 +5,12 @@ import { RepositoryApi, OrganizationApi } from 'dcs-js';
 import RcBible from './RcBible'
 import RcOpenBibleStories from './RcOpenBibleStories'
 
-const ComponentMap = {
-  rc: {
-    "Bible": RcBible,
-    "Open Bible Stories": RcOpenBibleStories,
-  },
-}
+// const ComponentMap = {
+//   rc: {
+//     "Bible": RcBible,
+//     "Open Bible Stories": RcOpenBibleStories,
+//   },
+// }
 
 export const AppContext = React.createContext();
 
@@ -28,7 +28,8 @@ export function AppContextProvider({ children }) {
   const [repos,setRepos] = useState()
   const [languages,setLanguages] = useState()
   const [printHtml, setPrintHtml] = useState("")
- 
+  const [canChangeColumns, setCanChangeColumns] = useState(false)
+
   useEffect(() => {
     const urlParts = (new URL(window.location.href)).pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
     const info = {
@@ -104,7 +105,7 @@ export function AppContextProvider({ children }) {
                 setResourceComponent(<RcOpenBibleStories />)
                 break
               default:
-                setErrorMessage(`Subject \`${subject}\` is currently not supported.`)
+                setErrorMessage(`Subject \`${catalogEntry.subject}\` is currently not supported.`)
             }
             break
           case "sb":
@@ -224,11 +225,13 @@ export function AppContextProvider({ children }) {
       languages,
       resourceComponent,
       printHtml,
+      canChangeColumns,
     },
     actions: {
       setUrlInfo,
       setErrorMessage,
       setPrintHtml,
+      setCanChangeColumns,
     },
   }
 
