@@ -9,7 +9,15 @@ import Navigator from "./Navigator"
 
 export default function OpenModal({ isOpenModal, onCloseModal }) {
   const {
-    state: { branches, languages, organizations, repos, tags, catalogEntry },
+    state: {
+      branches,
+      languages,
+      organizations,
+      repos,
+      tags,
+      repo,
+      catalogEntry,
+    },
   } = useContext(AppContext)
 
   const [langOptions, setLangOptions] = useState()
@@ -22,21 +30,21 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
   const [repoValue, setRepoValue] = useState()
 
   useEffect(() => {
-    if (catalogEntry?.language && catalogEntry?.language_title) 
+    if (repo?.language && repo?.language_title) 
       setLangValue({
-        label: catalogEntry?.language_title,
-        value: catalogEntry?.language,
+        label: repo?.language_title,
+        value: repo?.language,
       })
-  },[catalogEntry?.language, catalogEntry?.language_title])
+  },[repo, repo?.language, repo?.language_title])
 
   useEffect(() => {
-    if (catalogEntry?.owner) {
+    if (repo?.owner) {
       setOrganiValue({
-        label: catalogEntry?.owner,
-        value: catalogEntry?.owner,
+        label: repo?.owner.username,
+        value: repo?.owner.username,
       })
     }
-  },[catalogEntry?.owner])
+  },[repo?.owner])
 
   useEffect(() => {
     if (catalogEntry?.branch_or_tag_name) 
@@ -47,12 +55,12 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
   },[catalogEntry?.branch_or_tag_name])
 
   useEffect(() => {
-    if (catalogEntry?.name) 
+    if (repo?.name) 
       setRepoValue({
-        label: catalogEntry?.name,
-        value: catalogEntry?.name,
+        label: repo?.name,
+        value: repo?.name,
         })
-  },[catalogEntry?.name])
+  },[repo?.name])
 
   useEffect(() => {
     const _langOptions =
@@ -175,7 +183,7 @@ export default function OpenModal({ isOpenModal, onCloseModal }) {
                   options={repoOptions}
                 />
               )}
-              {tagsBranchesOptions && catalogEntry.branch_or_tag_name && (
+              {tagsBranchesOptions && catalogEntry?.branch_or_tag_name && (
                 <Navigator
                   onChange={(_, newValue) => {
                     setTagsBranchesValue(newValue)
