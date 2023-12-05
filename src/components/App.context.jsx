@@ -2,15 +2,24 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { BASE_DCS_URL, BASE_QA_URL, API_PATH } from "../common/constants";
 import { RepositoryApi, OrganizationApi } from 'dcs-js';
-import { decodeBase64ToUtf8 } from '../utils/base64Decode'
+import RcBible from './RcBible'
+import RcOpenBibleStories from './RcOpenBibleStories'
+
+// const ComponentMap = {
+//   rc: {
+//     "Bible": RcBible,
+//     "Open Bible Stories": RcOpenBibleStories,
+//   },
+// }
 
 export const AppContext = React.createContext();
 
 export function AppContextProvider({ children }) {
   const [errorMessage, setErrorMessage] = useState()
   const [urlInfo, setUrlInfo] = useState()
+  const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
-  const [bibleRef, setBibleRef] = useState()
+  const [resourceComponent, setResourceComponent] = useState()
   const [repoClient, setRepoClient] = useState(null)
   const [organizationClient, setOrganizationClient] = useState(null)
   const [organizations, setOrganizations] = useState()
@@ -18,123 +27,132 @@ export function AppContextProvider({ children }) {
   const [tags,setTags] = useState()
   const [repos,setRepos] = useState()
   const [languages,setLanguages] = useState()
-  const [loading, setLoading] = useState(true)
-  const [usfmText, setUsfmText] = useState()
-  const [usfmFileLoaded, setUsfmFileLoaded] = useState(false)
- 
+  const [printHtml, setPrintHtml] = useState("")
+  const [canChangeColumns, setCanChangeColumns] = useState(false)
+
   useEffect(() => {
-    const urlParts = (new URL(window.location.href)).pathname.replace(/^\/u\//, "").split("/")
+    const urlParts = (new URL(window.location.href)).pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
     const info = {
       owner: urlParts[0] || "unfoldingWord",
       repo: urlParts[1] || "en_ult",
       ref: urlParts[2] || "master",
+      extraPath: urlParts.slice(3)
     }
-    const br = {
-      book: urlParts[3] || "mat",
-      chapter: urlParts[4] || "1",
-      verse: urlParts[5] || "1",
-    }
-    window.history.pushState({id: "100"}, "Page", `/u/${info.owner}/${info.repo}/${info.ref}/${br.book}/${br.chapter !== "1" || br.verse !== "1"?`${br.chapter}/${br.verse}/`: ""}`);
     setUrlInfo(info)
-    setBibleRef(br)
-    const config = { basePath: `${BASE_QA_URL}/${API_PATH}/` }
+    const config = { basePath: `${BASE_QA_URL}/${API_PATH}` }
     setRepoClient(new RepositoryApi(config))
     setOrganizationClient(new OrganizationApi(config))
   }, [])
 
   useEffect(() => {
-    const handleInitialLoad = async (url) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          const text = await response.text();
-          throw Error(text);
-        }
-        
-        const jsonResponse = await response.json();
-        if (jsonResponse?.content) {
-          const _usfmText = decodeBase64ToUtf8(jsonResponse.content)
-          setUsfmText(_usfmText)
-          setUsfmFileLoaded(true)
-        }
-        setLoading(false)
-          
-      } catch (error) {
-        console.log(error);
-        setErrorMessage(error?.message)
-        setLoading(false)
-      }      
+    if (urlInfo) {
+        window.history.pushState({id: "100"}, "Page", `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${urlInfo.extraPath.join("/")}`)
     }
-
-    const loadFile = async () => {
-      let filePath = null
-      for(let i = 0; i < catalogEntry.ingredients.length; ++i) {
-        const ingredient = catalogEntry.ingredients[i]
-        if (ingredient.identifier == bibleRef?.book) {
-          filePath = ingredient.path
-          break
-        }
-      }
-      if (! filePath) {
-        setErrorMessage("Book not supported")
-        setLoading(false)
-      } else {
-        const fileURL = `${BASE_DCS_URL}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
-        handleInitialLoad(fileURL)
-      }
-    }
-
-    if (catalogEntry) {
-      loadFile()
-    }
-  }, [bibleRef?.book, catalogEntry, setErrorMessage]);
+  }, [urlInfo])
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      fetch(`${BASE_DCS_URL}/${API_PATH}/catalog/entry/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}`)
+      fetch(`${BASE_DCS_URL}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`)
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        setRepo(data)
+        if (urlInfo.ref == "master" && data.default_branch != "master") {
+          setUrlInfo({...urlInfo, ref: data.default_branch})
+        }
+      }).catch(() => {
+        setErrorMessage("Repo not found")
+      })
+    }
+
+    if (!repo && urlInfo) {
+      fetchCatalogEntry().catch(setErrorMessage);
+    }
+  }, [urlInfo, repo]);
+
+  useEffect(() => {
+    const fetchCatalogEntry = async () => {
+      fetch(`${BASE_DCS_URL}/${API_PATH}/catalog/entry/${repo.owner.username}/${repo.name}/${urlInfo.ref}`)
       .then(response => {
         return response.json();
       })
       .then(data => {
         setCatalogEntry(data)
       }).catch(() => {
-        setErrorMessage("Not found")
+        setErrorMessage("Metadata not found")
       })
     }
 
-    if (!catalogEntry && urlInfo) {
+    if (!catalogEntry && repo && urlInfo) {
       fetchCatalogEntry().catch(setErrorMessage);
     }
-  }, [urlInfo, catalogEntry]);
+  }, [urlInfo, repo, catalogEntry]);
+
+  useEffect(() => {
+    if (catalogEntry && ! resourceComponent) {
+      if(catalogEntry?.metadata_type && catalogEntry?.subject) {
+        switch (catalogEntry.metadata_type) {
+          case "rc": 
+            switch (catalogEntry.subject) {
+              case "Aligned Bible":
+              case "Bible":
+              case "Greek New Testament":
+              case "Hebrew Old Testament":
+                setResourceComponent(<RcBible />)
+                break
+              case "Open Bible Stories":
+                setResourceComponent(<RcOpenBibleStories />)
+                break
+              default:
+                setErrorMessage(`Subject \`${catalogEntry.subject}\` is currently not supported.`)
+            }
+            break
+          case "sb":
+            setErrorMessage("Scripture Burrito repositories are currently not supported.")
+            break
+          case "ts":
+            setErrorMessage("translationStudio repositories are currently not supported.")
+            break
+          case "tc":
+            setErrorMessage("translationCore repositories are currently not supported.")
+            break
+          default:
+            setErrorMessage(`Metadata type \`${catalogEntry.metadata_type}\` not supported.`)
+        }
+      } else {
+        setErrorMessage("Not a valid repository that we can convert")
+      }
+    }
+  }, [catalogEntry, resourceComponent])
 
   useEffect(() => {
     const getBranches = async () => {
-      const _branches = await repoClient.repoListBranches({owner: urlInfo?.owner, repo: urlInfo?.repo}).then(({data}) => data).catch(console.error)
+      const _branches = await repoClient.repoListBranches({owner: repo.owner.username, repo: repo.name}).then(({data}) => data).catch(console.error)
       if (_branches?.length)
         setBranches(_branches.map(branch => {return {label: branch.name, value: branch}}))
       else
         setBranches(null)
     }
-    if (!loading && !branches && urlInfo?.owner && urlInfo?.repo) { 
+    if (!branches && repo) { 
         getBranches()
     }
 
-  }, [tags, repoClient, urlInfo?.owner, urlInfo?.repo, branches, loading]);
+  }, [repoClient, repo, branches]);
 
   useEffect(() => {
     const getTags = async () => {
-      const _tags = await repoClient.repoListTags({owner: urlInfo?.owner, repo: urlInfo?.repo}).then(({data}) => data).catch(console.error)
+      const _tags = await repoClient.repoListTags({owner: repo.owner.username, repo: repo.name}).then(({data}) => data).catch(console.error)
       if (_tags?.length)
         setTags(_tags.map(tag => {return {label: tag.name, value: tag}}))
       else
         setTags(null)
 
     }
-    if (!loading && !tags && urlInfo?.owner && urlInfo?.repo) {
+    if (!tags && repo) {
       getTags()
     }
-
-  }, [tags, repoClient, urlInfo?.owner, urlInfo?.repo, loading]);
+  }, [tags, repoClient, repo]);
   
   useEffect(() => {
     const getLanguages = async () => {
@@ -149,10 +167,10 @@ export function AppContextProvider({ children }) {
       })
     }
 
-    if (!loading && !languages) {
+    if (!languages) {
       getLanguages()
     }
-  }, [languages, loading]);
+  }, [languages]);
 
   useEffect(() => {
     const getRepos = async () => {
@@ -167,10 +185,10 @@ export function AppContextProvider({ children }) {
       })
     }
 
-    if (!loading && !repos) {
+    if (!repos) {
       getRepos()
     }
-  }, [repos, loading, urlInfo?.owner]);
+  }, [repos, urlInfo?.owner]);
 
   useEffect(() => {
     const bibleSubjects = [
@@ -187,33 +205,35 @@ export function AppContextProvider({ children }) {
         setOrganizations(orgs)
       }
     }
-    if ( organizationClient && !loading && !organizations) {
+    if ( organizationClient && !organizations) {
       getOrgs().catch(console.error)
     }
 
-  }, [loading, organizationClient, organizations])
-
+  }, [organizationClient, organizations])
 
   // create the value for the context provider
   const context = {
     state: {
       urlInfo,
       catalogEntry,
-      bibleRef,
       errorMessage,
       organizations,
       branches,
       tags,
+      repo,
       repos,
       languages,
-      loading, 
-      usfmText, 
-      usfmFileLoaded,
+      resourceComponent,
+      printHtml,
+      canChangeColumns,
     },
     actions: {
+      setUrlInfo,
       setErrorMessage,
+      setPrintHtml,
+      setCanChangeColumns,
     },
-  };
+  }
 
   return <AppContext.Provider value={context}>{children}</AppContext.Provider>;
 }
