@@ -9,7 +9,7 @@ import {
 } from "../lib/previewStyling.js";
 import { AppContext } from "./App.context";
 import { decodeBase64ToUtf8 } from "../utils/base64Decode";
-import { BASE_DCS_URL, API_PATH } from "../common/constants";
+import { API_PATH } from "../common/constants";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { ALL_BIBLE_BOOKS } from "../common/BooksOfTheBible.js";
 
@@ -21,6 +21,7 @@ export default function RcBible() {
     state: {
         catalogEntry,
         urlInfo,
+        serverInfo,
     },
     actions: {
         setUrlInfo,
@@ -29,7 +30,7 @@ export default function RcBible() {
         setCanChangeColumns,
     },
   } = useContext(AppContext);
-    
+
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,
@@ -121,15 +122,15 @@ export default function RcBible() {
         setErrorMessage("Book not supported");
         setLoading(false);
       } else {
-        const fileURL = `${BASE_DCS_URL}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`;
+        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`;
         handleInitialLoad(fileURL);
       }
     };
 
-    if (loading && catalogEntry && bibleReferenceState?.bookId) {
+    if (loading && catalogEntry && bibleReferenceState?.bookId && serverInfo?.baseUrl) {
       loadFile();
     }
-  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns]);
+  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl]);
 
   useEffect(() => {
     if (htmlReady) {
