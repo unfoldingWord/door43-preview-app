@@ -31,7 +31,7 @@ export default function AppWorkspace() {
     handleClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
-    onRenderContent: () => printHtml,
+    onRenderContent: () => `<div style="direction: ${catalogEntry?.language_direction}">${printHtml}</div>`,
     canChangeAtts: false,
     canChangeColumns,
   }

@@ -63,7 +63,7 @@ export default function RcOpenBibleStories() {
   }, [catalogEntry, setErrorMessage, serverInfo?.baseUrl]);
 
   useEffect(() => {
-    if (storiesMarkdown) {
+    if (! html && storiesMarkdown) {
         let _html = ""
         storiesMarkdown.forEach(storyMarkdown => {
             _html += markdown(storyMarkdown)
@@ -71,7 +71,7 @@ export default function RcOpenBibleStories() {
         setHtml(_html)
         setPrintHtml(_html)
     }
-  }, [setPrintHtml, storiesMarkdown])
+  }, [storiesMarkdown, html])
 
   return (
     <>
