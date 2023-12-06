@@ -4,7 +4,7 @@ import DOMPurify from "dompurify";
 import CircularProgressUI from "@mui/joy/CircularProgress";
 import { AppContext } from "./App.context";
 import { decodeBase64ToUtf8 } from "../utils/base64Decode";
-import { BASE_DCS_URL, API_PATH } from "../common/constants";
+import { API_PATH } from "../common/constants";
 import markdown from '../lib/drawdown'
 
 export default function RcOpenBibleStories() {
@@ -15,6 +15,7 @@ export default function RcOpenBibleStories() {
   const {
     state: {
         catalogEntry,
+        serverInfo,
     },
     actions: {
         setErrorMessage,
@@ -48,7 +49,7 @@ export default function RcOpenBibleStories() {
       let markdownFiles = []
       for (let i = 1; i < 51; ++i) {
         const filePath = "content/" + `${i}`.padStart(2, '0') + ".md";
-        const fileURL = `${BASE_DCS_URL}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`;
+        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`;
         const markdownFile = await downloadFile(fileURL);
         markdownFiles.push(markdownFile ? markdownFile : `# ${i}. STORY NOT FOUND!\n\n`)
       }
@@ -56,10 +57,10 @@ export default function RcOpenBibleStories() {
       setLoading(false)
     }
 
-    if (catalogEntry) {
+    if (catalogEntry && serverInfo?.baseUrl) {
       loadMarkdownFiles();
     }
-  }, [catalogEntry, setErrorMessage]);
+  }, [catalogEntry, setErrorMessage, serverInfo?.baseUrl]);
 
   useEffect(() => {
     if (storiesMarkdown) {

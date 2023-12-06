@@ -7,7 +7,7 @@ import CircularProgressUI from '@mui/joy/CircularProgress'
 import { AppContext } from './App.context'
 import Header from './Header'
 import OpenModal from './OpenModal.jsx'
-import { APP_NAME, BASE_DCS_URL } from '../common/constants'
+import { APP_NAME, DCS_SERVERS } from '../common/constants'
 
 export default function AppWorkspace() {
   const [isOpenPrint,setIsOpenPrint] = useState(false)
@@ -21,6 +21,8 @@ export default function AppWorkspace() {
       errorMessage,
       printHtml,
       canChangeColumns,
+      buildInfo,
+      serverInfo,
     },
   } = useContext(AppContext)
 
@@ -37,9 +39,9 @@ export default function AppWorkspace() {
   return (
     <Sheet>
       <Header 
-        title={APP_NAME}
+        title={APP_NAME + (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID ? ` (${serverInfo.ID})` : '')}
         // infoLine={infoLine}
-        dcsRef={repo && `${BASE_DCS_URL}/${repo.owner.username}/${repo.name}` + (catalogEntry ? `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}` : '')} 
+        dcsRef={(repo && serverInfo?.baseUrl) ? `${serverInfo?.baseUrl}/${repo?.owner.username}/${repo.name}` + (catalogEntry ? `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}` : '') : ''}
         ready={printHtml != ""}
         onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
