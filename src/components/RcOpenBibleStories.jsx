@@ -22,7 +22,7 @@ export default function RcOpenBibleStories() {
         setPrintHtml,
     },
   } = useContext(AppContext);
-    
+
   useEffect(() => {
     const downloadFile = async (url) => {
       try {

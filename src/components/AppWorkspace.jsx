@@ -38,7 +38,7 @@ export default function AppWorkspace() {
 
   return (
     <Sheet>
-      <Header 
+      <Header
         title={APP_NAME + (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID ? ` (${serverInfo.ID})` : '')}
         // infoLine={infoLine}
         dcsRef={(repo && serverInfo?.baseUrl) ? `${serverInfo?.baseUrl}/${repo?.owner.username}/${repo.name}` + (catalogEntry ? `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}` : '') : ''}
@@ -57,7 +57,7 @@ export default function AppWorkspace() {
           </>
         }
       </Card>
-      <OpenModal 
+      <OpenModal
         isOpenModal={isOpenModal}
         onCloseModal={()=>setIsOpenModal(false)}
       />

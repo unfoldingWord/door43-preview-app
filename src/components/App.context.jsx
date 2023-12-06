@@ -31,6 +31,7 @@ export function AppContextProvider({ children }) {
   const [languages,setLanguages] = useState()
   const [printHtml, setPrintHtml] = useState("")
   const [canChangeColumns, setCanChangeColumns] = useState(false)
+  const [loadingMainContent, setLoadingMainContent] = useState(true)
 
   useEffect(() => {
     const url = (new URL(window.location.href))
@@ -124,7 +125,7 @@ export function AppContextProvider({ children }) {
     if (catalogEntry && ! resourceComponent) {
       if(catalogEntry?.metadata_type && catalogEntry?.subject) {
         switch (catalogEntry.metadata_type) {
-          case "rc": 
+          case "rc":
             switch (catalogEntry.subject) {
               case "Aligned Bible":
               case "Bible":
@@ -165,11 +166,11 @@ export function AppContextProvider({ children }) {
       else
         setBranches(null)
     }
-    if (!branches && repo) { 
+    if (!loadingMainContent && !branches && repo) {
         getBranches()
     }
 
-  }, [repoClient, repo, branches]);
+  }, [loadingMainContent, repoClient, repo, branches]);
 
   useEffect(() => {
     const getTags = async () => {
@@ -184,7 +185,7 @@ export function AppContextProvider({ children }) {
       getTags()
     }
   }, [tags, repoClient, repo]);
-  
+
   useEffect(() => {
     const getLanguages = async () => {
       fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/languages?stage=latest&metadataType=rc`)
@@ -198,14 +199,14 @@ export function AppContextProvider({ children }) {
       })
     }
 
-    if (!languages && serverInfo?.baseUrl) {
+    if (!loadingMainContent && !languages && serverInfo?.baseUrl) {
       getLanguages()
     }
-  }, [serverInfo?.baseUrl, languages]);
+  }, [serverInfo?.baseUrl, loadingMainContent, languages]);
 
   useEffect(() => {
     const getRepos = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?owner=${urlInfo?.owner}&lang=en&metadataType=rc`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?owner=${repo.owner.username}&lang=en&metadataType=rc`)
       .then(response => {
         return response.json();
       })
@@ -216,17 +217,18 @@ export function AppContextProvider({ children }) {
       })
     }
 
-    if (!repos && serverInfo?.baseUrl) {
+    if (!loadingMainContent && !repos && serverInfo?.baseUr && repo) {
       getRepos()
     }
-  }, [repos, urlInfo?.owner, serverInfo?.baseUrl]);
+  }, [repos, repo, loadingMainContent, serverInfo?.baseUrl]);
 
   useEffect(() => {
     const bibleSubjects = [
       'Aligned Bible',
       'Bible',
       'Hebrew Old Testament',
-      'Greek New Testament'
+      'Greek New Testament',
+      'Open Bible Stories',
     ]
   
     const getOrgs = async() => {
@@ -236,11 +238,17 @@ export function AppContextProvider({ children }) {
         setOrganizations(orgs)
       }
     }
-    if ( organizationClient && !organizations) {
+    if ( ! loadingMainContent && organizationClient && !organizations) {
       getOrgs().catch(console.error)
     }
 
-  }, [organizationClient, organizations])
+  }, [loadingMainContent, organizationClient, organizations])
+
+  useEffect(() => {
+    if (printHtml || errorMessage) {
+      setLoadingMainContent(false)
+    }
+  }, [printHtml, errorMessage])
 
   // create the value for the context provider
   const context = {
@@ -258,13 +266,15 @@ export function AppContextProvider({ children }) {
       printHtml,
       canChangeColumns,
       buildInfo,
-      serverInfo
+      serverInfo,
+      loadingMainContent,
     },
     actions: {
       setUrlInfo,
       setErrorMessage,
       setPrintHtml,
       setCanChangeColumns,
+      setLoadingMainContent,
     },
   }
 

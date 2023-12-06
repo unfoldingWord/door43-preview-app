@@ -30,7 +30,7 @@ export default function RcBible() {
         setCanChangeColumns,
     },
   } = useContext(AppContext);
-    
+
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,
