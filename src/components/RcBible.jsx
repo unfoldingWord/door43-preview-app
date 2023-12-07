@@ -146,14 +146,8 @@ export default function RcBible({
         </>
       ) : htmlReady ? (
         <>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
+            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>        
           </div>
           <div
             dangerouslySetInnerHTML={{

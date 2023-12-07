@@ -12,6 +12,12 @@ const sx = {
   title: {
     flexGrow: 1,
     color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  infoLine: {
+    flexGrow: 1,
+    color: '#ffffff',
+    ml: 1,
   },
   extendedIcon: {
     marginRight: theme => theme.spacing(1),
@@ -38,18 +44,13 @@ export default function Header({
           <div className='flex flex-1 justify-center items-center'>
           <Typography
               variant='h1'
-              sx={{
-                fontWeight: 'bold',
-                m: 1,
-                flexGrow: 1,
-                color: '#ffffff',            
-              }}
+              sx={sx.title}
             >
               {title}
             </Typography>
             <Typography
               variant='h3'
-              sx={sx.title}
+              sx={sx.infoLine}
             >
               {infoLine}
             </Typography>

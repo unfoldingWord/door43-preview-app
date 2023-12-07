@@ -36,12 +36,35 @@ export default function AppWorkspace() {
     canChangeColumns,
   }
 
+  let dcsRef = ""
+  let infoLine = null
+  if (repo && serverInfo?.baseUrl) {
+    dcsRef = `${serverInfo?.baseUrl}/${repo?.owner.username}/${repo.name}`
+    if (catalogEntry) {
+      dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`
+    }
+    let infoLineText = repo.full_name
+    if (catalogEntry) {
+      if (catalogEntry.ref_type != 'tag') {
+        infoLineText += `, ${catalogEntry.branch_or_tag_name} (${catalogEntry.commit_sha.substring(0,8)})`
+      } else {
+        infoLineText += `, ${catalogEntry.branch_or_tag_name}`
+      }
+    }
+    if (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID) {
+      infoLineText += ` (${serverInfo.ID})`
+    }
+
+    infoLine = (<a href={dcsRef} target={"_blank"} style={{textDecoration:"none", color: "inherit"}}>{infoLineText}</a>)
+  }
+
   return (
     <Sheet>
       <Header
-        title={APP_NAME + (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID ? ` (${serverInfo.ID})` : '')}
+        title={APP_NAME}
         // infoLine={infoLine}
-        dcsRef={(repo && serverInfo?.baseUrl) ? `${serverInfo?.baseUrl}/${repo?.owner.username}/${repo.name}` + (catalogEntry ? `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}` : '') : ''}
+        dcsRef={dcsRef}
+        infoLine={infoLine}
         ready={printHtml != ""}
         onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
