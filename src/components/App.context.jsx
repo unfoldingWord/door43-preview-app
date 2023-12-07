@@ -80,7 +80,7 @@ export function AppContextProvider({ children }) {
         if (response.ok) {
           return response.json();
         } else {
-          throw new Error("Repo not found")
+          throw new Error(`Repository not found: ${urlInfo.owner}/${urlInfo.repo}`)
         }
       })
       .then(data => {
@@ -90,8 +90,8 @@ export function AppContextProvider({ children }) {
           setUrlInfo(_urlInfo)
           updateUrlHotlink(_urlInfo)
         }
-      }).catch(() => {
-        setErrorMessage("Repo not found")
+      }).catch(err => {
+        setErrorMessage(err.message)
       })
     }
 
@@ -102,14 +102,18 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${repo?.owner.username}/${repo.name}/${urlInfo.ref}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${repo?.full_name}/${urlInfo.ref}`)
       .then(response => {
-        return response.json();
+        if (response.ok) {
+          return response.json()
+        } else {
+          throw new Error(`No metadata found for ${repo.full_name}, ref "${urlInfo.ref}". Please verify this is a valid resource and a valid ref.`)
+        }
       })
       .then(data => {
         setCatalogEntry(data)
-      }).catch(() => {
-        setErrorMessage("Metadata not found")
+      }).catch(err => {
+        setErrorMessage(err.message)
       })
     }
 
@@ -138,32 +142,29 @@ export function AppContextProvider({ children }) {
               case "Greek New Testament":
               case "Hebrew Old Testament":
                 setResourceComponent(<RcBible {...props} />)
-                break
+                return
               case "Open Bible Stories":
                 setResourceComponent(<RcOpenBibleStories {...props} />)
-                break
+                return
               case "TSV Translation Notes":
                 setResourceComponent(<RcTranslationNotes {...props} />)
-                break
+                return
               default:
-                setErrorMessage(`Subject \`${catalogEntry.subject}\` is currently not supported.`)
+                setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)
             }
-            break
+            return
           case "sb":
-            setErrorMessage("Scripture Burrito repositories are currently not supported.")
-            break
+            setErrorMessage("Conversion of Scripture Burrito repositories is currently not supported.")
+            return
           case "ts":
-            setErrorMessage("translationStudio repositories are currently not supported.")
-            break
+            setErrorMessage("Conversion of translationStudio repositories is currently not supported.")
+            return
           case "tc":
-            setErrorMessage("translationCore repositories are currently not supported.")
-            break
-          default:
-            setErrorMessage(`Metadata type \`${catalogEntry.metadata_type}\` not supported.`)
+            setErrorMessage("Conversion of translationCore repositories is currently not supported.")
+            return
         }
-      } else {
-        setErrorMessage("Not a valid repository that we can convert")
       }
+      setErrorMessage("Not a valid repository that can be convert.")
     }
   }, [catalogEntry, ResourceComponent])
 

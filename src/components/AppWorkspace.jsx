@@ -16,6 +16,7 @@ export default function AppWorkspace() {
   const {
     state: {
       repo,
+      urlInfo,
       catalogEntry,
       resourceComponent,
       errorMessage,
@@ -38,15 +39,21 @@ export default function AppWorkspace() {
 
   let dcsRef = ""
   let infoLine = null
-  if (repo && serverInfo?.baseUrl) {
-    dcsRef = `${serverInfo?.baseUrl}/${repo?.owner.username}/${repo.name}`
+  if (urlInfo && serverInfo?.baseUrl) {
+    let repoFullName = `${urlInfo.owner}/${urlInfo.repo}`
+    if(repo) {
+      repoFullName = repo.full_name
+    }
+    dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`
     if (catalogEntry) {
       dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`
+    } else {
+      dcsRef += `/src/branch/${urlInfo.ref}`
     }
-    let infoLineText = repo.full_name
-    if (catalogEntry) {
-      if (catalogEntry.ref_type != 'tag') {
-        infoLineText += `, ${catalogEntry.branch_or_tag_name} (${catalogEntry.commit_sha.substring(0,8)})`
+    let infoLineText = repoFullName
+    if (catalogEntry?.branch_or_tag_name) {
+      if (catalogEntry.ref_type == 'branch') {
+        infoLineText += `, ${catalogEntry.branch_or_tag_name} (${catalogEntry.commit_sha?.substring(0,8)})`
       } else {
         infoLineText += `, ${catalogEntry.branch_or_tag_name}`
       }
