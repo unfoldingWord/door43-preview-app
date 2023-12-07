@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from "react";
+import PropTypes from 'prop-types'
 import Typography from "@mui/joy/Typography";
 import { useUsfmPreviewRenderer } from "@oce-editor-tools/base";
 import DOMPurify from "dompurify";
@@ -7,29 +8,22 @@ import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
 } from "../lib/previewStyling.js";
-import { AppContext } from "./App.context";
 import { decodeBase64ToUtf8 } from "../utils/base64Decode";
 import { API_PATH } from "../common/constants";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { ALL_BIBLE_BOOKS } from "../common/BooksOfTheBible.js";
 
-export default function RcBible() {
+export default function RcBible({
+    urlInfo,
+    serverInfo,
+    catalogEntry,
+    setErrorMessage,
+    setPrintHtml,
+    setCanChangeColumns,
+    updateUrlHotlink,
+}) {
   const [loading, setLoading] = useState(true)
   const [usfmText, setUsfmText] = useState()
-
-  const {
-    state: {
-        catalogEntry,
-        urlInfo,
-        serverInfo,
-    },
-    actions: {
-        setUrlInfo,
-        setErrorMessage,
-        setPrintHtml,
-        setCanChangeColumns,
-    },
-  } = useContext(AppContext);
 
   const renderFlags = {
     showWordAtts: false,
@@ -44,11 +38,16 @@ export default function RcBible() {
     showVersesLabels: true,
   };
 
+  const onBibleReferenceChange = (book, chapter, verse) => {
+    updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
+  }
+
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: urlInfo?.extraPath[0] || catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS)[0] || "gen",
     initialChapter: urlInfo?.extraPath[1] || "1",
     initialVerse: urlInfo?.extraPath[2] || "1",
     supportedBooks: catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS),
+    onChange: onBibleReferenceChange,
   });
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
@@ -74,18 +73,16 @@ export default function RcBible() {
         }
         const chapter = urlInfo.extraPath[1] || "1"
         const verse = urlInfo.extraPath[2] || "1"
-        setUrlInfo({...urlInfo, extraPath: [book, chapter, verse]})
+        updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
         bibleReferenceActions.goToBookChapterVerse(book, chapter, verse)
     }
-  }, [bibleReferenceActions, catalogEntry, setErrorMessage, setUrlInfo, urlInfo])
+  }, [catalogEntry])
 
   useEffect(() => {
-    if (bibleReferenceState && urlInfo) {
-        if (bibleReferenceState.bookId != urlInfo.extraPath[0]) {
-            window.location.href = `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${bibleReferenceState.bookId}`
-        }
+    if (bibleReferenceState?.bookId && urlInfo?.extraPath && bibleReferenceState.bookId != urlInfo.extraPath[0]) {
+        window.location.href = `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${bibleReferenceState.bookId}`
     }
-  }, [bibleReferenceState, bibleReferenceState.bookId, urlInfo])
+  }, [bibleReferenceState?.bookId, urlInfo])
 
   useEffect(() => {
     const handleInitialLoad = async (url) => {
@@ -175,3 +172,13 @@ export default function RcBible() {
     </>
   );
 }
+
+RcBible.propTypes = {
+    urlInfo: PropTypes.object,
+    serverInfo: PropTypes.object,
+    catalogEntry: PropTypes.object,
+    setErrorMessage: PropTypes.func,
+    setPrintHtml: PropTypes.func,
+    setCanChangeColumns: PropTypes.func,
+    updateUrlHotlink: PropTypes.func,
+  }

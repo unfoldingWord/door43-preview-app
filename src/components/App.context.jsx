@@ -4,6 +4,8 @@ import { DCS_SERVERS, API_PATH } from "../common/constants";
 import { RepositoryApi, OrganizationApi } from 'dcs-js';
 import RcBible from './RcBible'
 import RcOpenBibleStories from './RcOpenBibleStories'
+import RcTranslationNotes from './RcTranslationNotes'
+import { updateUrlHotlink } from "../utils/url";
 
 // const ComponentMap = {
 //   rc: {
@@ -21,7 +23,7 @@ export function AppContextProvider({ children }) {
   const [buildInfo, setBuildInfo] = useState()
   const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
-  const [resourceComponent, setResourceComponent] = useState()
+  const [ResourceComponent, setResourceComponent] = useState()
   const [repoClient, setRepoClient] = useState(null)
   const [organizationClient, setOrganizationClient] = useState(null)
   const [organizations, setOrganizations] = useState()
@@ -60,6 +62,7 @@ export function AppContextProvider({ children }) {
       extraPath: urlParts.slice(3),
     }
     setUrlInfo(info)
+    updateUrlHotlink(info)
   }, [])
 
   useEffect(() => {
@@ -69,13 +72,6 @@ export function AppContextProvider({ children }) {
       setOrganizationClient(new OrganizationApi(config))
     }
   }, [serverInfo?.baseUrl])
-
-  useEffect(() => {
-    if (urlInfo) {
-      const params = new URLSearchParams(window.location.search)
-      window.history.replaceState({id: "100"}, '', decodeURIComponent(`/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${urlInfo.extraPath.join("/")}${params.size ? `?${params}` : ''}`))
-    }
-  }, [urlInfo])
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
@@ -88,10 +84,11 @@ export function AppContextProvider({ children }) {
         }
       })
       .then(data => {
-        console.log("DATA", data)
         setRepo(data)
         if (urlInfo.ref == "master" && data.default_branch != "master") {
-          setUrlInfo({...urlInfo, ref: data.default_branch})
+          const _urlInfo = {...urlInfo, ref: data.default_branch}
+          setUrlInfo(_urlInfo)
+          updateUrlHotlink(_urlInfo)
         }
       }).catch(() => {
         setErrorMessage("Repo not found")
@@ -122,8 +119,17 @@ export function AppContextProvider({ children }) {
   }, [urlInfo, serverInfo?.baseUrl, repo, catalogEntry]);
 
   useEffect(() => {
-    if (catalogEntry && ! resourceComponent) {
+    if (catalogEntry && ! ResourceComponent) {
       if(catalogEntry?.metadata_type && catalogEntry?.subject) {
+        const props = {
+          urlInfo,
+          serverInfo,
+          catalogEntry,
+          setPrintHtml,
+          setErrorMessage,
+          setCanChangeColumns,
+          updateUrlHotlink,
+        }
         switch (catalogEntry.metadata_type) {
           case "rc":
             switch (catalogEntry.subject) {
@@ -131,10 +137,13 @@ export function AppContextProvider({ children }) {
               case "Bible":
               case "Greek New Testament":
               case "Hebrew Old Testament":
-                setResourceComponent(<RcBible />)
+                setResourceComponent(<RcBible {...props} />)
                 break
               case "Open Bible Stories":
-                setResourceComponent(<RcOpenBibleStories />)
+                setResourceComponent(<RcOpenBibleStories {...props} />)
+                break
+              case "TSV Translation Notes":
+                setResourceComponent(<RcTranslationNotes {...props} />)
                 break
               default:
                 setErrorMessage(`Subject \`${catalogEntry.subject}\` is currently not supported.`)
@@ -156,7 +165,7 @@ export function AppContextProvider({ children }) {
         setErrorMessage("Not a valid repository that we can convert")
       }
     }
-  }, [catalogEntry, resourceComponent])
+  }, [catalogEntry, ResourceComponent])
 
   useEffect(() => {
     const getBranches = async () => {
@@ -230,7 +239,7 @@ export function AppContextProvider({ children }) {
       'Greek New Testament',
       'Open Bible Stories',
     ]
-  
+
     const getOrgs = async() => {
       const response  = await organizationClient.orgGetAll()
       if (response.status === 200) {
@@ -262,7 +271,7 @@ export function AppContextProvider({ children }) {
       repo,
       repos,
       languages,
-      resourceComponent,
+      resourceComponent: ResourceComponent,
       printHtml,
       canChangeColumns,
       buildInfo,

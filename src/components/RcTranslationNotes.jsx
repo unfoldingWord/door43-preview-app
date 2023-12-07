@@ -7,12 +7,11 @@ import { decodeBase64ToUtf8 } from "../utils/base64Decode";
 import { API_PATH } from "../common/constants";
 import markdown from '../lib/drawdown'
 
-export default function RcOpenBibleStories({
-    serverInfo,
-    catalogEntry,
-    setErrorMessage,
-    setPrintHtml,
-    setCanChangeColumns,
+export default function RcTranslationNotes({
+  serverInfo,
+  catalogEntry,
+  setErrorMessage,
+  setPrintHtml,
 }) {
   const [loading, setLoading] = useState(true)
   const [storiesMarkdown, setStoriesMarkdown] = useState()
@@ -97,9 +96,10 @@ export default function RcOpenBibleStories({
   );
 }
 
-RcOpenBibleStories.propTypes = {
+RcTranslationNotes.propTypes = {
   serverInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
+  setCanChangeColumns: PropTypes.func,
 }
