@@ -39,7 +39,9 @@ export default function RcBible({
   }
 
   const onBibleReferenceChange = (book, chapter, verse) => {
-    window.scrollTo({top: document.getElementById(`chapter-${chapter}-verse-${verse}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
+    if (chapter > "1" || verse > "5") {
+        window.scrollTo({top: document.getElementById(`chapter-${chapter}-verse-${verse}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
+    }
     updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
   }
 
