@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import PropTypes from 'prop-types'
+import PropTypes from 'prop-types';
 import Typography from "@mui/joy/Typography";
 import { useUsfmPreviewRenderer } from "@oce-editor-tools/base";
 import DOMPurify from "dompurify";
@@ -36,9 +36,10 @@ export default function RcBible({
     showCharacterMarkup: false,
     showChapterLabels: true,
     showVersesLabels: true,
-  };
+  }
 
   const onBibleReferenceChange = (book, chapter, verse) => {
+    window.scrollTo({top: document.getElementById(`chapter-${chapter}-verse-${verse}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
     updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
   }
 
@@ -48,7 +49,7 @@ export default function RcBible({
     initialVerse: urlInfo?.extraPath[2] || "1",
     supportedBooks: catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS),
     onChange: onBibleReferenceChange,
-  });
+  })
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
     usfmText,
@@ -59,7 +60,7 @@ export default function RcBible({
         : getLtrPreviewStyle()
       : getLtrPreviewStyle(),
     htmlRender: true,
-  });
+  })
 
   useEffect(() => {
     if (catalogEntry) {
@@ -87,53 +88,54 @@ export default function RcBible({
   useEffect(() => {
     const handleInitialLoad = async (url) => {
       try {
-        const response = await fetch(url);
+        const response = await fetch(url)
         if (!response.ok) {
-          const text = await response.text();
-          throw Error(text);
+          const text = await response.text()
+          throw Error(text)
         }
 
-        const jsonResponse = await response.json();
+        const jsonResponse = await response.json()
         if (jsonResponse?.content) {
-          const _usfmText = decodeBase64ToUtf8(jsonResponse.content);
+          const _usfmText = decodeBase64ToUtf8(jsonResponse.content)
           setUsfmText(_usfmText)
           setCanChangeColumns(true)
         }
-        setLoading(false);
+        setLoading(false)
       } catch (error) {
-        setErrorMessage(error?.message);
-        setLoading(false);
+        setErrorMessage(error?.message)
+        setLoading(false)
       }
-    };
+    }
 
     const loadFile = async () => {
-      let filePath = null;
+      let filePath = null
       for (let i = 0; i < catalogEntry.ingredients.length; ++i) {
-        const ingredient = catalogEntry.ingredients[i];
+        const ingredient = catalogEntry.ingredients[i]
         if (ingredient.identifier == bibleReferenceState.bookId) {
-          filePath = ingredient.path;
-          break;
+          filePath = ingredient.path
+          break
         }
       }
       if (!filePath) {
-        setErrorMessage("Book not supported");
-        setLoading(false);
+        setErrorMessage("Book not supported")
+        setLoading(false)
       } else {
-        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`;
-        handleInitialLoad(fileURL);
+        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
+        handleInitialLoad(fileURL)
       }
-    };
+    }
 
     if (loading && catalogEntry && bibleReferenceState?.bookId && serverInfo?.baseUrl) {
-      loadFile();
+      loadFile()
     }
-  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl]);
+  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl])
 
   useEffect(() => {
     if (htmlReady) {
-      setPrintHtml(renderedData);
+      setPrintHtml(renderedData)
+      onBibleReferenceChange(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
     }
-  }, [htmlReady, renderedData, setPrintHtml]);
+  }, [htmlReady, renderedData, setPrintHtml])
 
   return (
     <>
@@ -147,7 +149,7 @@ export default function RcBible({
       ) : htmlReady ? (
         <>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
-            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>        
+            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
           </div>
           <div
             dangerouslySetInnerHTML={{
@@ -164,7 +166,7 @@ export default function RcBible({
         </>
       )}
     </>
-  );
+  )
 }
 
 RcBible.propTypes = {

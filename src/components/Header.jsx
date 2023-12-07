@@ -93,7 +93,7 @@ export default function Header({
 
 Header.propTypes = {
   title: PropTypes.string,
-  infoLine: PropTypes.string,
+  infoLine: PropTypes.object,
   dcsRef: PropTypes.string,
   ready: PropTypes.bool,
   onPrintClick: PropTypes.func,
