@@ -62,7 +62,6 @@ export function AppContextProvider({ children }) {
       ref: ref || "master",
       extraPath: urlParts.slice(2),
     }
-    console.log(info)
     setUrlInfo(info)
     updateUrlHotlink(info)
   }, [])

@@ -39,24 +39,45 @@ export default function RcBible({
     showVersesLabels: true,
   }
 
-  const onBibleReferenceChange = (book, chapter, verse) => {
-    if (chapter > "1" || verse > "5") {
-        window.scrollTo({top: document.getElementById(`chapter-${chapter}-verse-${verse}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
+  const onBibleReferencePreChange = (b) => {
+    if (b != bibleReferenceState.bookId) {
+        redirectToUrl({...urlInfo, extraPath: [b]})
+        return false
     }
-    let extraPath = [book]
-    if (chapter != "1" || verse != "1") {
-        extraPath = [book,chapter, verse]
+    return true
+  }
+
+  const onBibleReferenceChange = (b, c, v) => {
+    if (c > "1" || v > "5") {
+        window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
+    }
+    let extraPath = [b]
+    if (c != "1" || v != "1" || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
+        extraPath = [b, c, v]
     }
     updateUrlHotlink({...urlInfo, extraPath})
   }
 
+  const supportedBooks = catalogEntry.ingredients.map(ingredient => ingredient.identifier.toLowerCase()).filter(id => id in ALL_BIBLE_BOOKS)
+  if(! supportedBooks) {
+    setErrorMessage("There are no books in this resource to render")
+    return
+  }
+
+  const book = urlInfo.extraPath[0].toLowerCase() || supportedBooks[0]
+  if (!supportedBooks.includes(book)) {
+    setErrorMessage(`Invalid book. ${book} is not an existing book in this resource.`)
+    return
+  }
+
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: urlInfo?.extraPath[0] || catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS)[0] || "gen",
-    initialChapter: urlInfo?.extraPath[1] || "1",
-    initialVerse: urlInfo?.extraPath[2] || "1",
-    supportedBooks: catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS),
+    initialBook: book,
+    initialChapter: urlInfo.extraPath[1] || "1",
+    initialVerse: urlInfo.extraPath[2] || "1",
     onChange: onBibleReferenceChange,
+    onPreChange: onBibleReferencePreChange,
   })
+  bibleReferenceActions.applyBooksFilter(supportedBooks)
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
     usfmText,
@@ -68,28 +89,6 @@ export default function RcBible({
       : getLtrPreviewStyle(),
     htmlRender: true,
   })
-
-  useEffect(() => {
-    if (catalogEntry) {
-        let book = ""
-        if (urlInfo?.extraPath.length > 0) {
-            book = urlInfo.extraPath[0]
-        } else if (catalogEntry?.ingredients.length) {
-            book = catalogEntry?.ingredients.map(ingredient => ingredient.identifier).filter(book => book in ALL_BIBLE_BOOKS)[0] || "gen"
-        } else {
-            setErrorMessage("No book given to render")
-        }
-        const chapter = urlInfo.extraPath[1] || "1"
-        const verse = urlInfo.extraPath[2] || "1"
-        bibleReferenceActions.goToBookChapterVerse(book, chapter, verse)
-    }
-  }, [catalogEntry])
-
-  useEffect(() => {
-    if (bibleReferenceState?.bookId && urlInfo?.extraPath && bibleReferenceState.bookId != urlInfo.extraPath[0]) {
-        redirectToUrl({...urlInfo, extraPath: [bibleReferenceState.bookId]})
-    }
-  }, [bibleReferenceState?.bookId, urlInfo])
 
   useEffect(() => {
     const handleInitialLoad = async (url) => {
@@ -131,15 +130,15 @@ export default function RcBible({
       }
     }
 
-    if (loading && catalogEntry && bibleReferenceState?.bookId && serverInfo?.baseUrl) {
+    if (loading && catalogEntry && bibleReferenceState && serverInfo?.baseUrl) {
       loadFile()
     }
-  }, [loading, catalogEntry, bibleReferenceState.bookId, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl])
+  }, [loading, catalogEntry, bibleReferenceState, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl])
 
   useEffect(() => {
     if (htmlReady) {
       setPrintHtml(renderedData)
-      onBibleReferenceChange(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
+      bibleReferenceActions?.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
     }
   }, [htmlReady, renderedData, setPrintHtml])
 
@@ -176,11 +175,11 @@ export default function RcBible({
 }
 
 RcBible.propTypes = {
-    urlInfo: PropTypes.object,
-    serverInfo: PropTypes.object,
-    catalogEntry: PropTypes.object,
-    setErrorMessage: PropTypes.func,
-    setPrintHtml: PropTypes.func,
-    setCanChangeColumns: PropTypes.func,
-    updateUrlHotlink: PropTypes.func,
-  }
+  urlInfo: PropTypes.object,
+  serverInfo: PropTypes.object,
+  catalogEntry: PropTypes.object,
+  setErrorMessage: PropTypes.func,
+  setPrintHtml: PropTypes.func,
+  setCanChangeColumns: PropTypes.func,
+  updateUrlHotlink: PropTypes.func,
+}
