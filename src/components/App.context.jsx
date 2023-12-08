@@ -55,12 +55,14 @@ export function AppContextProvider({ children }) {
     }
 
     const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
+    const ref = url.searchParams.get("ref")?.toLowerCase() || "master"
     const info = {
       owner: urlParts[0] || "unfoldingWord",
       repo: urlParts[1] || "en_ult",
-      ref: urlParts[2] || "master",
-      extraPath: urlParts.slice(3),
+      ref: ref || "master",
+      extraPath: urlParts.slice(2),
     }
+    console.log(info)
     setUrlInfo(info)
     updateUrlHotlink(info)
   }, [])

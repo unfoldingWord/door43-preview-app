@@ -12,6 +12,7 @@ import { decodeBase64ToUtf8 } from "../utils/base64Decode";
 import { API_PATH } from "../common/constants";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { ALL_BIBLE_BOOKS } from "../common/BooksOfTheBible.js";
+import { redirectToUrl } from "../utils/url.js"
 
 export default function RcBible({
     urlInfo,
@@ -42,7 +43,11 @@ export default function RcBible({
     if (chapter > "1" || verse > "5") {
         window.scrollTo({top: document.getElementById(`chapter-${chapter}-verse-${verse}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
     }
-    updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
+    let extraPath = [book]
+    if (chapter != "1" || verse != "1") {
+        extraPath = [book,chapter, verse]
+    }
+    updateUrlHotlink({...urlInfo, extraPath})
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
@@ -76,14 +81,13 @@ export default function RcBible({
         }
         const chapter = urlInfo.extraPath[1] || "1"
         const verse = urlInfo.extraPath[2] || "1"
-        updateUrlHotlink({...urlInfo, extraPath: [book, chapter, verse]})
         bibleReferenceActions.goToBookChapterVerse(book, chapter, verse)
     }
   }, [catalogEntry])
 
   useEffect(() => {
     if (bibleReferenceState?.bookId && urlInfo?.extraPath && bibleReferenceState.bookId != urlInfo.extraPath[0]) {
-        window.location.href = `/u/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref}/${bibleReferenceState.bookId}`
+        redirectToUrl({...urlInfo, extraPath: [bibleReferenceState.bookId]})
     }
   }, [bibleReferenceState?.bookId, urlInfo])
 
