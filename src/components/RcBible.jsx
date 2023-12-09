@@ -25,6 +25,7 @@ export default function RcBible({
 }) {
   const [loading, setLoading] = useState(true)
   const [usfmText, setUsfmText] = useState()
+  const [html, setHtml] = useState()
 
   const renderFlags = {
     showWordAtts: false,
@@ -48,11 +49,18 @@ export default function RcBible({
   }
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (c > "1" || v > "5") {
-        window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"});
+    c = parseInt(c)
+    v = parseInt(v)
+    if (v <= 3) {
+        v = 1
+    }
+    if (c > 1 || v > 1) {
+        window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
+    } else {
+        window.scrollTo({top: 0, behavior: "smooth"})
     }
     let extraPath = [b]
-    if (c != "1" || v != "1" || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
+    if (c != 1 || v != 1 || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
         extraPath = [b, c, v]
     }
     updateUrlHotlink({...urlInfo, extraPath})
@@ -77,7 +85,9 @@ export default function RcBible({
     onChange: onBibleReferenceChange,
     onPreChange: onBibleReferencePreChange,
   })
-  bibleReferenceActions.applyBooksFilter(supportedBooks)
+  if (supportedBooks.length != 66) {
+      bibleReferenceActions.applyBooksFilter(supportedBooks)
+  }
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
     usfmText,
@@ -137,10 +147,12 @@ export default function RcBible({
 
   useEffect(() => {
     if (htmlReady) {
-      setPrintHtml(renderedData)
-      bibleReferenceActions?.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
+      const _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${renderedData}`
+      setHtml(_html)
+      setPrintHtml(_html)
+      bibleReferenceActions.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
     }
-  }, [htmlReady, renderedData, setPrintHtml])
+  }, [htmlReady, renderedData])
 
   return (
     <>
@@ -151,14 +163,14 @@ export default function RcBible({
           </Typography>
           <CircularProgressUI />
         </>
-      ) : htmlReady ? (
+      ) : html ? (
         <>
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
             <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
           </div>
           <div
             dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(renderedData),
+              __html: DOMPurify.sanitize(html),
             }}
           />
         </>
