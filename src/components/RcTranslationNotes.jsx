@@ -77,7 +77,7 @@ export default function RcTranslationNotes({
     return
   }
 
-  const book = urlInfo.extraPath[0].toLowerCase() || supportedBooks[0]
+  const book = urlInfo.extraPath[0]?.toLowerCase() || supportedBooks[0]
   if (!supportedBooks.includes(book)) {
     setErrorMessage(`Invalid book. ${book} is not an existing book in this resource.`)
     return
