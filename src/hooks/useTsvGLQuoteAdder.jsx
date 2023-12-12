@@ -28,8 +28,6 @@ export default function useTsvGLQuoteAdder({
         if (row.Chapter) {
           ref = row.Chapter + ":" + row.Verse
           row.Reference = ref
-          del(row.Chapter)
-          del(row.Verse)
         } else {
           ref = row.Reference
         }
@@ -37,7 +35,6 @@ export default function useTsvGLQuoteAdder({
           let quote = ""
           if (row.OrigQuote) {
             row.Quote = quote
-            del(row.OrigQuote)
           } else {
             quote = row.Quote
           }  
