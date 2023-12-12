@@ -51,9 +51,6 @@ export default function RcBible({
   const onBibleReferenceChange = (b, c, v) => {
     c = parseInt(c)
     v = parseInt(v)
-    if (v <= 3) {
-        v = 1
-    }
     if (c > 1 || v > 1) {
         window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
     } else {
@@ -159,7 +156,7 @@ export default function RcBible({
       {loading ? (
         <>
           <Typography color="textPrimary" gutterBottom display="inline">
-            <>Loading USFM file from server... </>
+            <>Loading file from server... </>
           </Typography>
           <CircularProgressUI />
         </>
@@ -177,7 +174,7 @@ export default function RcBible({
       ) : (
         <>
           <Typography color="textPrimary" gutterBottom display="inline">
-            <>Converting from Usfm... </>
+            <>Converting file... </>
           </Typography>
           <CircularProgressUI />
         </>
