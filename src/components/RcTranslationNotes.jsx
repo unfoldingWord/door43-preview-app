@@ -285,8 +285,6 @@ export default function RcTranslationNotes({
         }
         if (row.GLQuote || row.Quote) {
           _html += `<h3 class="tn-note-header">${row.GLQuote || row.Quote}</h3>`
-        } else if(chapterStr != "front" && verseStr != "intro") {
-          _html += `<h3 class="tn-note-header">NOTE:</h3>`
         }
         _html += `<div class="tn-note-body">${markdown(row.Note.replaceAll("\\n", "\n"))}</div>
             <hr style="width: 75%"/>
