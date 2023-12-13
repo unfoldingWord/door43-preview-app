@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import PropTypes from 'prop-types';
 import Typography from "@mui/joy/Typography";
-import { useUsfmPreviewRenderer } from "@oce-editor-tools/base";
+import useUsfmPreviewRenderer from "../hooks/useUsfmPreviewRender.jsx";
 import DOMPurify from "dompurify";
 import CircularProgressUI from "@mui/joy/CircularProgress";
 import {
@@ -13,17 +13,19 @@ import { API_PATH } from "../common/constants";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { ALL_BIBLE_BOOKS } from "../common/BooksOfTheBible.js";
 import { redirectToUrl } from "../utils/url.js"
+import * as JSZip from 'jszip'
+import { BibleBookData } from "../common/books.js";
 
 export default function RcBible({
     urlInfo,
-    serverInfo,
     catalogEntry,
     setErrorMessage,
     setPrintHtml,
     setCanChangeColumns,
-    updateUrlHotlink,
+    updateUrlHashLink,
 }) {
   const [loading, setLoading] = useState(true)
+  const [zipFileData, setZipFileData] = useState()
   const [usfmText, setUsfmText] = useState()
   const [html, setHtml] = useState()
 
@@ -40,27 +42,25 @@ export default function RcBible({
     showVersesLabels: true,
   }
 
-  const onBibleReferencePreChange = (b) => {
-    if (b != bibleReferenceState.bookId) {
-        redirectToUrl({...urlInfo, extraPath: [b]})
-        return false
-    }
-    return true
-  }
-
   const onBibleReferenceChange = (b, c, v) => {
-    c = parseInt(c)
-    v = parseInt(v)
-    if (c > 1 || v > 1) {
-        window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
+    if (b != bibleReferenceState.bookId) {
+        setHtml(null)
+        setUsfmText(null)
+        setLoading(true)
     } else {
-        window.scrollTo({top: 0, behavior: "smooth"})
+        c = parseInt(c)
+        v = parseInt(v)
+        if (c > 1 || v > 1) {
+            window.scrollTo({top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
+        } else {
+            window.scrollTo({top: 0, behavior: "smooth"})
+        }
     }
-    let extraPath = [b]
-    if (c != 1 || v != 1 || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
-        extraPath = [b, c, v]
+    let hashParts = [b]
+    if (c != 1 || v != 1 || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
+        hashParts = [b, c, v]
     }
-    updateUrlHotlink({...urlInfo, extraPath})
+    updateUrlHashLink({...urlInfo, hashParts})
   }
 
   const supportedBooks = catalogEntry.ingredients.map(ingredient => ingredient.identifier.toLowerCase()).filter(id => id in ALL_BIBLE_BOOKS)
@@ -69,7 +69,7 @@ export default function RcBible({
     return
   }
 
-  const book = urlInfo.extraPath[0].toLowerCase() || supportedBooks[0]
+  const book = urlInfo.hashParts[0]?.toLowerCase() || supportedBooks[0]
   if (!supportedBooks.includes(book)) {
     setErrorMessage(`Invalid book. ${book} is not an existing book in this resource.`)
     return
@@ -77,16 +77,16 @@ export default function RcBible({
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: book,
-    initialChapter: urlInfo.extraPath[1] || "1",
-    initialVerse: urlInfo.extraPath[2] || "1",
+    initialChapter: urlInfo.hashParts[1] || "1",
+    initialVerse: urlInfo.hashParts[2] || "1",
     onChange: onBibleReferenceChange,
-    onPreChange: onBibleReferencePreChange,
   })
   if (supportedBooks.length != 66) {
       bibleReferenceActions.applyBooksFilter(supportedBooks)
   }
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
+    bookId: bibleReferenceState.bookId,
     usfmText,
     renderFlags,
     renderStyles: catalogEntry
@@ -98,61 +98,60 @@ export default function RcBible({
   })
 
   useEffect(() => {
-    const handleInitialLoad = async (url) => {
+    const loadZipFile = async () => {
       try {
-        const response = await fetch(url)
-        if (!response.ok) {
-          const text = await response.text()
-          throw Error(text)
-        }
-
-        const jsonResponse = await response.json()
-        if (jsonResponse?.content) {
-          const _usfmText = decodeBase64ToUtf8(jsonResponse.content)
-          setUsfmText(_usfmText)
-          setCanChangeColumns(true)
-        }
-        setLoading(false)
+        console.log("Downloading ", catalogEntry.zipball_url)
+        fetch(catalogEntry.zipball_url)
+        .then(response => response.arrayBuffer())
+        .then(data => setZipFileData(data))
       } catch (error) {
         setErrorMessage(error?.message)
         setLoading(false)
       }
     }
 
-    const loadFile = async () => {
-      let filePath = null
-      for (let i = 0; i < catalogEntry.ingredients.length; ++i) {
-        const ingredient = catalogEntry.ingredients[i]
-        if (ingredient.identifier == bibleReferenceState.bookId) {
-          filePath = ingredient.path
-          break
-        }
-      }
-      if (!filePath) {
-        setErrorMessage("Book not supported")
-        setLoading(false)
-      } else {
-        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
-        handleInitialLoad(fileURL)
-      }
+    if (!zipFileData) {
+        loadZipFile()
     }
-
-    if (loading && catalogEntry && bibleReferenceState && serverInfo?.baseUrl) {
-      loadFile()
-    }
-  }, [loading, catalogEntry, bibleReferenceState, setErrorMessage, setCanChangeColumns, serverInfo?.baseUrl])
+  }, [zipFileData])
 
   useEffect(() => {
-    if (htmlReady) {
-      const _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${renderedData}`
+    const loadUsfmFileFromZipFile = () => {
+      JSZip.loadAsync(zipFileData)
+        .then(zip => zip.file(`${catalogEntry.repo.name}/${BibleBookData[bibleReferenceState.bookId].usfm}.usfm`).async('text'))
+        .then(text => {
+            setUsfmText(text);
+            setLoading(false)
+        })
+        .catch(error => setErrorMessage(error?.message));
+    }
+
+    if(zipFileData && loading && !html) {
+        loadUsfmFileFromZipFile()
+    }
+  }, [zipFileData, loading, html])
+
+
+  useEffect(() => {
+    if (htmlReady && renderedData) {
+      let _html = renderedData.replaceAll(/id="chapter-(\d+)-verse-(\d+)"/g, `id="${bibleReferenceState.bookId}-$1-$2"`)
+      _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${_html}`
       setHtml(_html)
       setPrintHtml(_html)
-      bibleReferenceActions.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
     }
   }, [htmlReady, renderedData])
 
+  useEffect(() => {
+    if (html) {
+        bibleReferenceActions.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
+    }
+  }, [html])
+
   return (
     <>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
+        <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
+      </div>
       {loading ? (
         <>
           <Typography color="textPrimary" gutterBottom display="inline">
@@ -162,9 +161,6 @@ export default function RcBible({
         </>
       ) : html ? (
         <>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
-            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
-          </div>
           <div
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(html),
@@ -185,10 +181,9 @@ export default function RcBible({
 
 RcBible.propTypes = {
   urlInfo: PropTypes.object,
-  serverInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
-  updateUrlHotlink: PropTypes.func,
+  updateUrlHashLink: PropTypes.func,
 }

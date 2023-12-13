@@ -25,7 +25,7 @@ export default function RcTranslationNotes({
     setErrorMessage,
     setPrintHtml,
     setCanChangeColumns,
-    updateUrlHotlink,
+    updateUrlHashLink,
 }) {
   const [loading, setLoading] = useState(true)
   const [tsvText, setTsvText] = useState()
@@ -50,7 +50,7 @@ export default function RcTranslationNotes({
 
   const onBibleReferencePreChange = (b) => {
     if (b != bibleReferenceState.bookId) {
-        redirectToUrl({...urlInfo, extraPath: [b]})
+        redirectToUrl({...urlInfo, hashParts: [b]})
         return false
     }
     return true
@@ -60,15 +60,15 @@ export default function RcTranslationNotes({
     c = parseInt(c)
     v = parseInt(v)
     if (c > 1 || v > 1) {
-        window.scrollTo({top: document.getElementById(`chapter-${c}-verse-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
+        window.scrollTo({top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
     } else {
         window.scrollTo({top: 0, behavior: "smooth"})
     }
-    let extraPath = [b]
-    if (c != 1 || v != 1 || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
-        extraPath = [b, c, v]
+    let hashParts = [b]
+    if (c != 1 || v != 1 || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
+      hashParts = [b, c, v]
     }
-    updateUrlHotlink({...urlInfo, extraPath})
+    updateUrlHashLink({...urlInfo, hashParts})
   }
 
   const supportedBooks = catalogEntry.ingredients.map(ingredient => ingredient.identifier.toLowerCase()).filter(id => id in ALL_BIBLE_BOOKS)
@@ -77,7 +77,7 @@ export default function RcTranslationNotes({
     return
   }
 
-  const book = urlInfo.extraPath[0]?.toLowerCase() || supportedBooks[0]
+  const book = urlInfo.hashParts[0]?.toLowerCase() || supportedBooks[0]
   if (!supportedBooks.includes(book)) {
     setErrorMessage(`Invalid book. ${book} is not an existing book in this resource.`)
     return
@@ -85,8 +85,8 @@ export default function RcTranslationNotes({
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: book,
-    initialChapter: urlInfo.extraPath[1] || "1",
-    initialVerse: urlInfo.extraPath[2] || "1",
+    initialChapter: urlInfo.hashParts[1] || "1",
+    initialVerse: urlInfo.hashParts[2] || "1",
     onChange: onBibleReferenceChange,
     onPreChange: onBibleReferencePreChange,
   })
@@ -267,13 +267,13 @@ export default function RcTranslationNotes({
         const verseStr = row.Reference.split(':')[1]
         _html += `<article class="tn-note">`
         if(chapterStr != "front" && verseStr == "intro") {
-          _html += `<span id="chapter-${chapterStr}-verse-1"></span>`
+          _html += `<span id="${bibleReferenceState.bookId}-${chapterStr}-1"></span>`
         }
         if (chapterStr != prevChapter || verseStr != prevVerse) {
           const firstVerse = verseStr.split('-')[0]
           if (chapterStr != "front" && firstVerse != "intro") {
             if (firstVerse != prevVerse) {
-              _html += `<h2 id="chapter-${chapterStr}-verse-${firstVerse}" class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
+              _html += `<h2 id="${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}" class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
             } else {
               _html += `<h2>${chapterStr}:${verseStr}</h2>`
             }
@@ -286,7 +286,7 @@ export default function RcTranslationNotes({
         if (row.GLQuote || row.Quote) {
           _html += `<h3 class="tn-note-header">${row.GLQuote || row.Quote}</h3>`
         }
-        _html += `<div class="tn-note-body">${markdown(row.Note.replaceAll("\\n", "\n"))}</div>
+        _html += `<div class="tn-note-body">${markdown(row.Note.replaceAll("\\n", "\n").replaceAll('<br>', "\n"))}</div>
             <hr style="width: 75%"/>
           </article>`
       })
@@ -308,6 +308,9 @@ export default function RcTranslationNotes({
 
   return (
     <>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
+        <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
+      </div>
       {loading ? (
         <>
           <Typography color="textPrimary" gutterBottom display="inline">
@@ -317,9 +320,6 @@ export default function RcTranslationNotes({
         </>
       ) : html ? (
         <>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
-            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
-          </div>
           <div
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(html),
@@ -345,5 +345,5 @@ RcTranslationNotes.propTypes = {
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
-  updateUrlHotlink: PropTypes.func,
+  updateUrlHashLink: PropTypes.func,
 }

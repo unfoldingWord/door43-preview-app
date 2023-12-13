@@ -7,24 +7,25 @@ import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { decodeBase64ToUtf8 } from "../utils/base64Decode";
 import { API_PATH } from "../common/constants";
 import markdown from '../lib/drawdown'
-import { updateUrlHotlink } from "../utils/url";
+import { updateUrlHashLink } from "../utils/url";
+import * as JSZip from "jszip";
 
 export default function RcOpenBibleStories({
     urlInfo,
-    serverInfo,
     catalogEntry,
     setErrorMessage,
     setPrintHtml,
     setCanChangeColumns,
 }) {
   const [loading, setLoading] = useState(true)
+  const [zipFileData, setZipFileData] = useState()
   const [storiesMarkdown, setStoriesMarkdown] = useState()
   const [html, setHtml] = useState("")
 
   const onBibleReferenceChange = (b, c, v) => {
     const storyNum = parseInt(c)
     const frameNum = parseInt(v)    
-    const story = document.getElementById(`story-${storyNum}`)
+    const story = document.getElementById(`obs-${storyNum}-1`)
     if ((storyNum == 1 && frameNum == 1) || ! story) {
         window.scrollTo({top: 0, behavior: "smooth"})
     } else if (story) {
@@ -36,66 +37,68 @@ export default function RcOpenBibleStories({
             window.scrollTo({top: frame.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
         }
     }
-    let extraPath = [b]
-    if (c != "1" || v != "1" || urlInfo.extraPath[1] || urlInfo.extraPath[2]) {
-        extraPath = [b, c, v]
+    let hashParts = [b]
+    if (c != "1" || v != "1" || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
+        hashParts = [b, c, v]
     }
-    updateUrlHotlink({...urlInfo, extraPath})
+    updateUrlHashLink({...urlInfo, hashParts})
   }
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: "obs",
-    initialChapter: urlInfo.extraPath[1] || "1",
-    initialVerse: urlInfo.extraPath[2] || "1",
+    initialChapter: urlInfo.hashParts[1] || "1",
+    initialVerse: urlInfo.hashParts[2] || "1",
     onChange: onBibleReferenceChange,
     addOBS: true,
   })
   bibleReferenceActions.applyBooksFilter("obs")
 
   useEffect(() => {
-    const downloadFile = async (url) => {
+    const loadZipFile = async () => {
       try {
-        const response = await fetch(url)
-        if (!response.ok && response.status != 404) {
-          const text = await response.text()
-          throw Error(text)
-        }
-        if (response.status == 200) {
-            const jsonResponse = await response.json()
-            if (jsonResponse?.content) {
-              return decodeBase64ToUtf8(jsonResponse.content)
-            }
-        } else {
-             return ""
-        }
+        console.log("Downloading ", catalogEntry.zipball_url)
+        fetch(catalogEntry.zipball_url)
+        .then(response => response.arrayBuffer())
+        .then(data => setZipFileData(data))
       } catch (error) {
         setErrorMessage(error?.message)
         setLoading(false)
       }
     }
 
-    const loadMarkdownFiles = async () => {
-      let markdownFiles = []
+    if (catalogEntry && !zipFileData) {
+        loadZipFile()
+    }
+  }, [catalogEntry, zipFileData])
 
+  useEffect(() => {
+    const loadMarkdownFiles = async () => {
+      let markdownFilesHash = {}
+      const zip = await JSZip.loadAsync(zipFileData)
+      let markdownFiles = []
+      console.log(Object.keys(zip.files))
       for (let i = 1; i < 51; ++i) {
-        const filePath = "content/" + `${i}`.padStart(2, '0') + ".md"
-        const fileURL = `${serverInfo.baseUrl}/${API_PATH}/repos/${catalogEntry.owner}/${catalogEntry.repo.name}/contents/${filePath}?ref=${catalogEntry.commit_sha}`
-        const markdownFile = await downloadFile(fileURL)
-        markdownFiles.push(markdownFile ? markdownFile : `# ${i}. STORY NOT FOUND!\n\n`)
+        const filename = `${catalogEntry.repo.name}/content/${`${i}`.padStart(2, '0')}.md`
+        console.log(filename)
+        if (filename in zip.files) {
+            markdownFiles.push(await zip.file(filename).async('text'))
+        } else {
+            markdownFiles.push(`# ${i}. STORY NOT FOUND!\n\n`)
+        }
       }
       setStoriesMarkdown(markdownFiles)
       setLoading(false)
     }
 
-    if (catalogEntry && serverInfo?.baseUrl) {
+    if (catalogEntry && zipFileData) {
       loadMarkdownFiles()
     }
-  }, [catalogEntry, setErrorMessage, serverInfo?.baseUrl])
+  }, [catalogEntry, zipFileData])
 
   useEffect(() => {
     if (! html && storiesMarkdown) {
         let _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
         storiesMarkdown.forEach((storyMarkdown, i) => {
-            _html += `<div id="story-${i+1}">${markdown(storyMarkdown)}</div>`
+            _html += `<div id="obs-${i+1}-1">${markdown(storyMarkdown)}</div>`
         })
         setHtml(_html)
         setPrintHtml(_html)
@@ -113,11 +116,11 @@ export default function RcOpenBibleStories({
 
   return (
     <>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
+        <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
+      </div>
       {html ? (
         <>
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
-            <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
-          </div>
           <div style={{direction: catalogEntry ? catalogEntry.language_direction : "ltr"}}
             dangerouslySetInnerHTML={{
               __html: DOMPurify.sanitize(html),
@@ -144,7 +147,6 @@ export default function RcOpenBibleStories({
 }
 
 RcOpenBibleStories.propTypes = {
-  serverInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,

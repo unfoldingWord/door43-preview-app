@@ -5,7 +5,7 @@ import { RepositoryApi, OrganizationApi } from 'dcs-js';
 import RcBible from './RcBible'
 import RcOpenBibleStories from './RcOpenBibleStories'
 import RcTranslationNotes from './RcTranslationNotes'
-import { updateUrlHotlink } from "../utils/url";
+import { updateUrlHashLink } from "../utils/url";
 
 // const ComponentMap = {
 //   rc: {
@@ -55,15 +55,14 @@ export function AppContextProvider({ children }) {
     }
 
     const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
-    const ref = url.searchParams.get("ref")?.toLowerCase() || "master"
     const info = {
       owner: urlParts[0] || "unfoldingWord",
       repo: urlParts[1] || "en_ult",
-      ref: ref || "master",
-      extraPath: urlParts.slice(2),
+      ref: urlParts.slice(2).join('/') || "master",
+      hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
     }
     setUrlInfo(info)
-    updateUrlHotlink(info)
+    updateUrlHashLink(info)
   }, [])
 
   useEffect(() => {
@@ -89,7 +88,7 @@ export function AppContextProvider({ children }) {
         if (urlInfo.ref == "master" && data.default_branch != "master") {
           const _urlInfo = {...urlInfo, ref: data.default_branch}
           setUrlInfo(_urlInfo)
-          updateUrlHotlink(_urlInfo)
+          updateUrlHashLink(_urlInfo)
         }
       }).catch(err => {
         setErrorMessage(err.message)
@@ -133,7 +132,7 @@ export function AppContextProvider({ children }) {
           setPrintHtml,
           setErrorMessage,
           setCanChangeColumns,
-          updateUrlHotlink,
+          updateUrlHashLink,
         }
         switch (catalogEntry.metadata_type) {
           case "rc":
@@ -206,7 +205,8 @@ export function AppContextProvider({ children }) {
       .then(({data}) => {
         setLanguages(data)
       }).catch(() => {
-        setErrorMessage("No languages found")
+        console.log("No languages found")
+        // setErrorMessage("No languages found")
       })
     }
 
@@ -224,7 +224,8 @@ export function AppContextProvider({ children }) {
       .then(({data}) => {
         setRepos(data)
       }).catch(() => {
-        setErrorMessage("No repositories found")
+        console.log("No repositories found")
+        // setErrorMessage("No repositories found")
       })
     }
 

@@ -31,6 +31,9 @@ export default function useTsvGLQuoteAdder({
         } else {
           ref = row.Reference
         }
+        if (row.OccurrenceNote) {
+          row.Note = row.OccurrenceNote
+        }
         if (row.Quote || row.OrigQuote) {
           let quote = ""
           if (row.OrigQuote) {
