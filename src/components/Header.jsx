@@ -46,7 +46,7 @@ export default function Header({
               variant='h1'
               sx={sx.title}
             >
-              {title}
+              <a href={"/"} style={{textDecoration:"none", color: "inherit"}}>{title}</a>
             </Typography>
             <Typography
               variant='h3'

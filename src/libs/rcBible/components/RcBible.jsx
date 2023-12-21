@@ -101,7 +101,7 @@ export default function RcBible({
         if (sb.length != 66) {
           bibleReferenceActions.applyBooksFilter(sb)
         }
-        bibleReferenceActions.goToBookChapterVerse(book)
+        bibleReferenceActions.goToBookChapterVerse(book, urlInfo[1] || "1", urlInfo[2] || "1")
     }
 
     if(catalogEntry && zipFileData) {

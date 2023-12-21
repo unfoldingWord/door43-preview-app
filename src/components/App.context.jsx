@@ -31,7 +31,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const url = (new URL(window.location.href))
 
-    const getServerInfo = () => {
+    const getServerInfo = async () => {
       const server = url.searchParams.get("server")?.toLowerCase()
       if (server) {
         if (server in DCS_SERVERS) {
@@ -50,19 +50,22 @@ export function AppContextProvider({ children }) {
       }
     }
 
-    const getUrlInfo = () => {
+    const getUrlInfo = async () => {
       const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
+      if(urlParts.length < 2) {
+        throw new Error("Home Page (under construction)")
+      }
       const info = {
-        owner: urlParts[0] || "unfoldingWord",
-        repo: urlParts[1] || "en_ult",
+        owner: urlParts[0] || "",
+        repo: urlParts[1] || "",
         ref: urlParts.slice(2).join('/'),
         hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
       }
       setUrlInfo(info)
     }
 
-    getServerInfo()
-    getUrlInfo()
+    getServerInfo().catch(e => setErrorMessage(e?.message))
+    getUrlInfo().catch(e => setErrorMessage(e?.message))
   }, [])
 
   useEffect(() => {
@@ -83,7 +86,7 @@ export function AppContextProvider({ children }) {
     }
 
     if (serverInfo && urlInfo) {
-      fetchRepo().catch(setErrorMessage);
+      fetchRepo().catch(e => setErrorMessage(e?.message))
     }
   }, [serverInfo, urlInfo]);
 
@@ -105,7 +108,7 @@ export function AppContextProvider({ children }) {
     }
 
     if (repo) {
-      fetchCatalogEntry().catch(setErrorMessage);
+      fetchCatalogEntry().catch(e => setErrorMessage(e?.message))
     }
   }, [repo])
 
