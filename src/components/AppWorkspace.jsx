@@ -7,7 +7,7 @@ import CircularProgressUI from '@mui/joy/CircularProgress'
 import { AppContext } from './App.context'
 import Header from './Header'
 import OpenModal from './OpenModal.jsx'
-import { APP_NAME, DCS_SERVERS } from '../common/constants'
+import { APP_NAME, DCS_SERVERS } from '../common/constants.js'
 
 export default function AppWorkspace() {
   const [isOpenPrint,setIsOpenPrint] = useState(false)
@@ -48,7 +48,7 @@ export default function AppWorkspace() {
     if (catalogEntry) {
       dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`
     } else {
-      dcsRef += `/src/branch/${urlInfo.ref}`
+      dcsRef += `/src/branch/${urlInfo.ref || repo?.default_branch || "master"}`
     }
     let infoLineText = repoFullName
     if (catalogEntry?.branch_or_tag_name) {
@@ -58,18 +58,19 @@ export default function AppWorkspace() {
         infoLineText += `, ${catalogEntry.branch_or_tag_name}`
       }
     }
-    if (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID) {
-      infoLineText += ` (${serverInfo.ID})`
-    }
 
     infoLine = (<a href={dcsRef} target={"_blank"} style={{textDecoration:"none", color: "inherit"}}>{infoLineText}</a>)
+  }
+
+  let title = APP_NAME
+  if (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID) {
+    title += ` (${serverInfo.ID})`
   }
 
   return (
     <Sheet>
       <Header
-        title={APP_NAME}
-        // infoLine={infoLine}
+        title={title}
         dcsRef={dcsRef}
         infoLine={infoLine}
         ready={printHtml != ""}

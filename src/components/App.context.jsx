@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { DCS_SERVERS, API_PATH } from "../common/constants";
-import { RepositoryApi, OrganizationApi } from 'dcs-js';
-import RcBible from './RcBible'
-import RcOpenBibleStories from './RcOpenBibleStories'
-import RcTranslationNotes from './RcTranslationNotes'
+import RcBible from '../libs/rcBible/components/RcBible'
+import RcOpenBibleStories from '../libs/rcOpenBibleStories/components/RcOpenBibleStories'
+import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes'
+import { getZipFileDataForCatalogEntry } from "../libs/core/lib/zip";
 import { updateUrlHashLink } from "../utils/url";
 
-// const ComponentMap = {
-//   rc: {
-//     "Bible": RcBible,
-//     "Open Bible Stories": RcOpenBibleStories,
-//   },
-// }
 
 export const AppContext = React.createContext();
 
@@ -23,9 +17,8 @@ export function AppContextProvider({ children }) {
   const [buildInfo, setBuildInfo] = useState()
   const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
+  const [zipFileData, setZipFileData] = useState()
   const [ResourceComponent, setResourceComponent] = useState()
-  const [repoClient, setRepoClient] = useState(null)
-  const [organizationClient, setOrganizationClient] = useState(null)
   const [organizations, setOrganizations] = useState()
   const [branches,setBranches] = useState()
   const [tags,setTags] = useState()
@@ -37,44 +30,43 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const url = (new URL(window.location.href))
-    const server = url.searchParams.get("server")?.toLowerCase()
-    if (server) {
-      if (server in DCS_SERVERS) {
-        setServerInfo(DCS_SERVERS[server.toLowerCase()])
-      } else {
-        let baseUrl = server
-        if (! server.startsWith("http")) {
-          baseUrl = `http${server.includes("door43.org") ? "s" : ""}://${server}`
+
+    const getServerInfo = () => {
+      const server = url.searchParams.get("server")?.toLowerCase()
+      if (server) {
+        if (server in DCS_SERVERS) {
+          setServerInfo(DCS_SERVERS[server.toLowerCase()])
+        } else {
+          let baseUrl = server
+          if (! server.startsWith("http")) {
+            baseUrl = `http${server.includes("door43.org") ? "s" : ""}://${server}`
+          }
+          setServerInfo({baseUrl, ID: server})
         }
-        setServerInfo({baseUrl, ID: server})
+      } else if (url.hostname == 'preview.door43.org') {
+        setServerInfo(DCS_SERVERS['prod'])
+      } else {
+        setServerInfo(DCS_SERVERS['qa'])
       }
-    } else if (url.hostname == 'preview.door43.org') {
-      setServerInfo(DCS_SERVERS['prod'])
-    } else {
-      setServerInfo(DCS_SERVERS['qa'])
     }
 
-    const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
-    const info = {
-      owner: urlParts[0] || "unfoldingWord",
-      repo: urlParts[1] || "en_ult",
-      ref: urlParts.slice(2).join('/') || "master",
-      hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
+    const getUrlInfo = () => {
+      const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
+      const info = {
+        owner: urlParts[0] || "unfoldingWord",
+        repo: urlParts[1] || "en_ult",
+        ref: urlParts.slice(2).join('/'),
+        hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
+      }
+      setUrlInfo(info)
     }
-    setUrlInfo(info)
-    updateUrlHashLink(info)
+
+    getServerInfo()
+    getUrlInfo()
   }, [])
 
   useEffect(() => {
-    if (serverInfo?.baseUrl) {
-      const config = { basePath: `${serverInfo.baseUrl}/${API_PATH}` }
-      setRepoClient(new RepositoryApi(config))
-      setOrganizationClient(new OrganizationApi(config))
-    }
-  }, [serverInfo?.baseUrl])
-
-  useEffect(() => {
-    const fetchCatalogEntry = async () => {
+    const fetchRepo = async () => {
       fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`)
       .then(response => {
         if (response.ok) {
@@ -85,29 +77,24 @@ export function AppContextProvider({ children }) {
       })
       .then(data => {
         setRepo(data)
-        if (urlInfo.ref == "master" && data.default_branch != "master") {
-          const _urlInfo = {...urlInfo, ref: data.default_branch}
-          setUrlInfo(_urlInfo)
-          updateUrlHashLink(_urlInfo)
-        }
       }).catch(err => {
         setErrorMessage(err.message)
       })
     }
 
-    if (!repo && urlInfo && serverInfo?.baseUrl) {
-      fetchCatalogEntry().catch(setErrorMessage);
+    if (serverInfo && urlInfo) {
+      fetchRepo().catch(setErrorMessage);
     }
-  }, [urlInfo, serverInfo?.baseUrl, repo]);
+  }, [serverInfo, urlInfo]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${repo?.full_name}/${urlInfo.ref}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${repo?.full_name}/${urlInfo.ref || repo.default_branch}`)
       .then(response => {
         if (response.ok) {
           return response.json()
         } else {
-          throw new Error(`No metadata found for ${repo.full_name}, ref "${urlInfo.ref}". Please verify this is a valid resource and a valid ref.`)
+          throw new Error(`No metadata found for ${repo.full_name}, ref "${urlInfo.ref || repo.default_branch}". Please verify this is a valid resource and a valid ref.`)
         }
       })
       .then(data => {
@@ -117,18 +104,34 @@ export function AppContextProvider({ children }) {
       })
     }
 
-    if (!catalogEntry && repo && urlInfo) {
+    if (repo) {
       fetchCatalogEntry().catch(setErrorMessage);
     }
-  }, [urlInfo, serverInfo?.baseUrl, repo, catalogEntry]);
+  }, [repo])
 
   useEffect(() => {
-    if (catalogEntry && ! ResourceComponent) {
+    const loadZipFileData = async () => {
+      try {
+        getZipFileDataForCatalogEntry(catalogEntry)
+        .then(zip => setZipFileData(zip))
+      } catch (error) {
+        setErrorMessage(error?.message)
+      }
+    }
+
+    if (catalogEntry) {
+        loadZipFileData()
+    }
+  }, [catalogEntry])
+
+  useEffect(() => {
+    if (catalogEntry && zipFileData) {
       if(catalogEntry?.metadata_type && catalogEntry?.subject) {
         const props = {
           urlInfo,
           serverInfo,
           catalogEntry,
+          zipFileData,
           setPrintHtml,
           setErrorMessage,
           setCanChangeColumns,
@@ -166,95 +169,111 @@ export function AppContextProvider({ children }) {
       }
       setErrorMessage("Not a valid repository that can be convert.")
     }
-  }, [catalogEntry, ResourceComponent])
+  }, [catalogEntry, zipFileData])
 
-  useEffect(() => {
-    const getBranches = async () => {
-      const _branches = await repoClient.repoListBranches({owner: repo.owner.username, repo: repo.name}).then(({data}) => data).catch(console.error)
-      if (_branches?.length)
-        setBranches(_branches.map(branch => {return {label: branch.name, value: branch}}))
-      else
-        setBranches(null)
-    }
-    if (!loadingMainContent && !branches && repo) {
-        getBranches()
-    }
+  // useEffect(() => {
+  //   const getBranches = async () => {
+  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/repos/${repo.full_name}/branches`)
+  //     .then(response => {
+  //       return response.json()
+  //     })
+  //     .then(_branches => {
+  //       setTags(_branches.map(branch => {return {label: branch.name, value: branch}}))
+  //     }).catch(e => {
+  //       console.log(`Error fetching repo's branches: ${repo.full_name}`)
+  //       console.log(e)
+  //     })
+  //   }
 
-  }, [loadingMainContent, repoClient, repo, branches]);
+  //   if (!loadingMainContent && repo) {
+  //       getBranches()
+  //   }
+  // }, [loadingMainContent, repo]);
 
-  useEffect(() => {
-    const getTags = async () => {
-      const _tags = await repoClient.repoListTags({owner: repo.owner.username, repo: repo.name}).then(({data}) => data).catch(console.error)
-      if (_tags?.length)
-        setTags(_tags.map(tag => {return {label: tag.name, value: tag}}))
-      else
-        setTags(null)
+  // useEffect(() => {
+  //   const getTags = async () => {
+  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/repos/${repo.full_name}/tags`)
+  //     .then(response => {
+  //       return response.json()
+  //     })
+  //     .then(_tags => {
+  //       setTags(_tags.map(tag => {return {label: tag.name, value: tag}}))
+  //     }).catch(e => {
+  //       console.log(`Error fetching repo's tags: ${repo.full_name}`)
+  //       console.log(e)
+  //     })
+  //   }
 
-    }
-    if (!tags && repo) {
-      getTags()
-    }
-  }, [tags, repoClient, repo]);
+  //   if (! loadingMainContent && repo) {
+  //     getTags()
+  //   }
+  // }, [loadingMainContent, repo]);
 
-  useEffect(() => {
-    const getLanguages = async () => {
-      fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/languages?stage=latest&metadataType=rc`)
-      .then(response => {
-        return response.json();
-      })
-      .then(({data}) => {
-        setLanguages(data)
-      }).catch(() => {
-        console.log("No languages found")
-        // setErrorMessage("No languages found")
-      })
-    }
+  // useEffect(() => {
+  //   const getLanguages = async () => {
+  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/languages?stage=latest&metadataType=rc`)
+  //     .then(response => {
+  //       return response.json()
+  //     })
+  //     .then(({data}) => {
+  //       setLanguages(data)
+  //     }).catch(() => {
+  //       console.log("No languages found")
+  //       // setErrorMessage("No languages found")
+  //     })
+  //   }
 
-    if (!loadingMainContent && !languages && serverInfo?.baseUrl) {
-      getLanguages()
-    }
-  }, [serverInfo?.baseUrl, loadingMainContent, languages]);
+  //   if (!loadingMainContent && !languages) {
+  //     getLanguages()
+  //   }
+  // }, [loadingMainContent]);
 
-  useEffect(() => {
-    const getRepos = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?owner=${repo.owner.username}&lang=en&metadataType=rc`)
-      .then(response => {
-        return response.json();
-      })
-      .then(({data}) => {
-        setRepos(data)
-      }).catch(() => {
-        console.log("No repositories found")
-        // setErrorMessage("No repositories found")
-      })
-    }
+  // useEffect(() => {
+  //   const getRepos = async () => {
+  //     fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?owner=${repo.owner.username}&lang=en&metadataType=rc`)
+  //     .then(response => {
+  //       return response.json();
+  //     })
+  //     .then(({data}) => {
+  //       setRepos(data)
+  //     }).catch(() => {
+  //       console.log("No repositories found")
+  //       // setErrorMessage("No repositories found")
+  //     })
+  //   }
 
-    if (!loadingMainContent && !repos && serverInfo?.baseUr && repo) {
-      getRepos()
-    }
-  }, [repos, repo, loadingMainContent, serverInfo?.baseUrl]);
+  //   if (!loadingMainContent && repo) {
+  //     getRepos()
+  //   }
+  // }, [loadingMainContent, repo]);
 
-  useEffect(() => {
-    const bibleSubjects = [
-      'Aligned Bible',
-      'Bible',
-      'Hebrew Old Testament',
-      'Greek New Testament',
-      'Open Bible Stories',
-    ]
+  // useEffect(() => {
+  //   const bibleSubjects = [
+  //     'Aligned Bible',
+  //     'Bible',
+  //     'Hebrew Old Testament',
+  //     'Greek New Testament',
+  //     'Open Bible Stories',
+  //   ]
 
-    const getOrgs = async() => {
-      const response  = await organizationClient.orgGetAll()
-      if (response.status === 200) {
-        const orgs = response?.data.filter((org) => org.repo_subjects && org?.repo_subjects.some((subject) => bibleSubjects?.includes(subject))).map(org => org.username)
-        setOrganizations(orgs)
-      }
-    }
-    if ( ! loadingMainContent && organizationClient && !organizations) {
-      getOrgs().catch(console.error)
-    }
+  //   const getOrgs = async() => {
+  //     // fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/owners?stage=latest`)
+  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/orgs?subject=Open%20Bible%20Stories&subject=Bible&subject=Aligned%20Bible&subject=TSV%20Translation%20Notes&subject=TSV%20Translation%20Questions&subject=Translation%20Words&subject=Translation%20Academy&subject=TSV%20Translation%20Words%20Links`)
+  //     .then(response => {
+  //       return response.json()
+  //     })
+  //     .then(_orgs => {
+  //       setOrganizations(_orgs.map(org => org.username))
+  //     }).catch(e => {
+  //       console.log(`Error fetching orgs`)
+  //       console.log(e)
+  //     })
+  //   }
 
-  }, [loadingMainContent, organizationClient, organizations])
+  //   if (! loadingMainContent && !organizations) {
+  //     getOrgs().catch(console.error)
+  //   }
+  // }, [loadingMainContent, organizations])
 
   useEffect(() => {
     if (printHtml || errorMessage) {
@@ -267,6 +286,7 @@ export function AppContextProvider({ children }) {
     state: {
       urlInfo,
       catalogEntry,
+      zipFileData,
       errorMessage,
       organizations,
       branches,
@@ -282,7 +302,6 @@ export function AppContextProvider({ children }) {
       loadingMainContent,
     },
     actions: {
-      setUrlInfo,
       setErrorMessage,
       setPrintHtml,
       setCanChangeColumns,

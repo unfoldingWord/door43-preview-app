@@ -7,25 +7,22 @@ import CircularProgressUI from "@mui/joy/CircularProgress";
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
-} from "../lib/previewStyling.js";
-import { decodeBase64ToUtf8 } from "../utils/base64Decode";
-import { API_PATH } from "../common/constants";
+} from "../../core/lib/previewStyling.js";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
-import { ALL_BIBLE_BOOKS } from "../common/BooksOfTheBible.js";
-import { redirectToUrl } from "../utils/url.js"
-import * as JSZip from 'jszip'
-import { BibleBookData } from "../common/books.js";
+import { BibleBookData } from "../../../common/books.js";
+import { getSupportedBooks } from "../../core/lib/books.js";
 
 export default function RcBible({
     urlInfo,
     catalogEntry,
+    zipFileData,
     setErrorMessage,
     setPrintHtml,
     setCanChangeColumns,
     updateUrlHashLink,
 }) {
   const [loading, setLoading] = useState(true)
-  const [zipFileData, setZipFileData] = useState()
+  const [supportedBooks, setSupportedBooks] = useState([])
   const [usfmText, setUsfmText] = useState()
   const [html, setHtml] = useState()
 
@@ -56,34 +53,21 @@ export default function RcBible({
             window.scrollTo({top: 0, behavior: "smooth"})
         }
     }
-    let hashParts = [b]
-    if (c != 1 || v != 1 || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
-        hashParts = [b, c, v]
+    if (updateUrlHashLink) {
+      let hashParts = [b]
+      if (c != 1 || v != 1 || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
+          hashParts = [b, c, v]
+      }
+      updateUrlHashLink(hashParts)
     }
-    updateUrlHashLink({...urlInfo, hashParts})
-  }
-
-  const supportedBooks = catalogEntry.ingredients.map(ingredient => ingredient.identifier.toLowerCase()).filter(id => id in ALL_BIBLE_BOOKS)
-  if(! supportedBooks) {
-    setErrorMessage("There are no books in this resource to render")
-    return
-  }
-
-  const book = urlInfo.hashParts[0]?.toLowerCase() || supportedBooks[0]
-  if (!supportedBooks.includes(book)) {
-    setErrorMessage(`Invalid book. ${book} is not an existing book in this resource.`)
-    return
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: book,
+    initialBook: urlInfo.hashParts[0] || supportedBooks[0] || "gen",
     initialChapter: urlInfo.hashParts[1] || "1",
     initialVerse: urlInfo.hashParts[2] || "1",
     onChange: onBibleReferenceChange,
   })
-  if (supportedBooks.length != 66) {
-      bibleReferenceActions.applyBooksFilter(supportedBooks)
-  }
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
     bookId: bibleReferenceState.bookId,
@@ -98,39 +82,48 @@ export default function RcBible({
   })
 
   useEffect(() => {
-    const loadZipFile = async () => {
-      try {
-        console.log("Downloading ", catalogEntry.zipball_url)
-        fetch(catalogEntry.zipball_url)
-        .then(response => response.arrayBuffer())
-        .then(data => setZipFileData(data))
-      } catch (error) {
-        setErrorMessage(error?.message)
-        setLoading(false)
-      }
+    const loadSupportedBooks = async () => {
+        const sb = getSupportedBooks(catalogEntry, zipFileData)
+        if(! sb) {
+          setErrorMessage("There are no books in this resource to render")
+          setLoading(false)
+          return
+        }
+      
+        const book = urlInfo.hashParts[0]?.toLowerCase() || sb[0]
+        if (!sb.includes(book)) {
+          setErrorMessage(`Invalid book. \`${book}\` is not an existing book in this resource.`)
+          setLoading(false)
+          return
+        }
+      
+        setSupportedBooks(sb)
+        if (sb.length != 66) {
+          bibleReferenceActions.applyBooksFilter(sb)
+        }
+        bibleReferenceActions.goToBookChapterVerse(book)
     }
 
-    if (!zipFileData) {
-        loadZipFile()
+    if(catalogEntry && zipFileData) {
+        loadSupportedBooks()
     }
-  }, [zipFileData])
+  }, [catalogEntry, zipFileData])
 
   useEffect(() => {
-    const loadUsfmFileFromZipFile = () => {
-      JSZip.loadAsync(zipFileData)
-        .then(zip => zip.file(`${catalogEntry.repo.name}/${BibleBookData[bibleReferenceState.bookId].usfm}.usfm`).async('text'))
-        .then(text => {
-            setUsfmText(text);
-            setLoading(false)
-        })
-        .catch(error => setErrorMessage(error?.message));
+    const loadUsfmFileFromZipFile = async () => {
+        const text = await zipFileData.files[`${catalogEntry.repo.name}/${BibleBookData[bibleReferenceState.bookId].usfm}.usfm`]?.async('text')
+        if (text) {
+            setUsfmText(text)
+        } else {
+            setErrorMessage(`USFM file for \`${bibleReferenceState.bookId}\` is empty or invalid.`)
+        }
+        setLoading(false)
     }
 
-    if(zipFileData && loading && !html) {
+    if(zipFileData && loading && supportedBooks && !html) {
         loadUsfmFileFromZipFile()
     }
-  }, [zipFileData, loading, html])
-
+  }, [zipFileData, loading, supportedBooks, html])
 
   useEffect(() => {
     if (htmlReady && renderedData) {
@@ -138,6 +131,7 @@ export default function RcBible({
       _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${_html}`
       setHtml(_html)
       setPrintHtml(_html)
+      setCanChangeColumns(true)
     }
   }, [htmlReady, renderedData])
 
@@ -182,6 +176,7 @@ export default function RcBible({
 RcBible.propTypes = {
   urlInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
+  zipFileData: PropTypes.object,
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,

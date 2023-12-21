@@ -8,7 +8,7 @@ export default function useTsvGLQuoteAdder({
   tsvText,
   sourceUsfm,
   targetUsfm,
-  quoteTokenDelimiter,
+  quoteTokenDelimiter = " … ",
 }) {
   const [renderedData, setRenderedData] = useState()
   const [ready, setReady] = useState(false)
@@ -52,9 +52,9 @@ export default function useTsvGLQuoteAdder({
           if (quote && occurrence && occurrence != "0") {
             // console.log(`Generating target quote matching source quote`)
             try {
-              const glQuote = getTargetQuoteFromSourceQuote(params)
+              let glQuote = getTargetQuoteFromSourceQuote(params)
               if (quoteTokenDelimiter) {
-                glQuote.replaceAll(' & ', quoteTokenDivider)
+                glQuote = glQuote.replaceAll(' & ', quoteTokenDelimiter)
               }
               row.GLQuote = glQuote
               if (!row.GLQuote) {
@@ -73,7 +73,8 @@ export default function useTsvGLQuoteAdder({
       setReady(true)
     }
 
-    if (tsvText && sourceUsfm && targetUsfm && ! ready) {
+    if (tsvText && sourceUsfm && targetUsfm) {
+      console.log("ADDING GL QUOTES")
       doAddGLQuotes()
     }
   }, [tsvText, sourceUsfm, targetUsfm])

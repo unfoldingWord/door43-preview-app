@@ -1,5 +1,5 @@
-export const getRelationCatalogEntries = async (serverUrl, apiPath, relation, owners, stage) => {
-    if (!serverUrl || !apiPath || !relation) {
+export const getRelationCatalogEntries = async (catalogApiUrl, relation, owners, stage) => {
+    if (!catalogApiUrl || !relation) {
         return []
     }
     if (!stage || !['prod', 'preprod', 'latest'].includes(stage.toLowerCase())) {
@@ -10,7 +10,7 @@ export const getRelationCatalogEntries = async (serverUrl, apiPath, relation, ow
     }
     const repoParams = relation.map(r => `repo=${r.split('?')[0].replace('/', '_')}`).join('&')
     const ownerParams = owners.map(o => `owner=${o}`).join('&')
-    const resp = await fetch(`${serverUrl}/${apiPath}/catalog/search?${repoParams}&${ownerParams}&stage=${stage}`)
+    const resp = await fetch(`${catalogApiUrl}/search?${repoParams}&${ownerParams}&stage=${stage}`)
     if (!resp.ok) {
         throw new Error("Unable to search DCS catalog")
     }

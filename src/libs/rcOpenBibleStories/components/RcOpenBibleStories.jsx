@@ -4,21 +4,17 @@ import Typography from "@mui/joy/Typography";
 import DOMPurify from "dompurify";
 import CircularProgressUI from "@mui/joy/CircularProgress";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
-import { decodeBase64ToUtf8 } from "../utils/base64Decode";
-import { API_PATH } from "../common/constants";
-import markdown from '../lib/drawdown'
-import { updateUrlHashLink } from "../utils/url";
-import * as JSZip from "jszip";
+import markdownit from 'markdown-it'
+
 
 export default function RcOpenBibleStories({
     urlInfo,
     catalogEntry,
-    setErrorMessage,
+    zipFileData,
+    updateUrlHashLink,
     setPrintHtml,
-    setCanChangeColumns,
 }) {
   const [loading, setLoading] = useState(true)
-  const [zipFileData, setZipFileData] = useState()
   const [storiesMarkdown, setStoriesMarkdown] = useState()
   const [html, setHtml] = useState("")
 
@@ -31,17 +27,19 @@ export default function RcOpenBibleStories({
     } else if (story) {
         let frame = story
         if (frameNum > 1 && story.children[frameNum*2]) {
-            frame = story.children[frameNum*2] // There are 2 elements for every frame: image and text, and two title elements
+            frame = story.children[frameNum*2-1] // *2 because 2 elements for every frame: image & text; -1 because one title element
         }
         if (frame) {
-            window.scrollTo({top: frame.getBoundingClientRect().top + window.scrollY - 130, behavior: "smooth"})
+            window.scrollTo({top: frame.getBoundingClientRect().top + window.scrollY - 150, behavior: "smooth"})
         }
     }
-    let hashParts = [b]
-    if (c != "1" || v != "1" || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
-        hashParts = [b, c, v]
+    if (updateUrlHashLink) {
+      let hashParts = [b]
+      if (c != "1" || v != "1" || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
+          hashParts = [b, c, v]
+      }
+      updateUrlHashLink(hashParts)
     }
-    updateUrlHashLink({...urlInfo, hashParts})
   }
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: "obs",
@@ -53,34 +51,12 @@ export default function RcOpenBibleStories({
   bibleReferenceActions.applyBooksFilter("obs")
 
   useEffect(() => {
-    const loadZipFile = async () => {
-      try {
-        console.log("Downloading ", catalogEntry.zipball_url)
-        fetch(catalogEntry.zipball_url)
-        .then(response => response.arrayBuffer())
-        .then(data => setZipFileData(data))
-      } catch (error) {
-        setErrorMessage(error?.message)
-        setLoading(false)
-      }
-    }
-
-    if (catalogEntry && !zipFileData) {
-        loadZipFile()
-    }
-  }, [catalogEntry, zipFileData])
-
-  useEffect(() => {
     const loadMarkdownFiles = async () => {
-      let markdownFilesHash = {}
-      const zip = await JSZip.loadAsync(zipFileData)
       let markdownFiles = []
-      console.log(Object.keys(zip.files))
       for (let i = 1; i < 51; ++i) {
         const filename = `${catalogEntry.repo.name}/content/${`${i}`.padStart(2, '0')}.md`
-        console.log(filename)
-        if (filename in zip.files) {
-            markdownFiles.push(await zip.file(filename).async('text'))
+        if (filename in zipFileData.files) {
+            markdownFiles.push(await zipFileData.files[filename]?.async('text'))
         } else {
             markdownFiles.push(`# ${i}. STORY NOT FOUND!\n\n`)
         }
@@ -97,8 +73,9 @@ export default function RcOpenBibleStories({
   useEffect(() => {
     if (! html && storiesMarkdown) {
         let _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
+        const md = markdownit()
         storiesMarkdown.forEach((storyMarkdown, i) => {
-            _html += `<div id="obs-${i+1}-1">${markdown(storyMarkdown)}</div>`
+            _html += `<div id="obs-${i+1}-1">${md.render(storyMarkdown)}</div>`
         })
         setHtml(_html)
         setPrintHtml(_html)
@@ -147,7 +124,11 @@ export default function RcOpenBibleStories({
 }
 
 RcOpenBibleStories.propTypes = {
+  urlInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
+  zipFileData: PropTypes.object,
+  updateUrlHashLink: PropTypes.func,
   setErrorMessage: PropTypes.func,
+  setCanChangeColumns: PropTypes.func,
   setPrintHtml: PropTypes.func,
 }
