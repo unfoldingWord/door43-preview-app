@@ -5,7 +5,7 @@ export default async function convertRcOpenBibleStories(catalogEntry, zipFileDat
     let obsRootPath = ""
     catalogEntry.ingredients.forEach(ingredient => {
         if(ingredient.identifier == "obs") {
-            obsPath = `${catalogEntry.repo.name}/${ingredient.path}`
+            obsRootPath = `${catalogEntry.repo.name}/${ingredient.path.replace(/^\.\//, "")}`
         }
     })
     if (! obsRootPath) {
@@ -22,8 +22,8 @@ export default async function convertRcOpenBibleStories(catalogEntry, zipFileDat
 
     let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
     const md = markdownit()
-    storiesMarkdown.forEach((storyMarkdown, i) => {
-        html += `<div id="obs-${i+1}-1">${md.render(storyMarkdown)}</div>`
+    markdownFiles.forEach((markdownFile, i) => {
+        html += `<div id="obs-${i+1}-1">${md.render(markdownFile)}</div>`
     })
     return html
 }

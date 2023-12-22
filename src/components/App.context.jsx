@@ -11,6 +11,7 @@ import { updateUrlHashLink } from "../utils/url";
 export const AppContext = React.createContext();
 
 export function AppContextProvider({ children }) {
+  const [statusMessage, setStatusMessage] = useState("Preparing Preview. Please wait...")
   const [errorMessage, setErrorMessage] = useState()
   const [urlInfo, setUrlInfo] = useState()
   const [serverInfo, setServerInfo] = useState()
@@ -136,6 +137,7 @@ export function AppContextProvider({ children }) {
           catalogEntry,
           zipFileData,
           setPrintHtml,
+          setStatusMessage,
           setErrorMessage,
           setCanChangeColumns,
           updateUrlHashLink,
@@ -290,6 +292,7 @@ export function AppContextProvider({ children }) {
       urlInfo,
       catalogEntry,
       zipFileData,
+      statusMessage,
       errorMessage,
       organizations,
       branches,
@@ -305,6 +308,7 @@ export function AppContextProvider({ children }) {
       loadingMainContent,
     },
     actions: {
+      setStatusMessage,
       setErrorMessage,
       setPrintHtml,
       setCanChangeColumns,

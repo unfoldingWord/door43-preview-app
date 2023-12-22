@@ -1,13 +1,11 @@
-import { useState, useContext } from 'react'
-import Sheet from '@mui/joy/Sheet'
-import Card from '@mui/joy/Card'
-import Typography from '@mui/joy/Typography'
-import { PrintDrawer } from '@oce-editor-tools/joy-core'
-import CircularProgressUI from '@mui/joy/CircularProgress'
-import { AppContext } from './App.context'
-import Header from './Header'
-import OpenModal from './OpenModal.jsx'
-import { APP_NAME, DCS_SERVERS } from '../common/constants.js'
+import { useState, useContext } from 'react';
+import { Typography, Modal } from '@mui/material';
+import { Sheet, Card, Box, Alert, CircularProgress } from '@mui/joy';
+import { PrintDrawer } from '@oce-editor-tools/joy-core';
+import { AppContext } from './App.context';
+import Header from './Header';
+import OpenModal from './OpenModal.jsx';
+import { APP_NAME, DCS_SERVERS } from '../common/constants.js';
 
 export default function AppWorkspace() {
   const [isOpenPrint,setIsOpenPrint] = useState(false)
@@ -19,6 +17,7 @@ export default function AppWorkspace() {
       urlInfo,
       catalogEntry,
       resourceComponent,
+      statusMessage,
       errorMessage,
       printHtml,
       canChangeColumns,
@@ -67,6 +66,19 @@ export default function AppWorkspace() {
     title += ` (${serverInfo.ID})`
   }
 
+  const processModalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 400,
+    bgcolor: 'white',
+    border: '2px solid #000',
+    boxShadow: 24,
+    p: 4,
+    backdropFilter: "none",
+  };
+
   return (
     <Sheet>
       <Header
@@ -79,14 +91,23 @@ export default function AppWorkspace() {
       />
       <Card sx={{marginTop: "70px"}}>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
-        {errorMessage ? <>{errorMessage}</> : resourceComponent ? resourceComponent :
-          <>
-            <Typography color="textPrimary" gutterBottom display="inline">
-              <>Loading from server... </>
+        {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+        {resourceComponent}
+        {statusMessage && !printHtml && !errorMessage &&
+        <Modal
+          open={true}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={processModalStyle}>
+            <Typography id="modal-modal-title" variant="h6" component="h2" sx={{textAlign: "center"}}>
+              <CircularProgress />
             </Typography>
-            <CircularProgressUI />
-          </>
-        }
+            <Typography id="modal-modal-description" sx={{ mt: 2, textAlign: "center" }}>
+              {statusMessage}
+            </Typography>
+          </Box>
+        </Modal>}
       </Card>
       <OpenModal
         isOpenModal={isOpenModal}

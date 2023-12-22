@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
-import Typography from "@mui/joy/Typography";
 import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder.jsx";
 import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries.jsx"
 import DOMPurify from "dompurify";
-import CircularProgressUI from "@mui/joy/CircularProgress";
 import usfm from "usfm-js";
 import { verseObjectsToString } from "uw-quote-helpers";
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
@@ -18,12 +16,15 @@ export default function RcTranslationNotes({
     urlInfo,
     catalogEntry,
     zipFileData,
+    setStatusMessage,
     setErrorMessage,
     updateUrlHashLink,
     setPrintHtml,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
+  const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
+  const [htmlCache, setHtmlCache] = useState({})
   const [html, setHtml] = useState()
 
   const renderFlags = {
@@ -41,23 +42,24 @@ export default function RcTranslationNotes({
 
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bibleReferenceState.bookId) {
-      setTsvText(null)
-      setHtml(null)
-      return
-    }
-    c = parseInt(c)
-    v = parseInt(v)
-    if (c > 1 || v > 1) {
-        window.scrollTo({top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth"})
+      if (b in htmlCache) {
+        setHtml(htmlCache[b])
+      } else {
+        setBookIdToProcess(b)
+        setTsvText(null)
+        setHtml(null)
+      }
     } else {
+      c = parseInt(c)
+      v = parseInt(v)
+      if (c > 1 || v > 1) {
+        window.scrollTo({top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top + window.scrollY - 140, behavior: "smooth"})
+      } else {
         window.scrollTo({top: 0, behavior: "smooth"})
+      }
     }
     if (updateUrlHashLink) {
-      let hashParts = [b]
-      if (c != 1 || v != 1 || urlInfo.hashParts[1] || urlInfo.hashParts[2]) {
-        hashParts = [b, c, v]
-      }
-      updateUrlHashLink(hashParts)
+      updateUrlHashLink([b, c, v])
     }
   }
 
@@ -68,18 +70,29 @@ export default function RcTranslationNotes({
     onChange: onBibleReferenceChange,
   })
 
+  let book = bibleReferenceState?.bookId || urlInfo.hashParts[0] || supportedBooks[0] || "gen"
+  let bookIngredient = {
+    identifier: book,
+    title: book,
+  }
+  catalogEntry.ingredients.forEach(ingredient => {
+    if (ingredient.identifier == bibleReferenceState.bookId) {
+      bookIngredient = ingredient
+    }
+  })
+
   const { relationCatalogEntries } = useFetchRelationCatalogEntries({
     catalogEntry,
   })
 
   const { sourceUsfm } = useFetchSourceUsfm({
     relationCatalogEntries,
-    bookId: bibleReferenceState.bookId,
+    bookId: bookIdToProcess,
   })
 
   const { targetUsfm, targetCatalogEntry } = useFetchTargetUsfm({
     relationCatalogEntries,
-    bookId: bibleReferenceState.bookId,
+    bookId: bookIdToProcess,
   })
 
   const { renderedData: renderedTsvData, ready: glQuotesReady } = useTsvGLQuoteAdder({
@@ -103,12 +116,13 @@ export default function RcTranslationNotes({
           setLoading(false)
           return
         }
-      
+
         setSupportedBooks(sb)
         if (sb.length != 66) {
             bibleReferenceActions.applyBooksFilter(sb)
-        }        
+        }
         bibleReferenceActions.goToBookChapterVerse(book, urlInfo.hashParts[1] || "1", urlInfo.hashParts[2] || "1")
+        setBookIdToProcess(book)
     }
 
     if(catalogEntry && zipFileData) {
@@ -118,6 +132,7 @@ export default function RcTranslationNotes({
 
   useEffect(() => {
     const loadTsvFile = async () => {
+      setStatusMessage(`Preparing preview for ${bookIngredient?.title || bibleReferenceState?.bookId}. Please wait...`)
       let usfmFilePath = null
       for (let i = 0; i < catalogEntry.ingredients.length; ++i) {
         const ingredient = catalogEntry.ingredients[i]
@@ -148,7 +163,7 @@ export default function RcTranslationNotes({
       console.log("LOADING TSV FILE")
       loadTsvFile()
     }
-  }, [zipFileData, bibleReferenceState?.bookId])
+  }, [zipFileData, bookIdToProcess])
 
   useEffect(() => {
     const generateHtml = async () => {
@@ -176,6 +191,7 @@ export default function RcTranslationNotes({
             } else {
               _html += `<h2>${chapterStr}:${verseStr}</h2>`
             }
+            console.log(chapterStr, firstVerse, usfmJSON.chapters[chapterStr])
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects)
             _html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
           }
@@ -199,7 +215,12 @@ export default function RcTranslationNotes({
   }, [targetCatalogEntry, renderedTsvData, glQuotesReady])
 
   useEffect(() => {
+    // Handle Print Preview & Status & Navigation
+    setPrintHtml(html)
     if (html) {
+      if (!(bibleReferenceState.bookId in htmlCache)) {
+        setHtmlCache({...htmlCache, [bibleReferenceState.bookId]: html})
+      }
       bibleReferenceActions.goToBookChapterVerse(bibleReferenceState.bookId, bibleReferenceState.chapter, bibleReferenceState.verse)
     }
   }, [html])
@@ -209,22 +230,11 @@ export default function RcTranslationNotes({
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
         <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
       </div>
-      {html ? (
-        <>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(html),
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <Typography color="textPrimary" gutterBottom display="inline">
-            <>Converting to HTML... </>
-          </Typography>
-          <CircularProgressUI />
-        </>
-      )}
+      {html && (<div
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(html),
+        }}
+      />)}
     </>
   )
 }
@@ -232,6 +242,7 @@ export default function RcTranslationNotes({
 RcTranslationNotes.propTypes = {
   catalogEntry: PropTypes.object,
   zipFileData: PropTypes.object,
+  setStatusMessage: PropTypes.func,
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
