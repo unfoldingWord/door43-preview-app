@@ -1,7 +1,7 @@
 # example netlify.toml
 [[redirects]]
   from = "/*"
-  to = "/convert.html"
+  to = "/index.html"
   status = 200
   
 [build]
