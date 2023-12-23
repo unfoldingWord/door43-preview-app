@@ -61,7 +61,7 @@ export function AppContextProvider({ children }) {
       const info = {
         owner: urlParts[0] || "",
         repo: urlParts[1] || "",
-        ref: (url.hostname.match(/(git|develop|qa)\.door43\.org/) ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/')),
+        ref: urlParts[2] == "preview" ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
         hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
       }
       setUrlInfo(info)
