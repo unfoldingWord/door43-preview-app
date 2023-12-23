@@ -27,7 +27,11 @@ export function AppContextProvider({ children }) {
   const [languages,setLanguages] = useState()
   const [printHtml, setPrintHtml] = useState("")
   const [canChangeColumns, setCanChangeColumns] = useState(false)
-  const [loadingMainContent, setLoadingMainContent] = useState(true)
+  const [isOpenPrint, setIsOpenPrint] = useState(false)
+
+  const onPrintClick = () => {
+    setIsOpenPrint(true)
+  }
 
   useEffect(() => {
     const url = (new URL(window.location.href))
@@ -143,6 +147,7 @@ export function AppContextProvider({ children }) {
           setErrorMessage,
           setCanChangeColumns,
           updateUrlHashLink,
+          onPrintClick,
         }
         switch (catalogEntry.metadata_type) {
           case "rc":
@@ -282,12 +287,6 @@ export function AppContextProvider({ children }) {
   //   }
   // }, [loadingMainContent, organizations])
 
-  useEffect(() => {
-    if (printHtml || errorMessage) {
-      setLoadingMainContent(false)
-    }
-  }, [printHtml, errorMessage])
-
   // create the value for the context provider
   const context = {
     state: {
@@ -307,14 +306,14 @@ export function AppContextProvider({ children }) {
       canChangeColumns,
       buildInfo,
       serverInfo,
-      loadingMainContent,
+      isOpenPrint,
     },
     actions: {
       setStatusMessage,
       setErrorMessage,
       setPrintHtml,
       setCanChangeColumns,
-      setLoadingMainContent,
+      setIsOpenPrint,
     },
   }
 

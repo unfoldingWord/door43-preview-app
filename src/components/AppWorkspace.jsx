@@ -8,7 +8,6 @@ import OpenModal from './OpenModal.jsx';
 import { APP_NAME, DCS_SERVERS } from '../common/constants.js';
 
 export default function AppWorkspace() {
-  const [isOpenPrint,setIsOpenPrint] = useState(false)
   const [isOpenModal,setIsOpenModal] = useState(false)
 
   const {
@@ -23,11 +22,15 @@ export default function AppWorkspace() {
       canChangeColumns,
       buildInfo,
       serverInfo,
+      isOpenPrint,
     },
+    actions: {
+      setIsOpenPrint,
+    }
   } = useContext(AppContext)
 
   const printPreviewProps = {
-    openPrintDrawer: isOpenPrint && printHtml,
+    openPrintDrawer: isOpenPrint && printHtml != "",
     handleClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
@@ -86,8 +89,6 @@ export default function AppWorkspace() {
         title={title}
         dcsRef={dcsRef}
         infoLine={infoLine}
-        ready={printHtml != ""}
-        onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
       />}
       <Card>

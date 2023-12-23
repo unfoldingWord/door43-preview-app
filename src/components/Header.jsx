@@ -2,9 +2,7 @@ import PropTypes from 'prop-types'
 import { Typography } from '@mui/joy'
 import { AppBar, Toolbar, Fab, Hidden } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import PrintIcon from '@mui/icons-material/Print'
 import SourceIcon from '@mui/icons-material/Source'
-import { DISABLE_NAVIGATION_BUTTON } from '../common/constants'
 
 const sx = {
   title: {
@@ -26,8 +24,6 @@ export default function Header({
   title,
   infoLine,
   dcsRef,
-  ready,
-  onPrintClick,
   onOpenClick,
 }) {
 
@@ -40,7 +36,7 @@ export default function Header({
       <AppBar position='relative'>
         <Toolbar sx={{ justifyContent: "space-between" }}>
           <div className='flex flex-1 justify-center items-center'>
-          <Typography
+            <Typography
               variant='h1'
               sx={sx.title}>
               <a href={"/"} style={{textDecoration:"none", color: "inherit"}}>{title}</a>
@@ -53,18 +49,8 @@ export default function Header({
           </div>
             <Fab
               color='primary'
-              aria-label='open'
-              variant='extended'
-              disabled={!ready}
-              onClick={onPrintClick}>
-              <PrintIcon sx={sx.extendedIcon} />
-              <Hidden xsDown>Print</Hidden>
-            </Fab>
-            <Fab
-              color='primary'
               aria-label='view'
               variant='extended'
-              disabled={true}
               onClick={handleViewClick}>
               <SourceIcon sx={sx.extendedIcon} />
               <Hidden xsDown>View on DCS</Hidden>
