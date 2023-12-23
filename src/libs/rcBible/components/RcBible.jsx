@@ -160,7 +160,7 @@ export default function RcBible({
 
   return (
     <>
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "60px", background: "inherit", padding: "10px"}}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', position: "sticky", "top": "0", background: "inherit", padding: "10px"}}>
         <BibleReference status={bibleReferenceState} actions={bibleReferenceActions}/>
       </div>
       {html && (<>
