@@ -5,6 +5,16 @@ const constructUrl = urlInfo => {
     }
 }
 
-export const updateUrlHashLink = hashData => {
-    window.location.hash = hashData.join('-')
+export const updateUrlInAddressBar = urlInfo => {
+    const url = constructUrl(urlInfo)
+    if (url) {
+        window.history.replaceState({id: "100"}, '', url)
+    }  
+}
+
+export const redirectToUrl = urlInfo => {
+    const url = constructUrl(urlInfo)
+    if (url) {
+        window.location.href = url
+    }
 }

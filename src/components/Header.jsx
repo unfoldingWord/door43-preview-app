@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types'
 import { Typography } from '@mui/joy'
-import { AppBar, Toolbar, Fab, Hidden } from '@mui/material'
+import { AppBar, Toolbar, Fab, Box } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import SourceIcon from '@mui/icons-material/Source'
 
@@ -34,7 +34,15 @@ export default function Header({
   return (
     <header>
       <AppBar position='relative'>
-        <Toolbar sx={{ justifyContent: "space-between" }}>
+        <Toolbar sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+              overflowX: "scroll",
+              button: {
+                flex: "none"
+              }
+        }}>
           <div className='flex flex-1 justify-center items-center'>
             <Typography
               variant='h1'
@@ -53,7 +61,7 @@ export default function Header({
               variant='extended'
               onClick={handleViewClick}>
               <SourceIcon sx={sx.extendedIcon} />
-              <Hidden xsDown>View on DCS</Hidden>
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }} >View on DCS</Box>
             </Fab>
             <Fab
               color='primary'
@@ -62,7 +70,7 @@ export default function Header({
               disabled={true}
               onClick={onOpenClick}>
               <OpenInNewIcon sx={sx.extendedIcon} />
-              <Hidden xsDown>Open</Hidden>
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }} >Open</Box>
             </Fab>
         </Toolbar>
       </AppBar>

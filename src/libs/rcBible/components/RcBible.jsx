@@ -1,16 +1,15 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { AppBar, Toolbar, Fab, Hidden } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
 import useUsfmPreviewRenderer from "../hooks/useUsfmPreviewRender.jsx";
 import DOMPurify from "dompurify";
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
 } from "../../core/lib/previewStyling.js";
-import BibleReference, { useBibleReference } from "bible-reference-rcl";
+import { useBibleReference } from "bible-reference-rcl";
 import { BibleBookData } from "../../../common/books.js";
 import { getSupportedBooks } from "../../core/lib/books.js";
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
 
 export default function RcBible({
   urlInfo,
@@ -26,7 +25,7 @@ export default function RcBible({
   const [supportedBooks, setSupportedBooks] = useState([]);
   const [usfmText, setUsfmText] = useState();
   const [htmlCache, setHtmlCache] = useState({});
-  const [html, setHtml] = useState();
+  const [html, setHtml] = useState("");
 
   const renderFlags = {
     showWordAtts: false,
@@ -54,11 +53,8 @@ export default function RcBible({
       v = parseInt(v);
       if (c > 1 || v > 1) {
         window.scrollTo({
-          top:
-            document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect()
-              .top +
-            window.scrollY -
-            130,
+          top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top +
+            window.scrollY - 80,
           behavior: "smooth",
         });
       } else {
@@ -200,31 +196,11 @@ export default function RcBible({
 
   return (
     <>
-      <AppBar
-        position="relative"
-        sx={{ backgroundColor: "white", position: "sticky", top: "0" }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <BibleReference
-            status={bibleReferenceState}
-            actions={bibleReferenceActions}
-          />
-          <Fab
-            color="primary"
-            aria-label="open"
-            variant="extended"
-            disabled={!html}
-            onClick={onPrintClick}
-          >
-            <PrintIcon
-              sx={{
-                extendedIcon: { marginRight: (theme) => theme.spacing(1) },
-              }}
-            />
-            <Hidden xsDown>Print</Hidden>
-          </Fab>
-        </Toolbar>
-      </AppBar>
+      <BibleReferencePrintBar 
+        bibleReferenceState={bibleReferenceState} 
+        bibleReferenceActions={bibleReferenceActions}
+        onPrintClick={onPrintClick} 
+        printEnabled={html != ""} />
       {html && (
         <>
           <div

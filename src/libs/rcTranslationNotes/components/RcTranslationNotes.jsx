@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { AppBar, Toolbar, Fab, Hidden } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
 import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder.jsx";
 import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries.jsx";
 import DOMPurify from "dompurify";
 import usfm from "usfm-js";
 import { verseObjectsToString } from "uw-quote-helpers";
-import BibleReference, { useBibleReference } from "bible-reference-rcl";
+import { useBibleReference } from "bible-reference-rcl";
 import useFetchTargetUsfm from "../../core/hooks/useFetchTargetUsfm.jsx";
 import useFetchSourceUsfm from "../../core/hooks/useFetchSourceUsfm.jsx";
 import MarkdownIt from "markdown-it";
 import { getSupportedBooks } from "../../core/lib/books.js";
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
 
 export default function RcTranslationNotes({
   urlInfo,
@@ -269,31 +268,11 @@ export default function RcTranslationNotes({
 
   return (
     <>
-      <AppBar
-        position="relative"
-        sx={{ backgroundColor: "white", position: "sticky", top: "0" }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <BibleReference
-            status={bibleReferenceState}
-            actions={bibleReferenceActions}
-          />
-          <Fab
-            color="primary"
-            aria-label="open"
-            variant="extended"
-            disabled={!html}
-            onClick={onPrintClick}
-          >
-            <PrintIcon
-              sx={{
-                extendedIcon: { marginRight: (theme) => theme.spacing(1) },
-              }}
-            />
-            <Hidden xsDown>Print</Hidden>
-          </Fab>
-        </Toolbar>
-      </AppBar>
+      <BibleReferencePrintBar 
+        bibleReferenceState={bibleReferenceState} 
+        bibleReferenceActions={bibleReferenceActions}
+        onPrintClick={onPrintClick} 
+        printEnabled={html != ""} />
       {html && (
         <div
           dangerouslySetInnerHTML={{

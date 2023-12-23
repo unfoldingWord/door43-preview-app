@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import PropTypes from "prop-types";
-import { AppBar, Toolbar, Fab, Hidden } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
 import DOMPurify from "dompurify";
-import BibleReference, { useBibleReference } from "bible-reference-rcl";
+import { useBibleReference } from "bible-reference-rcl";
 import useGenerateRcOpenBibleStoriesHtml from "../hooks/useGenerateRcOpenBibleStoriesHtml";
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
 
 export default function RcOpenBibleStories({
   urlInfo,
@@ -84,31 +83,11 @@ export default function RcOpenBibleStories({
 
   return (
     <>
-      <AppBar
-        position="relative"
-        sx={{ backgroundColor: "white", position: "sticky", top: "0" }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <BibleReference
-            status={bibleReferenceState}
-            actions={bibleReferenceActions}
-          />
-          <Fab
-            color="primary"
-            aria-label="open"
-            variant="extended"
-            disabled={!html}
-            onClick={onPrintClick}
-          >
-            <PrintIcon
-              sx={{
-                extendedIcon: { marginRight: (theme) => theme.spacing(1) },
-              }}
-            />
-            <Hidden xsDown>Print</Hidden>
-          </Fab>
-        </Toolbar>
-      </AppBar>
+      <BibleReferencePrintBar 
+        bibleReferenceState={bibleReferenceState} 
+        bibleReferenceActions={bibleReferenceActions}
+        onPrintClick={onPrintClick} 
+        printEnabled={html != ""} />
       {html && (
         <div
           style={{
