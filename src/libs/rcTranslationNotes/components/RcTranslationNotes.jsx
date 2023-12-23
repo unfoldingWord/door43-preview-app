@@ -18,7 +18,7 @@ export default function RcTranslationNotes({
   zipFileData,
   setStatusMessage,
   setErrorMessage,
-  updateUrlHashLink,
+  updateUrlHashInAddressBar,
   setPrintHtml,
   onPrintClick,
 }) {
@@ -56,18 +56,15 @@ export default function RcTranslationNotes({
       if (c > 1 || v > 1) {
         window.scrollTo({
           top:
-            document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect()
-              .top +
-            window.scrollY -
-            140,
+            document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top + window.scrollY - 80,
           behavior: "smooth",
         });
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }
-    if (updateUrlHashLink) {
-      updateUrlHashLink([b, c, v]);
+    if (updateUrlHashInAddressBar) {
+      updateUrlHashInAddressBar([b, c, v]);
     }
   };
 
@@ -291,6 +288,6 @@ RcTranslationNotes.propTypes = {
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
-  updateUrlHashLink: PropTypes.func,
+  updateUrlHashInAddressBar: PropTypes.func,
   onPrintClick: PropTypes.func,
 };

@@ -1,20 +1,5 @@
-const constructUrl = urlInfo => {
-    if (urlInfo) {
-        const params = new URLSearchParams(window.location.search)
-        return decodeURIComponent(`/u/${urlInfo?.owner}/${urlInfo?.repo}/${urlInfo?.ref}${params.size ? `?${params}` : ''}${urlInfo?.hashParts.length ? `#${urlInfo.hashParts.join('-')}` : ''}`)
-    }
-}
-
-export const updateUrlInAddressBar = urlInfo => {
-    const url = constructUrl(urlInfo)
-    if (url) {
-        window.history.replaceState({id: "100"}, '', url)
-    }  
-}
-
-export const redirectToUrl = urlInfo => {
-    const url = constructUrl(urlInfo)
-    if (url) {
-        window.location.href = url
+export const updateUrlHashInAddressBar = hashParts => {
+    if (hashParts) {
+        window.history.replaceState({id: "100"}, '', `${window.location.href.split('#')[0]}#${hashParts.join('-')}`)
     }
 }

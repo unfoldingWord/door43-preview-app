@@ -19,7 +19,7 @@ export default function RcBible({
   setErrorMessage,
   setPrintHtml,
   setCanChangeColumns,
-  updateUrlHashLink,
+  updateUrlHashInAddressBar,
   onPrintClick,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([]);
@@ -52,17 +52,19 @@ export default function RcBible({
       c = parseInt(c);
       v = parseInt(v);
       if (c > 1 || v > 1) {
-        window.scrollTo({
-          top: document.getElementById(`${b}-${c}-${v}`)?.getBoundingClientRect().top +
-            window.scrollY - 80,
-          behavior: "smooth",
-        });
+        const verseEl = document.getElementById(`${b}-${c}-${v}`)
+        if (verseEl) {
+          window.scrollTo({
+            top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
+            behavior: "smooth",
+          });
+        }
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }
-    if (updateUrlHashLink) {
-      updateUrlHashLink([b, c, v]);
+    if (updateUrlHashInAddressBar) {
+      updateUrlHashInAddressBar([b, c, v]);
     }
   };
 
@@ -222,6 +224,6 @@ RcBible.propTypes = {
   setErrorMessage: PropTypes.func,
   setPrintHtml: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
-  updateUrlHashLink: PropTypes.func,
+  updateUrlHashInAddressBar: PropTypes.func,
   onPrintClick: PropTypes.func,
 };

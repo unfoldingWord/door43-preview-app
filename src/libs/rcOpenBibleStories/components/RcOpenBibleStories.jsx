@@ -9,7 +9,7 @@ export default function RcOpenBibleStories({
   urlInfo,
   catalogEntry,
   zipFileData,
-  updateUrlHashLink,
+  updateUrlHashInAddressBar,
   setStatusMessage,
   setPrintHtml,
   onPrintClick,
@@ -27,13 +27,13 @@ export default function RcOpenBibleStories({
       }
       if (frame) {
         window.scrollTo({
-          top: frame.getBoundingClientRect().top + window.scrollY - 150,
+          top: frame.getBoundingClientRect().top + window.scrollY - 80,
           behavior: "smooth",
         });
       }
     }
-    if (updateUrlHashLink) {
-      updateUrlHashLink([b, c, v]);
+    if (updateUrlHashInAddressBar) {
+      updateUrlHashInAddressBar([b, c, v]);
     }
   };
   const { state: bibleReferenceState, actions: bibleReferenceActions } =
@@ -106,7 +106,7 @@ RcOpenBibleStories.propTypes = {
   urlInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
   zipFileData: PropTypes.object,
-  updateUrlHashLink: PropTypes.func,
+  updateUrlHashInAddressBar: PropTypes.func,
   setStatusMessage: PropTypes.func,
   setErrorMessage: PropTypes.func,
   setCanChangeColumns: PropTypes.func,

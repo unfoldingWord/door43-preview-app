@@ -5,7 +5,7 @@ import RcBible from '../libs/rcBible/components/RcBible'
 import RcOpenBibleStories from '../libs/rcOpenBibleStories/components/RcOpenBibleStories'
 import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes'
 import { getZipFileDataForCatalogEntry } from "../libs/core/lib/zip";
-import { updateUrlInAddressBar } from "../utils/url";
+import { updateUrlHashInAddressBar } from "../utils/url";
 
 
 export const AppContext = React.createContext();
@@ -134,10 +134,6 @@ export function AppContextProvider({ children }) {
     }
   }, [catalogEntry])
 
-  const updateUrlHashLink = hashParts => {
-    updateUrlInAddressBar({...urlInfo, hashParts})
-  }
-
   useEffect(() => {
     if (catalogEntry && zipFileData) {
       if(catalogEntry?.metadata_type && catalogEntry?.subject) {
@@ -150,7 +146,7 @@ export function AppContextProvider({ children }) {
           setStatusMessage,
           setErrorMessage,
           setCanChangeColumns,
-          updateUrlHashLink,
+          updateUrlHashInAddressBar,
           onPrintClick,
         }
         switch (catalogEntry.metadata_type) {
