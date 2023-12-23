@@ -81,6 +81,7 @@ export default function AppWorkspace() {
 
   return (
     <Sheet>
+      {(window.location.hostname == "preview.door43.org" || window.location.hostname.includes("netlify") || window.location.host == "localhost:5173" || window.Location.port == "localhost:4173") && 
       <Header
         title={title}
         dcsRef={dcsRef}
@@ -88,7 +89,7 @@ export default function AppWorkspace() {
         ready={printHtml != ""}
         onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
-      />
+      />}
       <Card sx={{marginTop: "70px"}}>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

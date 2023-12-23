@@ -1,8 +1,6 @@
 import PropTypes from 'prop-types'
-import Typography from '@mui/joy/Typography'
-import Toolbar from '@mui/material/Toolbar'
-import AppBar from '@mui/material/AppBar'
-import Fab from '@mui/material/Fab'
+import { Typography } from '@mui/joy'
+import { AppBar, Toolbar, Fab, Hidden } from '@mui/material'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import PrintIcon from '@mui/icons-material/Print'
 import SourceIcon from '@mui/icons-material/Source'
@@ -39,52 +37,47 @@ export default function Header({
 
   return (
     <header>
-      <AppBar position='fixed'>
+      <AppBar position='relative'>
         <Toolbar sx={{ justifyContent: "space-between" }}>
           <div className='flex flex-1 justify-center items-center'>
           <Typography
               variant='h1'
-              sx={sx.title}
-            >
+              sx={sx.title}>
               <a href={"/"} style={{textDecoration:"none", color: "inherit"}}>{title}</a>
             </Typography>
             <Typography
               variant='h3'
-              sx={sx.infoLine}
-            >
+              sx={sx.infoLine}>
               {infoLine}
             </Typography>
           </div>
-          <>
             <Fab
               color='primary'
               aria-label='open'
               variant='extended'
               disabled={!ready}
-              onClick={onPrintClick}
-            >
+              onClick={onPrintClick}>
               <PrintIcon sx={sx.extendedIcon} />
-              Print
+              <Hidden xsDown>Print</Hidden>
             </Fab>
             <Fab
               color='primary'
               aria-label='view'
               variant='extended'
-              onClick={handleViewClick}
-            >
+              disabled={true}
+              onClick={handleViewClick}>
               <SourceIcon sx={sx.extendedIcon} />
-              View on DCS
+              <Hidden xsDown>View on DCS</Hidden>
             </Fab>
-            {!DISABLE_NAVIGATION_BUTTON && (<Fab
+            <Fab
               color='primary'
               aria-label='print'
               variant='extended'
-              onClick={onOpenClick}
-            >
+              disabled={true}
+              onClick={onOpenClick}>
               <OpenInNewIcon sx={sx.extendedIcon} />
-              Open
-            </Fab>)}
-          </>
+              <Hidden xsDown>Open</Hidden>
+            </Fab>
         </Toolbar>
       </AppBar>
     </header>

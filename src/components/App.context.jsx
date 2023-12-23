@@ -44,22 +44,24 @@ export function AppContextProvider({ children }) {
           }
           setServerInfo({baseUrl, ID: server})
         }
-      } else if (url.hostname == 'preview.door43.org') {
+      } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
         setServerInfo(DCS_SERVERS['prod'])
+      } else if (url.hostname == "develop.door43.org" ) {
+        setServerInfo(DCS_SERVERS['dev'])
       } else {
         setServerInfo(DCS_SERVERS['qa'])
       }
     }
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname.replace(/^\/u(\/|$)/, "").replace(/\/+$/, "").split("/")
-      if(urlParts.length < 2) {
-        throw new Error("Home Page (under construction)")
-      }
+      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").split("/")
+      // if(urlParts.length < 2) {
+      //   throw new Error("Home Page (under construction)")
+      // }
       const info = {
         owner: urlParts[0] || "",
         repo: urlParts[1] || "",
-        ref: urlParts.slice(2).join('/'),
+        ref: (url.hostname.match(/(git|develop|qa)\.door43\.org/) ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/')),
         hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
       }
       setUrlInfo(info)
