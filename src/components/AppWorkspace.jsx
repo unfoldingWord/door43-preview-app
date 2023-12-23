@@ -90,7 +90,7 @@ export default function AppWorkspace() {
         onPrintClick={() => setIsOpenPrint(!isOpenPrint)}
         onOpenClick={() => setIsOpenModal(!isOpenModal)}
       />}
-      <Card sx={{marginTop: "70px"}}>
+      <Card>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
         {resourceComponent}
