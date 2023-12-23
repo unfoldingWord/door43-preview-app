@@ -84,7 +84,7 @@ export default function AppWorkspace() {
 
   return (
     <Sheet>
-      {(window.location.hostname == "preview.door43.org" || window.location.hostname.includes("netlify") || window.location.host == "localhost:5173" || window.Location.port == "localhost:4173") && 
+      {(window.location.hostname == "preview.door43.org" || window.location.hostname.includes("netlify") || window.location.host == "localhost:5173" || window.location.host == "localhost:4173") &&
       <Header
         title={title}
         dcsRef={dcsRef}

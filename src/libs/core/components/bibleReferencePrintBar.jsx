@@ -20,6 +20,7 @@ export default function BibleReferencePrintBar({
                 width: "100%",
                 overflowX: "scroll",
           }}>
+            <div></div>
             <BibleReference
               status={bibleReferenceState}
               actions={bibleReferenceActions}
