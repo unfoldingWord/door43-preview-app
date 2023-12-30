@@ -20,7 +20,6 @@
     "@mui/material": "^5.14.18",
     "@oce-editor-tools/base": "0.1.26",
     "@oce-editor-tools/joy-core": "0.1.27-alpha.1",
-    "base-64": "^1.0.0",
     "bible-reference-rcl": "^1.2.3",
     "dompurify": "^3.0.6",
     "jszip": "^3.10.1",

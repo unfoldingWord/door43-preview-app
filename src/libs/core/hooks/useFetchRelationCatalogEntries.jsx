@@ -39,7 +39,6 @@ export default function useFetchRelationCatalogEntries({
     }
 
     if (catalogEntry) {
-      console.log("FETCHING RELATION ENTRIES")
       fetchRelationEntries()
     }
   }, [catalogEntry])

@@ -35,9 +35,6 @@ dependencies:
   '@oce-editor-tools/joy-core':
     specifier: 0.1.27-alpha.1
     version: 0.1.27-alpha.1(@babel/core@7.23.5)(@emotion/react@11.11.1)(@emotion/styled@11.11.0)(@mui/icons-material@5.14.18)(@mui/joy@5.0.0-beta.7)(@mui/lab@5.0.0-alpha.143)(@mui/material@5.14.18)(@types/react@18.2.39)(prop-types@15.8.1)(react-dom@18.2.0)(react-icons@4.12.0)(react@18.2.0)
-  base-64:
-    specifier: ^1.0.0
-    version: 1.0.0
   bible-reference-rcl:
     specifier: ^1.2.3
     version: 1.2.3(@babel/core@7.23.5)(@types/react@18.2.39)(prop-types@15.8.1)(react-dom@18.2.0)(react-is@18.2.0)(react@18.2.0)

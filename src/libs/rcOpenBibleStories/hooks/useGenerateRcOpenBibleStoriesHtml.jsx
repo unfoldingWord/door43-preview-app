@@ -6,12 +6,9 @@ export default function useGenerateRcOpenBibleStoriesHtml({
   zipFileData,
 }) {
   const [html, setHtml] = useState()
-  console.log("HERE1")
 
   useEffect(() => {
-    console.log("HERE2")
     if(catalogEntry && zipFileData) {
-      console.log("HERE3")
       convertRcOpenBibleStories(catalogEntry, zipFileData).
         then(html => setHtml(html))
     }

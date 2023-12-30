@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { DCS_SERVERS, API_PATH } from "../common/constants";
-import RcBible from '../libs/rcBible/components/RcBible'
-import RcOpenBibleStories from '../libs/rcOpenBibleStories/components/RcOpenBibleStories'
-import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes'
-import { getZipFileDataForCatalogEntry } from "../libs/core/lib/zip";
-import { updateUrlHashInAddressBar } from "../utils/url";
+import { DCS_SERVERS, API_PATH } from "../common/constants.js";
+import RcBible from '../libs/rcBible/components/RcBible.jsx'
+import RcOpenBibleStories from '../libs/rcOpenBibleStories/components/RcOpenBibleStories.jsx'
+import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes.jsx'
+import { updateUrlHashInAddressBar } from "../utils/url.js";
+import { getCatalogEntry } from "../libs/core/lib/dcsApi.js";
 
 
 export const AppContext = React.createContext();
 
 export function AppContextProvider({ children }) {
-  const [statusMessage, setStatusMessage] = useState("Preparing Preview. Please wait...")
-  const [errorMessage, setErrorMessage] = useState()
+  const [statusMessage, setStatusMessage] = useState(<>Preparing Preview.<br/>Please wait...</>)
+  const [errorMessages, setErrorMessages] = useState([])
   const [urlInfo, setUrlInfo] = useState()
   const [serverInfo, setServerInfo] = useState()
   const [buildInfo, setBuildInfo] = useState()
   const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
-  const [zipFileData, setZipFileData] = useState()
   const [ResourceComponent, setResourceComponent] = useState()
   const [organizations, setOrganizations] = useState()
   const [branches,setBranches] = useState()
@@ -31,6 +30,19 @@ export function AppContextProvider({ children }) {
 
   const onPrintClick = () => {
     setIsOpenPrint(true)
+  }
+
+  const setErrorMessage = (message) => {
+    if (! errorMessages.includes(message)) {
+      setErrorMessages([...errorMessages, message])
+    }
+  }
+
+  const clearErrorMessage = idxToRemove => {
+    if (errorMessages.length > idxToRemove) {
+      errorMessages.splice(idxToRemove, 1)
+      setErrorMessages(errorMessages.map((value, idx) => idx != idxToRemove))
+    }
   }
 
   useEffect(() => {
@@ -59,9 +71,9 @@ export function AppContextProvider({ children }) {
 
     const getUrlInfo = async () => {
       const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").split("/")
-      // if(urlParts.length < 2) {
-      //   throw new Error("Home Page (under construction)")
-      // }
+      if(urlParts.length < 2) {
+        throw new Error("Home Page (under construction)")
+      }
       const info = {
         owner: urlParts[0] || "",
         repo: urlParts[1] || "",
@@ -71,8 +83,8 @@ export function AppContextProvider({ children }) {
       setUrlInfo(info)
     }
 
-    getServerInfo().catch(e => setErrorMessage(e?.message))
-    getUrlInfo().catch(e => setErrorMessage(e?.message))
+    getServerInfo().catch(e => setErrorMessage(e.message))
+    getUrlInfo().catch(e => setErrorMessage(e.message))
   }, [])
 
   useEffect(() => {
@@ -93,55 +105,29 @@ export function AppContextProvider({ children }) {
     }
 
     if (serverInfo && urlInfo) {
-      fetchRepo().catch(e => setErrorMessage(e?.message))
+      fetchRepo().catch(e => setErrorMessage(e.message))
     }
   }, [serverInfo, urlInfo]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${repo?.full_name}/${urlInfo.ref || repo.default_branch}`)
-      .then(response => {
-        if (response.ok) {
-          return response.json()
-        } else {
-          throw new Error(`No metadata found for ${repo.full_name}, ref "${urlInfo.ref || repo.default_branch}". Please verify this is a valid resource and a valid ref.`)
-        }
-      })
-      .then(data => {
-        setCatalogEntry(data)
-      }).catch(err => {
-        setErrorMessage(err.message)
-      })
+      getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch).
+      then(entry => setCatalogEntry(entry)).
+      catch(err => setErrorMessage(err.message))
     }
 
     if (repo) {
-      fetchCatalogEntry().catch(e => setErrorMessage(e?.message))
+      fetchCatalogEntry().catch(e => setErrorMessage(e.message))
     }
   }, [repo])
 
   useEffect(() => {
-    const loadZipFileData = async () => {
-      try {
-        getZipFileDataForCatalogEntry(catalogEntry)
-        .then(zip => setZipFileData(zip))
-      } catch (error) {
-        setErrorMessage(error?.message)
-      }
-    }
-
     if (catalogEntry) {
-        loadZipFileData()
-    }
-  }, [catalogEntry])
-
-  useEffect(() => {
-    if (catalogEntry && zipFileData) {
       if(catalogEntry?.metadata_type && catalogEntry?.subject) {
         const props = {
           urlInfo,
           serverInfo,
           catalogEntry,
-          zipFileData,
           setPrintHtml,
           setStatusMessage,
           setErrorMessage,
@@ -181,7 +167,7 @@ export function AppContextProvider({ children }) {
       }
       setErrorMessage("Not a valid repository that can be convert.")
     }
-  }, [catalogEntry, zipFileData])
+  }, [catalogEntry])
 
   // useEffect(() => {
   //   const getBranches = async () => {
@@ -292,9 +278,8 @@ export function AppContextProvider({ children }) {
     state: {
       urlInfo,
       catalogEntry,
-      zipFileData,
       statusMessage,
-      errorMessage,
+      errorMessages,
       organizations,
       branches,
       tags,
@@ -311,6 +296,7 @@ export function AppContextProvider({ children }) {
     actions: {
       setStatusMessage,
       setErrorMessage,
+      clearErrorMessage,
       setPrintHtml,
       setCanChangeColumns,
       setIsOpenPrint,
