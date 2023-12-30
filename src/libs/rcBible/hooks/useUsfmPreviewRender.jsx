@@ -11,6 +11,7 @@ export default function useUsfmPreviewRenderer(props) {
     renderFlags,
     htmlRender,
     renderStyles,
+    setErrorMessage,
   } = props
 
   const [docId, setDocId] = useState()
@@ -27,38 +28,38 @@ export default function useUsfmPreviewRenderer(props) {
   })
 
   useEffect(() => {
-    if (pk != null && usfmText != null && ! (bookId in importedBookDocIds)) {
-      const res = pk.importDocument(
-        {lang: 'xxx', abbr: 'XXX'}, // doesn't matter...
-        "usfm",
-        usfmText
-      )
-      if (res.id !== undefined) {
-        importedBookDocIds[bookId] = res.id
-        setImportedBookDocIds(importedBookDocIds)
+    const importBookIntoPk= async () => {
+      console.log("IMPORTING USFM FOR REAL!")
+      try {
+        const res = pk.importDocument(
+          {lang: 'xxx', abbr: 'XXX'}, // doesn't matter...
+          "usfm",
+          usfmText
+        )
+        if (res.id !== undefined) {
+          setImportedBookDocIds({...importedBookDocIds, [bookId]: res.id})
+          setDocId(res.id)
+        } else {
+          setErrorMessage("Failed to import book for rendering.")
+        }
+      } catch(e) {
+        console.log(e)
+        setErrorMessage("Failed to import book for rendering. See console log for details.")
       }
     }
-    if (bookId in importedBookDocIds){
+
+    if ( pk && usfmText && bookId ) {
+      if (! (bookId in importedBookDocIds)) {
+        importBookIntoPk()
+      } else {
         setDocId(importedBookDocIds[bookId])
+      }
     }
   }, [pk, usfmText, bookId])
 
   useEffect(() => {
-    async function doQueryPk() {
-      const query = `{ documents { id bookCode: header( id: "bookCode") } }`
-      const result = await pk.gqlQuerySync(query)
-    }
-
-    if (pk) {
-      if (!ready) {
-        try {
-          doQueryPk()
-        } catch (e) {
-          console.log(e)
-        }
-      } else {
-        setRenderedData(doRender({renderFlags, extInfo, verbose, htmlRender}))
-      }
+    if (pk && ready) {
+      setRenderedData(doRender({renderFlags, extInfo, verbose, htmlRender}))
     }
   },[pk, doRender, extInfo, renderFlags, verbose, ready, htmlRender])
 
