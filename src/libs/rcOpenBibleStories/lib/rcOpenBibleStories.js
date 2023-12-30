@@ -11,6 +11,7 @@ export default async function convertRcOpenBibleStories(catalogEntry, zipFileDat
     if (! obsRootPath) {
         throw new Error("Unable to find an obs project in the manfiest.yaml file.")
     }
+
     for (let i = 1; i < 51; ++i) {
       const obsStoryFilePath = `${obsRootPath}/${`${i}`.padStart(2, '0')}.md`
       if (obsStoryFilePath in zipFileData.files) {
@@ -22,8 +23,14 @@ export default async function convertRcOpenBibleStories(catalogEntry, zipFileDat
 
     let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
     const md = markdownit()
-    markdownFiles.forEach((markdownFile, i) => {
-        html += `<div id="obs-${i+1}-1">${md.render(markdownFile)}</div>`
+    markdownFiles.forEach((storyMarkdown, storyIdx) => {
+        const frames = storyMarkdown.split(/(?=\!\[)/g) // Spliting on image markdown
+        const header = frames.shift()
+        frames[0] = header + frames?.[0]
+        frames.forEach((frame, frameIdx) => {
+            html += `<article id="obs-${storyIdx+1}-${frameIdx+1}" class="break-inside: avoid">${md.render(frame)}</article>`
+        })
     })
+
     return html
 }

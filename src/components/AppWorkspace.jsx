@@ -1,6 +1,8 @@
-import { useState, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Typography, Modal } from '@mui/material';
-import { Sheet, Card, Box, Alert, CircularProgress } from '@mui/joy';
+import { Sheet, Card, Box, Alert, CircularProgress, IconButton } from '@mui/joy';
+import ReportIcon from '@mui/icons-material/Report.js'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded.js'
 import { PrintDrawer } from '@oce-editor-tools/joy-core';
 import { AppContext } from './App.context';
 import Header from './Header';
@@ -17,7 +19,7 @@ export default function AppWorkspace() {
       catalogEntry,
       resourceComponent,
       statusMessage,
-      errorMessage,
+      errorMessages,
       printHtml,
       canChangeColumns,
       buildInfo,
@@ -25,6 +27,7 @@ export default function AppWorkspace() {
       isOpenPrint,
     },
     actions: {
+      clearErrorMessage,
       setIsOpenPrint,
     }
   } = useContext(AppContext)
@@ -93,9 +96,27 @@ export default function AppWorkspace() {
       />}
       <Card>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
-        {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+        {errorMessages.map((message, i) => <Alert
+          key={`errorMessage${i}`}
+          sx={{ alignItems: 'flex-start' }}
+          startDecorator={<ReportIcon />}
+          variant="soft"
+          color="danger"
+          endDecorator={
+            <IconButton variant="soft" color="danger" onClick={()=>clearErrorMessage(i)}>
+              <CloseRoundedIcon />
+            </IconButton>
+          }
+          >
+          <div>
+            <div>Error</div>
+            <Typography level="body-sm" color="danger">
+              {message}
+            </Typography>
+          </div>
+        </Alert>)}
         {resourceComponent}
-        {statusMessage && !printHtml && !errorMessage &&
+        {statusMessage && !printHtml && !errorMessages.length &&
         <Modal
           open={true}
           aria-labelledby="modal-modal-title"

@@ -20,10 +20,10 @@ export default function BibleReferencePrintBar({
                 width: "100%",
                 overflowX: "scroll",
           }}>
-            <div></div>
+            <div>&nbsp;</div>
             <BibleReference
-              status={bibleReferenceState}
-              actions={bibleReferenceActions}
+                status={bibleReferenceState}
+                actions={bibleReferenceActions}
             />
             <Fab
               color="primary"
