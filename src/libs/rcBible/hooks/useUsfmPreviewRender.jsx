@@ -29,7 +29,6 @@ export default function useUsfmPreviewRenderer(props) {
 
   useEffect(() => {
     const importBookIntoPk= async () => {
-      console.log("IMPORTING USFM FOR REAL!")
       try {
         const res = pk.importDocument(
           {lang: 'xxx', abbr: 'XXX'}, // doesn't matter...

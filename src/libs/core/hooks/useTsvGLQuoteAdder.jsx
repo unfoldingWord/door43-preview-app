@@ -74,7 +74,6 @@ export default function useTsvGLQuoteAdder({
     }
 
     if (tsvText && sourceUsfm && targetUsfm) {
-      console.log("ADDING GL QUOTES")
       doAddGLQuotes()
     }
   }, [tsvText, sourceUsfm, targetUsfm])
