@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { DCS_SERVERS, API_PATH } from "../common/constants.js";
-import RcBible from '../libs/rcBible/components/RcBible.jsx'
-import RcOpenBibleStories from '../libs/rcOpenBibleStories/components/RcOpenBibleStories.jsx'
+import Bible from '../libs/Bible/components/Bible.jsx'
+import OpenBibleStories from '../libs/OpenBibleStories/components/OpenBibleStories.jsx'
 import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes.jsx'
 import { updateUrlHashInAddressBar } from "../utils/url.js";
 import { getCatalogEntry } from "../libs/core/lib/dcsApi.js";
@@ -142,10 +142,10 @@ export function AppContextProvider({ children }) {
               case "Bible":
               case "Greek New Testament":
               case "Hebrew Old Testament":
-                setResourceComponent(<RcBible {...props} />)
+                setResourceComponent(<Bible {...props} />)
                 return
               case "Open Bible Stories":
-                setResourceComponent(<RcOpenBibleStories {...props} />)
+                setResourceComponent(<OpenBibleStories {...props} />)
                 return
               case "TSV Translation Notes":
                 setResourceComponent(<RcTranslationNotes {...props} />)
@@ -155,17 +155,43 @@ export function AppContextProvider({ children }) {
             }
             return
           case "sb":
-            setErrorMessage("Conversion of Scripture Burrito repositories is currently not supported.")
+            switch (catalogEntry.flavor_type) {
+              case "scripture":
+                switch (catalogEntry.flavor) {
+                  case "textTranslation":
+                    setResourceComponent(<Bible {...props} />)
+                    return
+                  default:
+                    setErrorMessage(`Conversion of SB flavor \`${catalogEntry.flavor}\` is not currently supported.`)
+                }
+                return
+              case "gloss":
+                switch (catalogEntry.flavor) {
+                  case "textStories":
+                    setResourceComponent(<OpenBibleStories {...props} />)
+                    return
+                }
+                return
+              default:
+                setErrorMessage(`Conversion of SB flavor type \`${catalogEntry.flavor_type}\` is not currently supported.`)
+            }
             return
           case "ts":
             setErrorMessage("Conversion of translationStudio repositories is currently not supported.")
             return
           case "tc":
-            setErrorMessage("Conversion of translationCore repositories is currently not supported.")
+            switch (catalogEntry.subject) {
+              case "Aligned Bible":
+              case "Bible":
+                setResourceComponent(<Bible {...props} />)
+                return
+              default:
+                setErrorMessage(`Conversion of translationCore \`${subject}\` repositories is currently not supported.`)
+            }
             return
         }
       }
-      setErrorMessage("Not a valid repository that can be convert.")
+      setErrorMessage(`Not a valid repository that can be convert.`)
     }
   }, [catalogEntry])
 
