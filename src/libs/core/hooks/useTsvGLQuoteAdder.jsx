@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-unused-vars
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import Papa from 'papaparse';
-import { getParsedUSFM, getTargetQuoteFromSourceQuote} from 'uw-quote-helpers';
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import Papa from 'papaparse'
+import { getParsedUSFM, getTargetQuoteFromSourceQuote} from 'uw-quote-helpers'
 
 export default function useTsvGLQuoteAdder({
   tsvText,

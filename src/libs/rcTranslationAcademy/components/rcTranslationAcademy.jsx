@@ -2,9 +2,9 @@ import { useEffect } from "react"
 import PropTypes from "prop-types"
 import DOMPurify from "dompurify"
 import { useBibleReference } from "bible-reference-rcl"
-import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml.jsx"
-import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
-import useFetchZipFileData from "../../core/hooks/useFetchZipFileData.jsx"
+import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml"
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar"
+import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
 
 export default function RcTranslationAcademy({
   urlInfo,

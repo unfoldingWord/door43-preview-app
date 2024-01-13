@@ -1,13 +1,13 @@
-import { useState, useEffect, useContext } from 'react';
-import { Typography, Modal } from '@mui/material';
-import { Sheet, Card, Box, Alert, CircularProgress, IconButton } from '@mui/joy';
-import ReportIcon from '@mui/icons-material/Report.js'
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded.js'
-import { PrintDrawer } from '@oce-editor-tools/joy-core';
-import { AppContext } from './App.context';
-import Header from './Header';
-import SelectResourceToPreviewModal from './SelectResourceToPreviewModal.jsx';
-import { APP_NAME, DCS_SERVERS, API_PATH } from '@common/constants.js';
+import { useState, useEffect, useContext } from 'react'
+import { Typography, Modal } from '@mui/material'
+import { Sheet, Card, Box, Alert, CircularProgress, IconButton } from '@mui/joy'
+import ReportIcon from '@mui/icons-material/Report'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
+import { PrintDrawer } from '@oce-editor-tools/joy-core'
+import { AppContext } from './App.context'
+import Header from './Header'
+import SelectResourceToPreviewModal from './SelectResourceToPreviewModal'
+import { APP_NAME, DCS_SERVERS, API_PATH } from '@common/constants'
 
 export default function AppWorkspace() {
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)

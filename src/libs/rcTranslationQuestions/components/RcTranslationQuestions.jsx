@@ -6,13 +6,13 @@ import {
   getRtlPreviewStyle,
 } from "../../core/lib/previewStyling.js"
 import { useBibleReference } from "bible-reference-rcl"
-import { BibleBookData } from "../../../common/books.js"
-import { getSupportedBooks } from "../../core/lib/books.js"
-import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
-import { getRepoContentsContent, getRepoGitTrees } from "../../core/lib/dcsApi.js"
-import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries.jsx"
-import useFetchBookFileBySubject from "../../core/hooks/useFetchBookFileBySubject.jsx"
-import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder.jsx"
+import { BibleBookData } from "../../../common/books"
+import { getSupportedBooks } from "../../core/lib/books"
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar"
+import { getRepoContentsContent, getRepoGitTrees } from "../../core/lib/dcsApi"
+import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries"
+import useFetchBookFileBySubject from "../../core/hooks/useFetchBookFileBySubject"
+import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder"
 import usfm from "usfm-js";
 import MarkdownIt from "markdown-it";
 import { verseObjectsToString } from "uw-quote-helpers";

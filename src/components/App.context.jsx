@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { DCS_SERVERS, API_PATH } from "@common/constants.js";
-import { updateUrlHashInAddressBar } from "@utils/url.js";
-import { getCatalogEntry } from "@libs/core/lib/dcsApi.js";
+import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { DCS_SERVERS, API_PATH } from '@common/constants'
+import { updateUrlHashInAddressBar } from '@utils/url'
+import { getCatalogEntry } from '@libs/core/lib/dcsApi'
 
 // Converter components
-import Bible from '@libs/Bible/components/Bible.jsx'
-import OpenBibleStories from '@libs/openBibleStories/components/OpenBibleStories.jsx'
-import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTranslationAcademy.jsx'
-import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes.jsx'
-import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions.jsx'
+import Bible from '@libs/Bible/components/Bible'
+import OpenBibleStories from '@libs/openBibleStories/components/OpenBibleStories'
+import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTranslationAcademy'
+import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
+import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
 
 
 export const AppContext = React.createContext();
