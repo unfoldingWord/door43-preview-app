@@ -1,10 +1,10 @@
-import { useEffect } from "react"
-import PropTypes from "prop-types"
-import DOMPurify from "dompurify"
-import { useBibleReference } from "bible-reference-rcl"
-import useGenerateOpenBibleStoriesHtml from "../hooks/useGenerateOpenBibleStoriesHtml"
-import BibleReferencePrintBar from "@libs/core/components/bibleReferencePrintBar"
-import useFetchZipFileData from "@libs/core/hooks/useFetchZipFileData"
+import { useEffect } from 'react'
+import PropTypes from 'prop-types'
+import DOMPurify from 'dompurify'
+import { useBibleReference } from 'bible-reference-rcl'
+import useGenerateOpenBibleStoriesHtml from '../hooks/useGenerateOpenBibleStoriesHtml'
+import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
+import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
 
 export default function OpenBibleStories({
   urlInfo,

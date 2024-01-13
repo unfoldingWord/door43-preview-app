@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { getZipFileDataForCatalogEntry } from "../lib/zip"
+import { useState, useEffect } from 'react'
+import { getZipFileDataForCatalogEntry } from '../lib/zip'
 
 export default function useFetchZipFileData({ catalogEntry }) {
   const [zipFileData, setZipFileData] = useState();
