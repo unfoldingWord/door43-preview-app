@@ -6,16 +6,16 @@ import {
   getRtlPreviewStyle,
 } from "@libs/core/lib/previewStyling.js"
 import { useBibleReference } from "bible-reference-rcl"
-import { BibleBookData } from "@common/books.js"
-import { getSupportedBooks } from "@libs/core/lib/books.js"
-import BibleReferencePrintBar from "@libs/core/components/bibleReferencePrintBar.jsx"
-import { getRepoContentsContent, getRepoGitTrees } from "@libs/core/lib/dcsApi.js"
-import useFetchRelationCatalogEntries from "@libs/core/hooks/useFetchRelationCatalogEntries.jsx"
-import useFetchBookFileBySubject from "@libs/core/hooks/useFetchBookFileBySubject.jsx"
-import useTsvGLQuoteAdder from "@libs/core/hooks/useTsvGLQuoteAdder.jsx"
-import usfm from "usfm-js";
-import MarkdownIt from "markdown-it";
-import { verseObjectsToString } from "uw-quote-helpers";
+import { BibleBookData } from "@common/books"
+import { getSupportedBooks } from "@libs/core/lib/books"
+import BibleReferencePrintBar from "@libs/core/components/bibleReferencePrintBar"
+import { getRepoContentsContent, getRepoGitTrees } from "@libs/core/lib/dcsApi"
+import useFetchRelationCatalogEntries from "@libs/core/hooks/useFetchRelationCatalogEntries"
+import useFetchBookFileBySubject from "@libs/core/hooks/useFetchBookFileBySubject"
+import useTsvGLQuoteAdder from "@libs/core/hooks/useTsvGLQuoteAdder"
+import usfm from "usfm-js"
+import MarkdownIt from "markdown-it"
+import { verseObjectsToString } from "uw-quote-helpers"
 
 
 export default function RcTranslationNotes({
