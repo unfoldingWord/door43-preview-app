@@ -2,16 +2,16 @@ import { useEffect } from "react"
 import PropTypes from "prop-types"
 import DOMPurify from "dompurify"
 import { useBibleReference } from "bible-reference-rcl"
-import useGenerateOpenBibleStoriesHtml from "../hooks/useGenerateOpenBibleStoriesHtml.jsx"
+import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml.jsx"
 import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
 import useFetchZipFileData from "../../core/hooks/useFetchZipFileData.jsx"
 
-export default function OpenBibleStories({
+export default function RcTranslationAcademy({
   urlInfo,
   catalogEntry,
   updateUrlHashInAddressBar,
-  setErrorMessage,
   setStatusMessage,
+  setErrorMessage,
   setPrintHtml,
   onPrintClick,
 }) {
@@ -46,15 +46,22 @@ export default function OpenBibleStories({
     setErrorMessage(e.message)
   }
 
+  let taArticles = null
+  try {
+    taArticles = useFetchTranslationAcademyArticles({ catalogEntry, zipFileData })
+  } catch (e) {
+    setErrorMessage(e.message)
+  }
+
   let html = ""
   try {
-    html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData })
+    html = useGenerateTranslationAcademyHtml({ catalogEntry })
   } catch (e) {
     setErrorMessage(e.message)
   }
 
   useEffect(() => {
-    setStatusMessage(<>Preparing OBS Preview.<br/>Please wait...</>)
+    setStatusMessage(<>Preparing ${catalogEntry.subject} Preview.<br/>Please wait...</>)
     bibleReferenceActions.applyBooksFilter("obs")
   }, [])
 
@@ -103,7 +110,7 @@ export default function OpenBibleStories({
   )
 }
 
-OpenBibleStories.propTypes = {
+RcTranslationAcademy.propTypes = {
   urlInfo: PropTypes.object,
   catalogEntry: PropTypes.object,
   updateUrlHashInAddressBar: PropTypes.func,

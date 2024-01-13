@@ -16,10 +16,9 @@ import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder.jsx"
 import usfm from "usfm-js";
 import MarkdownIt from "markdown-it";
 import { verseObjectsToString } from "uw-quote-helpers";
-import { populateSupportReferences } from "../../core/lib/translationAcademy.js"
 
 
-export default function RcTranslationNotes({
+export default function RcTranslationQuestions({
   urlInfo,
   catalogEntry,
   setStatusMessage,
@@ -201,7 +200,6 @@ export default function RcTranslationNotes({
       let prevVerse = ""
       const usfmJSON = usfm.toJSON(targetUsfm)
       const md = new MarkdownIt()
-      const supportReferences = {}
 
       renderedTsvData.forEach((row) => {
         if (!row || !row.ID || !row.Note) {
@@ -230,38 +228,16 @@ export default function RcTranslationNotes({
           prevVerse = verseStr
         }
         if (row.GLQuote || row.Quote) {
-          _html += `<h3 id="${row.ID}" class="tn-note-header">${
-            row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'
+          _html += `<h3 class="tn-note-header">${
+            row.GLQuote || row.Quote
           }</h3>`
         }
-        console.log(row)
-        if (row.SupportReference) {
-          if (! (row.SupportReference in supportReferences)) {
-            supportReferences[row.SupportReference] = {
-              backRefs: [],
-              title: "",
-              html: "",
-            }
-          }
-          supportReferences[row.SupportReference].backRefs.push(`<a href="#${row.ID}">${row.Reference}</a>`)
-          _html += `
-        <div class="tn-note-support-reference">
-          <span style="font-weight: bold">Support Reference:</span> ${row.SupportReference}
-        </div>`
-        }
-        _html += `
-        <div class="tn-note-body">
-            ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
-        </div>
-        <hr style="width: 75%"/>
-      </article>`
+        _html += `<div class="tn-note-body">${md.render(
+          row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n")
+        )}</div>
+            <hr style="width: 75%"/>
+          </article>`
       })
-
-      const taCatalogEntry = relationCatalogEntries.filter(entry => entry.subject == "Translation Academy")[0]
-      if (taCatalogEntry) {
-        populateSupportReferences(supportReferences, taCatalogEntry)
-      }
-
       setHtml(_html)
       setHtmlCache({...htmlCache, [bookIdToProcess]: _html})
     }
@@ -307,7 +283,7 @@ export default function RcTranslationNotes({
   )
 }
 
-RcTranslationNotes.propTypes = {
+RcTranslationQuestions.propTypes = {
   urlInfo: PropTypes.object.isRequired,
   catalogEntry: PropTypes.object.isRequired,
   setStatusMessage: PropTypes.func,
