@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react"
-import PropTypes from "prop-types"
-import useUsfmPreviewRenderer from "../hooks/useUsfmPreviewRender"
-import DOMPurify from "dompurify"
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
+import DOMPurify from 'dompurify'
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
 } from "@libs/core/lib/previewStyling.js"
-import { useBibleReference } from "bible-reference-rcl"
-import { BibleBookData } from "@common/books"
-import { getSupportedBooks } from "@libs/core/lib/books"
-import BibleReferencePrintBar from "@libs/core/components/bibleReferencePrintBar"
-import { getRepoContentsContent, getRepoGitTrees } from "@libs/core/lib/dcsApi"
+import { useBibleReference } from 'bible-reference-rcl'
+import { BibleBookData } from '@common/books'
+import { getSupportedBooks } from '@libs/core/lib/books'
+import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
+import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 
 
 export default function Bible({
