@@ -3,8 +3,8 @@ import PropTypes from "prop-types"
 import DOMPurify from "dompurify"
 import { useBibleReference } from "bible-reference-rcl"
 import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml.jsx"
-import BibleReferencePrintBar from "@libs/core/components/bibleReferencePrintBar.jsx"
-import useFetchZipFileData from "@libs/core/hooks/useFetchZipFileData.jsx"
+import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
+import useFetchZipFileData from "../../core/hooks/useFetchZipFileData.jsx"
 
 export default function RcTranslationAcademy({
   urlInfo,
@@ -46,9 +46,16 @@ export default function RcTranslationAcademy({
     setErrorMessage(e.message)
   }
 
+  let taArticles = null
+  try {
+    taArticles = useFetchTranslationAcademyArticles({ catalogEntry, zipFileData })
+  } catch (e) {
+    setErrorMessage(e.message)
+  }
+
   let html = ""
   try {
-    html = useGenerateTranslationAcademyHtml({ catalogEntry, zipFileData })
+    html = useGenerateTranslationAcademyHtml({ catalogEntry })
   } catch (e) {
     setErrorMessage(e.message)
   }
