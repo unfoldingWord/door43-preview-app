@@ -7,7 +7,7 @@ import { PrintDrawer } from '@oce-editor-tools/joy-core';
 import { AppContext } from './App.context';
 import Header from './Header';
 import SelectResourceToPreviewModal from './SelectResourceToPreviewModal.jsx';
-import { APP_NAME, DCS_SERVERS, API_PATH } from '../common/constants.js';
+import { APP_NAME, DCS_SERVERS, API_PATH } from '@common/constants.js';
 
 export default function AppWorkspace() {
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
