@@ -1,4 +1,4 @@
-import useFetchZipFileData from '../../core/hooks/useFetchZipFileData'
+import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
 
 export function usePopulateSupportReferences({catalogEntry, supportReferences}) {
     const [populatedSupportReferences, setPopulatedSupportReferences] = useState({})
