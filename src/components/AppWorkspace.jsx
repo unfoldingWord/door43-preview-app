@@ -6,11 +6,11 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded.js'
 import { PrintDrawer } from '@oce-editor-tools/joy-core';
 import { AppContext } from './App.context';
 import Header from './Header';
-import OpenModal from './OpenModal.jsx';
-import { APP_NAME, DCS_SERVERS } from '../common/constants.js';
+import SelectResourceToPreviewModal from './SelectResourceToPreviewModal.jsx';
+import { APP_NAME, DCS_SERVERS, API_PATH } from '../common/constants.js';
 
 export default function AppWorkspace() {
-  const [isOpenModal,setIsOpenModal] = useState(false)
+  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
 
   const {
     state: {
@@ -92,7 +92,7 @@ export default function AppWorkspace() {
         title={title}
         dcsRef={dcsRef}
         infoLine={infoLine}
-        onOpenClick={() => setIsOpenModal(!isOpenModal)}
+        onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)}
       />}
       <Card>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
@@ -132,10 +132,13 @@ export default function AppWorkspace() {
           </Box>
         </Modal>}
       </Card>
-      <OpenModal
-        isOpenModal={isOpenModal}
-        onCloseModal={()=>setIsOpenModal(false)}
-      />
+      {serverInfo && catalogEntry && 
+      <SelectResourceToPreviewModal
+        showModal={showSelectResourceModal}
+        setShowModal={setShowSelectResourceModal}
+        baseCatalogApiUrl={`${serverInfo.baseUrl}/${API_PATH}/catalog`}
+        catalogEntry={catalogEntry}
+      />}
     </Sheet>
   )
 }
