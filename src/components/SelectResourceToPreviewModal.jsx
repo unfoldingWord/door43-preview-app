@@ -3,12 +3,10 @@ import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
 import Paper from '@mui/material/Paper'
 import Draggable from 'react-draggable'
 import TextField from '@mui/material/TextField'
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 
 
@@ -22,10 +20,15 @@ export default function SelectResourceToPreviewModal(
   const [languages, setLanguages] = useState()
   const [owners, setOwners] = useState()
   const [branchCatalogEntries, setBranchCatalogEntries] = useState()
+  const [availableRefs, setAvailableRefs] = useState(null)
+  const [availableBooks, setAvailableBooks] = useState(null)
   const [selectedLanguage, setSelectedLanguage] = useState()
   const [selectedOwner, setSelectedOwner] = useState()
   const [selectedBranchCatalogEntry, setSelectedBranchCatalogEntry] = useState()
-
+  const [refTypeChoice, setRefTypeChoice] = useState('')
+  const [selectedRef, setSelectedRef] = useState()
+  const [selectedBook, setSelectedBook] = useState()
+ 
   useEffect(() => {
     const getLanguages = async () => {
       fetch(`${baseCatalogApiUrl}/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`)
@@ -95,6 +98,40 @@ export default function SelectResourceToPreviewModal(
     }
   }, [selectedLanguage, selectedOwner])
 
+  useEffect(() => {
+    const fetchBranches = async () => {
+      const branches = await repoClient.repoListBranches({owner: selectedOrganization, repo: selectedRepository}).then(({data}) => data).catch(console.error)
+      console.log("BRANCHES", branches)
+      if (branches.length)
+        setAvailableRefs(branches.map(branch => {return {id: branch.name, name: branch.name}}))
+      else
+        setAvailableRefs(null)
+    }
+
+    const fetchTags = async () => {
+      const tags = await repoClient.repoListTags({owner: selectedOrganization, repo: selectedRepository}).then(({data}) => data).catch(console.error)
+      console.log("TAGS", tags)
+      if (tags.length)
+        setAvailableRefs(tags.map(tag => {return {id: tag.name, name: tag.name}}))
+      else
+        setAvailableRefs(null)
+    }
+
+    if (selectedOrganization && selectedRepository) {
+      console.log(selectedOrganization, selectedRepository, refTypeChoice)
+      switch (refTypeChoice) {
+        case "branch":
+          fetchBranches()
+          break
+        case "tag":
+          fetchTags()
+          break
+        default:
+          setAvailableRefs(null)
+      }
+    }
+  }, [selectedRepository, selectedOwner, refTypeChoice])
+
   const nodeRef = React.useRef(null);
 
   const handleSelectResource = (data) => {
@@ -124,11 +161,12 @@ export default function SelectResourceToPreviewModal(
     { label: '12 Angry Men', year: 1957 },
     { label: "Schindler's List", year: 1993 },
   ]
-
-  const filterOptions = createFilterOptions({
-    stringify: (option) => option.ang + " " + option.lc,
-  });
   
+  const handleRefTypeChange = event => {
+    console.log(event.target.value)
+    setSelectedRef('')
+    setRefTypeChoice(event.target.value)
+  }
 
   return(
     <Dialog
@@ -141,7 +179,7 @@ export default function SelectResourceToPreviewModal(
       Preview a Resource
     </DialogTitle>
     <DialogContent>
-      {languages && 
+      {languages ? 
       <Autocomplete
         id="language-select"
         sx={{ width: 300, paddingTop: "5px" }}
@@ -170,8 +208,8 @@ export default function SelectResourceToPreviewModal(
             } 
           }
         }
-      />}
-      {owners && 
+      /> : ""}
+      {owners ? 
       <Autocomplete
         id="owner-select"
         sx={{ width: 300, paddingTop: "5px" }}
@@ -198,8 +236,8 @@ export default function SelectResourceToPreviewModal(
             }
           }
         }
-      />}
-      {branchCatalogEntries && 
+      /> : ""}
+      {branchCatalogEntries ? 
       <Autocomplete
         id="branch-catalog-entry-select"
         sx={{ width: 300, paddingTop: "5px" }}
@@ -224,7 +262,58 @@ export default function SelectResourceToPreviewModal(
             }
           }
         }
-      />}
+      /> : ""}
+        {selectedBranchCatalogEntry ?
+        <FormControl>
+          <FormLabel id="ref">Release or Branch</FormLabel>
+          <RadioGroup
+            aria-labelledby="ref-radio-buttons-group-label"
+            defaultValue="prod"
+            name="ref-radio-buttons-group"
+            row
+            value={refTypeChoice}
+            onChange={handleRefTypeChange}
+          >
+            <div>
+              {catalogProd ?
+                <FormControlLabel
+                  value="prod"
+                  control={<Radio />}
+                  label={"Latest Release ("+catalogProd.branch_or_tag_name+")"} 
+                /> : ""}
+            <FormControlLabel value="tag" control={<Radio />} label="Tag" />
+            </div>
+            <div>
+              {catalogLatest?<FormControlLabel value="latest" control={<Radio />} label={"Default Branch ("+catalogLatest.branch_or_tag_name+")"} />:""}
+            <FormControlLabel value="branch" control={<Radio />} label="Branch" />
+            </div>
+          </RadioGroup>
+        </FormControl> : ""}
+        {console.log("AR:", availableRefs)}
+        {availableRefs ? <Autocomplete
+          id="select-ref"
+          value={selectedRef}
+          options={ availableRefs }
+          getOptionLabel={option => {console.log(option); return option.name}}
+          isOptionEqualToValue={(option, value) => {console.log("op", option.id, "val", value, option.id===value); return option.id === value}}
+          onChange={(event, ref) => {
+            console.log("SELECTED REF", ref)
+            setSelectedRef(ref)
+          }}
+          renderInput={(params) => <TextField {...params} label={refTypeChoice} margin="normal" />}
+        />: ""}
+        {availableBooks ?
+        <Autocomplete
+          id="select-book"
+          value={selectedBook}
+          options={ bookSelectList(availableBooks) }
+          getOptionLabel={(option) => option.name}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          onChange={(event, book) => {
+            setSelectedBook(book)
+          }}
+          renderInput={(params) => <TextField {...params} label="Book" margin="normal" />}
+        /> : ""}      
     </DialogContent>
     <DialogActions>
       <Button autoFocus onClick={()=>setShowModal(false)}>
