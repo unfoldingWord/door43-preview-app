@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
-import { DCS_SERVERS, API_PATH } from "../common/constants.js";
-import Bible from '../libs/Bible/components/Bible.jsx'
-import OpenBibleStories from '../libs/OpenBibleStories/components/OpenBibleStories.jsx'
-import RcTranslationNotes from '../libs/rcTranslationNotes/components/RcTranslationNotes.jsx'
-import { updateUrlHashInAddressBar } from "../utils/url.js";
-import { getCatalogEntry } from "../libs/core/lib/dcsApi.js";
+import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
+import { DCS_SERVERS, API_PATH } from '@common/constants'
+import { updateUrlHashInAddressBar } from '@utils/url'
+import { getCatalogEntry } from '@libs/core/lib/dcsApi'
+
+// Converter components
+import Bible from '@libs/Bible/components/Bible'
+import OpenBibleStories from '@libs/openBibleStories/components/OpenBibleStories'
+import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
 
 
 export const AppContext = React.createContext();
@@ -70,7 +72,7 @@ export function AppContextProvider({ children }) {
     }
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").split("/")
+      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/preview\/(tag|branch)/, "").split("/")
       if(urlParts.length < 2) {
         throw new Error("Home Page (under construction)")
       }
@@ -147,8 +149,14 @@ export function AppContextProvider({ children }) {
               case "Open Bible Stories":
                 setResourceComponent(<OpenBibleStories {...props} />)
                 return
+              case "Translation Academy":
+                setResourceComponent(<RcTranslationAcademy {...props} />)
+                return
               case "TSV Translation Notes":
                 setResourceComponent(<RcTranslationNotes {...props} />)
+                return
+              case "TSV Translation Questions":
+                setResourceComponent(<RcTranslationQuestions {...props} />)
                 return
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)

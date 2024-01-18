@@ -1,4 +1,4 @@
-import * as base64 from "./base64.js"
+import * as base64 from './base64'
 
 export const getCatalogEntry = async (catalogApiUrl, owner, repo, ref) => {
     const catalogEntryUrl = `${catalogApiUrl}/entry/${owner}/${repo}/${ref}`

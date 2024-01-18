@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import PropTypes from 'prop-types';
-import { getRepoContentsContent } from "../lib/dcsApi.js";
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import { getRepoContentsContent } from '../lib/dcsApi'
 
 
 export default function useFetchBookFileBySubject({

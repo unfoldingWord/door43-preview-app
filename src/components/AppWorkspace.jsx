@@ -1,16 +1,16 @@
-import { useState, useEffect, useContext } from 'react';
-import { Typography, Modal } from '@mui/material';
-import { Sheet, Card, Box, Alert, CircularProgress, IconButton } from '@mui/joy';
-import ReportIcon from '@mui/icons-material/Report.js'
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded.js'
-import { PrintDrawer } from '@oce-editor-tools/joy-core';
-import { AppContext } from './App.context';
-import Header from './Header';
-import OpenModal from './OpenModal.jsx';
-import { APP_NAME, DCS_SERVERS } from '../common/constants.js';
+import { useState, useEffect, useContext } from 'react'
+import { Typography, Modal } from '@mui/material'
+import { Sheet, Card, Box, Alert, CircularProgress, IconButton } from '@mui/joy'
+import ReportIcon from '@mui/icons-material/Report'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
+import { PrintDrawer } from '@oce-editor-tools/joy-core'
+import { AppContext } from './App.context'
+import Header from './Header'
+import SelectResourceToPreviewModal from './SelectResourceToPreviewModal'
+import { APP_NAME, DCS_SERVERS, API_PATH } from '@common/constants'
 
 export default function AppWorkspace() {
-  const [isOpenModal,setIsOpenModal] = useState(false)
+  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
 
   const {
     state: {
@@ -92,7 +92,7 @@ export default function AppWorkspace() {
         title={title}
         dcsRef={dcsRef}
         infoLine={infoLine}
-        onOpenClick={() => setIsOpenModal(!isOpenModal)}
+        onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)}
       />}
       <Card>
         {printHtml && <PrintDrawer {...printPreviewProps} />}
@@ -132,10 +132,15 @@ export default function AppWorkspace() {
           </Box>
         </Modal>}
       </Card>
-      <OpenModal
-        isOpenModal={isOpenModal}
-        onCloseModal={()=>setIsOpenModal(false)}
-      />
+      {serverInfo && 
+      <SelectResourceToPreviewModal
+        canLoad={true}
+        showModal={showSelectResourceModal}
+        setShowModal={setShowSelectResourceModal}
+        serverInfo={serverInfo}
+        urlInfo={urlInfo}
+        currentCatalogEntry={catalogEntry}
+      />}
     </Sheet>
   )
 }

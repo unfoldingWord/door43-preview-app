@@ -1,4 +1,4 @@
-import { BibleBookData } from "../../../common/books"
+import { BibleBookData } from '@common/books'
 
 // supported books are books that are both in the ingredients of a catalog entry and have existing files in zip file
 export const getSupportedBooks = (catalogEntry, fileList = null) => {

@@ -67,7 +67,6 @@ export default function Header({
               color='primary'
               aria-label='print'
               variant='extended'
-              disabled={true}
               onClick={onOpenClick}>
               <OpenInNewIcon sx={sx.extendedIcon} />
               <Box sx={{ display: { xs: 'none', sm: 'block' } }} >Open</Box>
