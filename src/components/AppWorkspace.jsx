@@ -132,12 +132,14 @@ export default function AppWorkspace() {
           </Box>
         </Modal>}
       </Card>
-      {serverInfo && catalogEntry && 
+      {serverInfo && 
       <SelectResourceToPreviewModal
+        canLoad={true}
         showModal={showSelectResourceModal}
         setShowModal={setShowSelectResourceModal}
-        baseCatalogApiUrl={`${serverInfo.baseUrl}/${API_PATH}/catalog`}
-        catalogEntry={catalogEntry}
+        serverInfo={serverInfo}
+        urlInfo={urlInfo}
+        currentCatalogEntry={catalogEntry}
       />}
     </Sheet>
   )

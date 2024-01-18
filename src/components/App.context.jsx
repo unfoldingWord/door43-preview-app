@@ -72,7 +72,7 @@ export function AppContextProvider({ children }) {
     }
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").split("/")
+      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/preview\/(tag|branch)/, "").split("/")
       if(urlParts.length < 2) {
         throw new Error("Home Page (under construction)")
       }
