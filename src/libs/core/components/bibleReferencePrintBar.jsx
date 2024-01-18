@@ -1,7 +1,7 @@
-import PropTypes from "prop-types";
-import { AppBar, Toolbar, Fab, Box } from "@mui/material";
-import PrintIcon from "@mui/icons-material/Print";
-import BibleReference from "bible-reference-rcl";
+import PropTypes from 'prop-types'
+import { AppBar, Toolbar, Fab, Box } from '@mui/material'
+import PrintIcon from '@mui/icons-material/Print'
+import BibleReference from 'bible-reference-rcl'
 
 export default function BibleReferencePrintBar({
     bibleReferenceState,

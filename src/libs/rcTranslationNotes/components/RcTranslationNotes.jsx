@@ -1,21 +1,21 @@
-import { useState, useEffect } from "react"
-import PropTypes from "prop-types"
-import DOMPurify from "dompurify"
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import DOMPurify from 'dompurify'
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
-} from "../../core/lib/previewStyling.js"
-import { useBibleReference } from "bible-reference-rcl"
-import { BibleBookData } from "../../../common/books.js"
-import { getSupportedBooks } from "../../core/lib/books.js"
-import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar.jsx"
-import { getRepoContentsContent, getRepoGitTrees } from "../../core/lib/dcsApi.js"
-import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries.jsx"
-import useFetchBookFileBySubject from "../../core/hooks/useFetchBookFileBySubject.jsx"
-import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder.jsx"
-import usfm from "usfm-js";
-import MarkdownIt from "markdown-it";
-import { verseObjectsToString } from "uw-quote-helpers";
+} from "@libs/core/lib/previewStyling.js"
+import { useBibleReference } from 'bible-reference-rcl'
+import { BibleBookData } from '@common/books'
+import { getSupportedBooks } from '@libs/core/lib/books'
+import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
+import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
+import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
+import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
+import useTsvGLQuoteAdder from '@libs/core/hooks/useTsvGLQuoteAdder'
+import usfm from 'usfm-js'
+import MarkdownIt from 'markdown-it'
+import { verseObjectsToString } from 'uw-quote-helpers'
 
 
 export default function RcTranslationNotes({
