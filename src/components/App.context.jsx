@@ -65,7 +65,8 @@ export function AppContextProvider({ children }) {
           setServerInfo({baseUrl, ID: server})
         }
       } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
-        setServerInfo(DCS_SERVERS['prod'])
+        // setServerInfo(DCS_SERVERS['prod'])
+        setServerInfo(DCS_SERVERS['qa'])
       } else if (url.hostname == "develop.door43.org" ) {
         setServerInfo(DCS_SERVERS['dev'])
       } else {
@@ -74,7 +75,7 @@ export function AppContextProvider({ children }) {
     }
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").split("/")
+      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/preview\/(tag|branch)/, "").split("/")
       if(urlParts.length < 2) {
         throw new Error("Home Page (under construction)")
       }

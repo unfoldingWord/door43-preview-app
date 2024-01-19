@@ -1,4 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react'
+import { API_PATH } from '@common/constants'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
@@ -7,136 +8,225 @@ import DialogTitle from '@mui/material/DialogTitle'
 import Paper from '@mui/material/Paper'
 import Draggable from 'react-draggable'
 import TextField from '@mui/material/TextField'
-import Box from '@mui/material/Box'
+import Autocomplete from '@mui/material/Autocomplete'
+import FormControl from '@mui/material/FormControl'
+import FormLabel from '@mui/material/FormLabel'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import RadioGroup from '@mui/material/RadioGroup'
+import Radio from '@mui/material/Radio'
+import Typography from '@mui/material/Typography'
+import CircularProgress from '@mui/joy/CircularProgress'
+import { styled } from "@mui/material";
 
+const StyledTextField = styled(TextField)(() => ({
+  "& .MuiFormLabel-asterisk": {
+    color: "red"
+  }
+}))
 
 export default function SelectResourceToPreviewModal(
 {
+  canLoad,
   showModal,
   setShowModal,
-  baseCatalogApiUrl,
-  catalogEntry,
+  serverInfo,
+  urlInfo,
+  currentCatalogEntry,
 }) {
   const [languages, setLanguages] = useState()
-  const [owners, setOwners] = useState()
-  const [branchCatalogEntries, setBranchCatalogEntries] = useState()
-  const [availableRefs, setAvailableRefs] = useState(null)
-  const [availableBooks, setAvailableBooks] = useState(null)
-  const [selectedLanguage, setSelectedLanguage] = useState()
+  const [owners, setOwners] = useState({})
+  const [repos, setRepos] = useState({})
+  const [availableRefs, setAvailableRefs] = useState({})
+  const [catalogEntry, setCatalogEntry] = useState()
+  const [availableBooks, setAvailableBooks] = useState({})
+  const [isFetching, setIsFetching] = useState(false)
+  const [error, setError] = useState()
+  const [selectedLanguage, setSelectedLanguage] = useState({lc: "en", ang: "English"})
   const [selectedOwner, setSelectedOwner] = useState()
-  const [selectedBranchCatalogEntry, setSelectedBranchCatalogEntry] = useState()
+  const [selectedRepo, setSelectedRepo] = useState()
   const [refTypeChoice, setRefTypeChoice] = useState('')
   const [selectedRef, setSelectedRef] = useState()
   const [selectedBook, setSelectedBook] = useState()
- 
+
+  useEffect(() => {
+    if(currentCatalogEntry) {
+      if (!selectedLanguage) {
+        setSelectedLanguage({lc: currentCatalogEntry.language, ang: currentCatalogEntry.language_title})
+      }
+      if (!selectedOwner) {
+        setSelectedOwner(currentCatalogEntry.repo.owner)
+      }
+      if (!selectedRepo) {
+        setSelectedRepo(currentCatalogEntry.repo)
+      }
+      if (!refTypeChoice) {
+        setRefTypeChoice(currentCatalogEntry.ref_type)
+      }
+      if (!selectedRef) {
+        setSelectedRef(currentCatalogEntry.branch_or_tag_name)
+      }
+    }
+    if(urlInfo && urlInfo.hashParts[0]) {
+      setSelectedBook({identifier: urlInfo.hashParts[0], title: urlInfo.hashParts[0].toUpperCase()})
+    }
+  }, [currentCatalogEntry])
+
   useEffect(() => {
     const getLanguages = async () => {
-      fetch(`${baseCatalogApiUrl}/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`)
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`)
       .then(response => {
         return response.json()
       })
       .then(({data}) => {
         setLanguages(data)
-      }).catch(e => {
-        console.log("Error getting languages")
-        console.log(e)
+      })
+      .catch(e => {
+        console.log("Error fetching languages:", e)
+        setError("Failed to fetch languages")
+      })
+      .finally(() => {
+        setIsFetching(false)
       })
     }
-    
-    getLanguages()
-  }, [])
 
-  useEffect(() => {
-    if(catalogEntry) {
-      if (!selectedLanguage) {
-        setSelectedLanguage({lc: catalogEntry.language, ang: catalogEntry.language_title})
-      }
-      if (!selectedOwner) {
-        setSelectedOwner(catalogEntry.repo.owner)
-      }
-      if (!selectedBranchCatalogEntry) {
-        setSelectedBranchCatalogEntry(catalogEntry)
-      }
+    if (serverInfo && canLoad && !languages) {
+      getLanguages()
     }
-  }, [catalogEntry])
+  }, [serverInfo, canLoad])
 
   useEffect(() => {
-    const getOwners = async () => {
-      fetch(`${baseCatalogApiUrl}/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`)
+    const fetchOwners = async () => {
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`)
       .then(response => {
         return response.json()
       })
       .then(({data}) => {
-        setOwners(data)
-      }).catch(e => {
-        console.log("Error getting owners")
-        console.log(e)
+        setOwners({...owners, [selectedLanguage.lc]: data})
+      })
+      .catch(e => {
+        setError("Error fetching providers")
+        console.log(`Error fetching owners for language ${language.lc}:`, e)
+      })
+      .finally(() => {
+        setIsFetching(false)
       })
     }
-    
-    if (selectedLanguage) {
-      getOwners()
+
+    if (serverInfo && selectedLanguage && !(selectedLanguage.lc in owners) && canLoad) {
+      fetchOwners()
     }
-  }, [selectedLanguage])
+  }, [serverInfo, selectedLanguage])
 
   useEffect(() => {
-    const getBranchCatalogEntries = async () => {
-      fetch(`${baseCatalogApiUrl}/search?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`)
-      .then(response => {
-        return response.json()
-      })
+    const fetchRepos = async () => {
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`)
+      .then(response => response.json())
       .then(({data}) => {
-        setBranchCatalogEntries(data)
-      }).catch(e => {
-        console.log("Error getting catalog entries via search of stage branch")
-        console.log(e)
+        setRepos({...repos, [selectedOwner.username]: data})
+      })
+      .catch(e => {
+        setError("Error fetching repositories")
+        console.log(`Error fetching repos for ${selectedOwner.username}:`, e)
+      })
+      .finally(() => {
+        setIsFetching(false)
       })
     }
-    
-    if (selectedLanguage && selectedOwner) {
-      getBranchCatalogEntries()
+
+    if (selectedOwner && !(selectedOwner.username in repos) && canLoad) {
+      fetchRepos()
     }
-  }, [selectedLanguage, selectedOwner])
+  }, [serverInfo, selectedOwner, canLoad])
 
   useEffect(() => {
     const fetchBranches = async () => {
-      const branches = await repoClient.repoListBranches({owner: selectedOrganization, repo: selectedRepository}).then(({data}) => data).catch(console.error)
-      console.log("BRANCHES", branches)
-      if (branches.length)
-        setAvailableRefs(branches.map(branch => {return {id: branch.name, name: branch.name}}))
-      else
-        setAvailableRefs(null)
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`)
+        .then(response => response.json())
+        .then(branches => {
+          setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}})
+        })
+        .catch(e => {
+          setError("Error fetching branches")
+          console.log(`Error fetching branches for ${selectedRepo.full_name}:`, e)
+        })
+        .finally(() => {
+          setIsFetching(false)
+        })
     }
 
     const fetchTags = async () => {
-      const tags = await repoClient.repoListTags({owner: selectedOrganization, repo: selectedRepository}).then(({data}) => data).catch(console.error)
-      console.log("TAGS", tags)
-      if (tags.length)
-        setAvailableRefs(tags.map(tag => {return {id: tag.name, name: tag.name}}))
-      else
-        setAvailableRefs(null)
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`)
+        .then(response => response.json())
+        .then(tags => {
+          setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}})
+        })
+        .catch(e => {
+          setError("Error fetching tags")
+          console.log(`Error fetching tags for ${selectedRepo.full_name}:`, e)
+        })
+        .finally(() => {
+          setIsFetching(false)
+        })
     }
 
-    if (selectedOrganization && selectedRepository) {
-      console.log(selectedOrganization, selectedRepository, refTypeChoice)
-      switch (refTypeChoice) {
-        case "branch":
+    if (serverInfo && selectedOwner && selectedRepo && canLoad) {
+      if (!(selectedRepo.full_name in availableRefs) || !(refTypeChoice in availableRefs[selectedRepo.full_name])) {
+        if (refTypeChoice == "branch") {
           fetchBranches()
-          break
-        case "tag":
+        } else if (refTypeChoice == "tag") {
           fetchTags()
-          break
-        default:
-          setAvailableRefs(null)
+        }
       }
     }
-  }, [selectedRepository, selectedOwner, refTypeChoice])
+  }, [serverInfo, selectedRepo, refTypeChoice, canLoad])
+
+  useEffect(() => {
+    const fetchCatalogEntry = async (ref) => {
+      setIsFetching(true)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`)
+      .then(response => response.json())
+      .then((entry) => {
+        setCatalogEntry(entry)
+        if (!entry.is_valid) {
+          setError("WARNING! This entry has invalid metadata")
+        }
+      })
+      .catch(e => {
+        setError("This is an invalid entry")
+        console.log(`Error fetching catalog entry for ${selectedRepo.full_path}/${ref}:`, e)
+      })
+      .finally(() => {
+        setIsFetching(false)
+      })
+    }
+
+    if (selectedRepo && refTypeChoice) {
+      if (refTypeChoice == "prod" && selectedRepo.catalog.prod) {
+        fetchCatalogEntry(selectedRepo.catalog.prod.branch_or_tag_name)
+      } else if (refTypeChoice == "latest" && selectedRepo.catalog.latest) {
+        fetchCatalogEntry(selectedRepo.catalog.latest.branch_or_tag_name)
+      } else if (selectedRef) {
+        fetchCatalogEntry(selectedRef)
+      }
+    }
+  }, [serverInfo, refTypeChoice, selectedRef, canLoad])
 
   const nodeRef = React.useRef(null);
 
   const handleSelectResource = (data) => {
-    if (selectedBranchCatalogEntry) {
-      window.location.href = `/u/${selectedBranchCatalogEntry.full_name}`
+    if (selectedRepo) {
+      let ref = selectedRef || ""
+      if (refTypeChoice == "prod" && selectedRepo.catalog.prod) {
+        ref = selectedRepo.catalog.prod.branch_or_tag_name
+      } else if (refTypeChoice == "latest" && selectedRepo.catalog.latest) {
+        ref = selectedRepo.catalog.latest.branch_or_tag_name
+      }
+      window.location.href = `/u/${selectedRepo.full_name}/${ref}#${selectedBook.identifier}`
     }
     setShowModal(false)
   }
@@ -153,18 +243,10 @@ export default function SelectResourceToPreviewModal(
     )
   }
 
-  const top100Films = [
-    { label: 'The Shawshank Redemption', year: 1994 },
-    { label: 'The Godfather', year: 1972 },
-    { label: 'The Godfather: Part II', year: 1974 },
-    { label: 'The Dark Knight', year: 2008 },
-    { label: '12 Angry Men', year: 1957 },
-    { label: "Schindler's List", year: 1993 },
-  ]
-  
   const handleRefTypeChange = event => {
-    console.log(event.target.value)
-    setSelectedRef('')
+    setSelectedRef()
+    setCatalogEntry()
+    setError()
     setRefTypeChoice(event.target.value)
   }
 
@@ -179,7 +261,7 @@ export default function SelectResourceToPreviewModal(
       Preview a Resource
     </DialogTitle>
     <DialogContent>
-      {languages ? 
+      {languages ?
       <Autocomplete
         id="language-select"
         sx={{ width: 300, paddingTop: "5px" }}
@@ -189,137 +271,173 @@ export default function SelectResourceToPreviewModal(
         defaultValue={selectedLanguage}
         getOptionLabel={option => option.lc + ": "+ option.ang }
         renderInput={(params) => (
-          <TextField
+          <StyledTextField
             {...params}
             label="Language"
-            variant="outlined"          
+            variant="outlined"
+            required
           />
         )}
         isOptionEqualToValue={(option, value) => option.lc === value.lc}
         onChange={
           (event, option) => {
-            console.log(option.lc)
             if (! selectedLanguage || option.lc != selectedLanguage.lc) {
               setSelectedLanguage(option)
-              setOwners()
               setSelectedOwner()
-              setBranchCatalogEntries()
-              setSelectedBranchCatalogEntry()
-            } 
+              setSelectedRepo()
+              setSelectedRef()
+              setCatalogEntry()
+              setSelectedBook()
+            }
           }
         }
       /> : ""}
-      {owners ? 
+      {selectedLanguage && selectedLanguage.lc in owners ?
       <Autocomplete
         id="owner-select"
         sx={{ width: 300, paddingTop: "5px" }}
-        options={owners}
+        options={owners[selectedLanguage.lc]}
         autoHighlight
         clearOnEscape
         defaultValue={selectedOwner}
         getOptionLabel={option => (option.full_name ? `${option.full_name} (${option.username})` : option.username )}
         renderInput={(params) => (
-          <TextField
+          <StyledTextField
             {...params}
             label="Provider"
-            variant="outlined"          
+            variant="outlined"
+            required
           />
         )}
         isOptionEqualToValue={(option, value) => option.username === value.username}
         onChange={
           (event, option) => {
-            console.log(option.username)
             if(!selectedOwner || selectedOwner.username != option.username) {
               setSelectedOwner(option)
-              setBranchCatalogEntries()
-              setSelectedBranchCatalogEntry()
+              setError()
+              setSelectedRepo()
+              setSelectedRef()
+              setCatalogEntry()
+              setSelectedBook()
             }
           }
         }
       /> : ""}
-      {branchCatalogEntries ? 
+      {selectedOwner && selectedOwner.username in repos ?
       <Autocomplete
-        id="branch-catalog-entry-select"
+        id="repo-select"
         sx={{ width: 300, paddingTop: "5px" }}
-        options={branchCatalogEntries}
+        options={repos[selectedOwner.username]}
         autoHighlight
         clearOnEscape
-        defaultValue={selectedBranchCatalogEntry}
+        defaultValue={selectedRepo}
         getOptionLabel={option => `${option.name} (${option.subject})`}
         renderInput={(params) => (
-          <TextField
+          <StyledTextField
             {...params}
             label="Repository"
-            variant="outlined"          
+            variant="outlined"
+            required
           />
         )}
         isOptionEqualToValue={(option, value) => option.full_name === value.full_name}
         onChange={
           (event, option) => {
-            console.log(option.full_name)
-            if(!selectedBranchCatalogEntry || selectedBranchCatalogEntry.full_name != option.full_name) {
-              setSelectedBranchCatalogEntry(option)
+            if(!selectedRepo || selectedRepo.full_name != option.full_name) {
+              setSelectedRepo(option)
+              setError()
+              setSelectedRef()
+              setCatalogEntry()
+              setSelectedBook()
             }
           }
         }
       /> : ""}
-        {selectedBranchCatalogEntry ?
-        <FormControl>
-          <FormLabel id="ref">Release or Branch</FormLabel>
-          <RadioGroup
-            aria-labelledby="ref-radio-buttons-group-label"
-            defaultValue="prod"
-            name="ref-radio-buttons-group"
-            row
-            value={refTypeChoice}
-            onChange={handleRefTypeChange}
-          >
-            <div>
-              {catalogProd ?
-                <FormControlLabel
-                  value="prod"
-                  control={<Radio />}
-                  label={"Latest Release ("+catalogProd.branch_or_tag_name+")"} 
-                /> : ""}
-            <FormControlLabel value="tag" control={<Radio />} label="Tag" />
-            </div>
-            <div>
-              {catalogLatest?<FormControlLabel value="latest" control={<Radio />} label={"Default Branch ("+catalogLatest.branch_or_tag_name+")"} />:""}
+      {selectedRepo ?
+      <FormControl>
+        <FormLabel id="ref">Select Tag or Branch</FormLabel>
+        <RadioGroup
+          aria-labelledby="ref-radio-buttons-group-label"
+          defaultValue={refTypeChoice}
+          name="ref-radio-buttons-group"
+          onChange={handleRefTypeChange}
+        >
+          <div>
+            {selectedRepo.catalog.latest ?
+              <FormControlLabel
+                value="latest"
+                control={<Radio />}
+                label={"Default Branch ("+selectedRepo.catalog.latest.branch_or_tag_name+")"}
+              /> : ""}
             <FormControlLabel value="branch" control={<Radio />} label="Branch" />
-            </div>
-          </RadioGroup>
-        </FormControl> : ""}
-        {console.log("AR:", availableRefs)}
-        {availableRefs ? <Autocomplete
-          id="select-ref"
-          value={selectedRef}
-          options={ availableRefs }
-          getOptionLabel={option => {console.log(option); return option.name}}
-          isOptionEqualToValue={(option, value) => {console.log("op", option.id, "val", value, option.id===value); return option.id === value}}
-          onChange={(event, ref) => {
-            console.log("SELECTED REF", ref)
-            setSelectedRef(ref)
-          }}
-          renderInput={(params) => <TextField {...params} label={refTypeChoice} margin="normal" />}
-        />: ""}
-        {availableBooks ?
-        <Autocomplete
-          id="select-book"
-          value={selectedBook}
-          options={ bookSelectList(availableBooks) }
-          getOptionLabel={(option) => option.name}
-          isOptionEqualToValue={(option, value) => option.id === value.id}
-          onChange={(event, book) => {
-            setSelectedBook(book)
-          }}
-          renderInput={(params) => <TextField {...params} label="Book" margin="normal" />}
-        /> : ""}      
+          </div>
+          <div>
+            {selectedRepo.catalog.prod ?
+              <FormControlLabel
+                value="prod"
+                control={<Radio />}
+                label={"Latest Release ("+selectedRepo.catalog.prod.branch_or_tag_name+")"}
+              /> : ""}
+            <FormControlLabel value="tag" control={<Radio />} label="Tag" />
+          </div>
+        </RadioGroup>
+      </FormControl> : ""}
+      {selectedRepo && selectedRepo.full_name in availableRefs && refTypeChoice in availableRefs[selectedRepo.full_name] ? 
+      <Autocomplete
+        id="select-ref"
+        sx={{ width: 300, paddingTop: "5px" }}
+        defaultValue={selectedRef}
+        options={ availableRefs[selectedRepo.full_name][refTypeChoice] }
+        onChange={(event, option) => {
+          if(!selectedRef || selectedRef != option) {
+            setError()
+            setSelectedRef(option)
+            setCatalogEntry()
+            setSelectedBook()
+          }
+        }}
+        renderInput={(params) => <TextField {...params} label={refTypeChoice.charAt(0).toUpperCase() + refTypeChoice.slice(1)} margin="normal" />}
+      />: ""}
+      {catalogEntry && catalogEntry.ingredients && (catalogEntry.subject == "Bible" || catalogEntry.subject == "Aligned Bible" || catalogEntry.subject.startsWith("TSV ")) ? 
+      <Autocomplete
+        id="select-book"
+        sx={{ width: 300, paddingTop: "5px" }}
+        options={catalogEntry.ingredients}
+        autoHighlight
+        clearOnEscape
+        defaultValue={selectedBook}
+        getOptionLabel={option => `${option.title || option.identifier.toUpperCase()}${option.title ? ` (${option.identifier.toUpperCase()})`: ''}`}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Book"
+            variant="outlined"
+          />
+        )}
+        isOptionEqualToValue={(option, value) => option.identifier === value.identifier}
+        onChange={
+          (event, option) => {
+            if(!selectedBook || selectedBook.identifer != option.identifier) {
+              setSelectedBook(option)
+            }
+          }
+        }
+      /> : ""}        
+      {error ? 
+      <Typography id="modal-error" sx={{textAlign: "center", color: "red"}}>
+        {error}
+      </Typography>
+      : isFetching ? 
+      <Typography id="modal-modal-title" variant="h6" component="h2" sx={{textAlign: "center"}}>
+        <CircularProgress />
+      </Typography>
+      : ""}
     </DialogContent>
     <DialogActions>
       <Button autoFocus onClick={()=>setShowModal(false)}>
         Cancel
       </Button>
-      <Button onClick={handleSelectResource}>Select</Button>
+      <Button onClick={handleSelectResource} disabled={!selectedRepo}>Select</Button>
     </DialogActions>
   </Dialog>
   )

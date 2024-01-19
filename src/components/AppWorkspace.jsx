@@ -34,7 +34,7 @@ export default function AppWorkspace() {
 
   const printPreviewProps = {
     openPrintDrawer: isOpenPrint && printHtml != "",
-    handleClosePrintDrawer: () => {
+    onClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
     onRenderContent: () => `<div style="direction: ${catalogEntry?.language_direction}">${printHtml}</div>`,
@@ -132,12 +132,14 @@ export default function AppWorkspace() {
           </Box>
         </Modal>}
       </Card>
-      {serverInfo && catalogEntry && 
+      {serverInfo && 
       <SelectResourceToPreviewModal
+        canLoad={true}
         showModal={showSelectResourceModal}
         setShowModal={setShowSelectResourceModal}
-        baseCatalogApiUrl={`${serverInfo.baseUrl}/${API_PATH}/catalog`}
-        catalogEntry={catalogEntry}
+        serverInfo={serverInfo}
+        urlInfo={urlInfo}
+        currentCatalogEntry={catalogEntry}
       />}
     </Sheet>
   )

@@ -19,6 +19,8 @@ export default function BibleReferencePrintBar({
                 justifyContent: "space-between",
                 width: "100%",
                 overflowX: "scroll",
+                paddingTop: "10px",
+                paddingBottom: "10px",
           }}>
             <div>&nbsp;</div>
             <BibleReference
