@@ -34,7 +34,7 @@ export default function AppWorkspace() {
 
   const printPreviewProps = {
     openPrintDrawer: isOpenPrint && printHtml != "",
-    handleClosePrintDrawer: () => {
+    onClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
     onRenderContent: () => `<div style="direction: ${catalogEntry?.language_direction}">${printHtml}</div>`,
