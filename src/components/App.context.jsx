@@ -63,8 +63,7 @@ export function AppContextProvider({ children }) {
           setServerInfo({baseUrl, ID: server})
         }
       } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
-        // setServerInfo(DCS_SERVERS['prod'])
-        setServerInfo(DCS_SERVERS['qa'])
+        setServerInfo(DCS_SERVERS['prod'])
       } else if (url.hostname == "develop.door43.org" ) {
         setServerInfo(DCS_SERVERS['dev'])
       } else {
