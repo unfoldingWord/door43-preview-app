@@ -226,7 +226,7 @@ export default function SelectResourceToPreviewModal(
       } else if (refTypeChoice == "latest" && selectedRepo.catalog.latest) {
         ref = selectedRepo.catalog.latest.branch_or_tag_name
       }
-      window.location.href = `/u/${selectedRepo.full_name}/${ref}#${selectedBook.identifier}`
+      window.location.href = `/u/${selectedRepo.full_name}/${ref}${selectedBook ? `#${selectedBook.identifier}` : ""}`
     }
     setShowModal(false)
   }
