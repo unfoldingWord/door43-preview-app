@@ -125,7 +125,19 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     if (catalogEntry) {
-      if(catalogEntry?.metadata_type && catalogEntry?.subject) {
+      if(!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type)  {
+        if (catalogEntry.repo?.ingredients && catalogEntry.repo?.subject && catalogEntry.repo?.metadata_type) {
+          catalogEntry.subject = catalogEntry.repo.subject
+          catalogEntry.ingredients = catalogEntry.repo.ingredients
+          catalogEntry.metadata_type = catalogEntry.repo.metadata_type
+          catalogEntry.flavor_type = catalogEntry.repo.flavor_type
+          catalogEntry.flavor = catalogEntry.repo.flavor
+        } else {
+          setErrorMessage(`This references an invalid ${catalogEntry.ref_type ? catalogEntry.ref_type : "entry"}. Unable to determine its type and/or ingredients.`)
+          return
+        }
+      }
+      if(catalogEntry.metadata_type && catalogEntry.subject) {
         const props = {
           urlInfo,
           serverInfo,
