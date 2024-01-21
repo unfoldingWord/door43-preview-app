@@ -11,6 +11,7 @@ export default function OpenBibleStories({
   catalogEntry,
   updateUrlHashInAddressBar,
   setStatusMessage,
+  setErrorMessage,
   setPrintHtml,
   onPrintClick,
 }) {
@@ -47,7 +48,7 @@ export default function OpenBibleStories({
 
   let html = ""
   try {
-    html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData })
+    html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
   } catch (e) {
     setErrorMessage(e.message)
   }

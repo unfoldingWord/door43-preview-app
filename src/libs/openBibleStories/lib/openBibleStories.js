@@ -3,6 +3,9 @@ import markdownit from 'markdown-it'
 export default async function convertOpenBibleStories(catalogEntry, zipFileData) {
     let markdownFiles = []
     let obsRootPath = ""
+    if (!catalogEntry || !catalogEntry.ingredients) {
+        throw new Error("No valid ingredeints found in this resource to render.")
+    }
     catalogEntry.ingredients.forEach(ingredient => {
         if(ingredient.identifier == "obs") {
             obsRootPath = `${catalogEntry.repo.name.toLowerCase()}/${ingredient.path.replace(/^\.\//, "")}`
