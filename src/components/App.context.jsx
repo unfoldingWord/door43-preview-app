@@ -126,7 +126,8 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     if (catalogEntry) {
       if(!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type)  {
-        if (catalogEntry.repo?.ingredients && catalogEntry.repo?.subject && catalogEntry.repo?.metadata_type) {
+        if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
+          catalogEntry.title = catalogEntry.repo.title
           catalogEntry.subject = catalogEntry.repo.subject
           catalogEntry.ingredients = catalogEntry.repo.ingredients
           catalogEntry.metadata_type = catalogEntry.repo.metadata_type
