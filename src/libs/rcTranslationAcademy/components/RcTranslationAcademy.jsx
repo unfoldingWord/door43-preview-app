@@ -82,12 +82,22 @@ hr.article-divider {
 `
 
 const printCss = `
-.section-header a {
+.pagedjs_pages .section-header a {
   border-bottom: none;
 }
 
-.article-header a {
+.pagedjs_pages .article-header a {
   border-bottom: none;
+}
+
+.pagedjs_pages hr.article-divider {
+  display: none;
+}
+
+.pagedjs_pages a,
+.pagedjs_pages a:hover,
+.pagedjs_pages a:visited {
+  color: inherit;
 }
 `
 
