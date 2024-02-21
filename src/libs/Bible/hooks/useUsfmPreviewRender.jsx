@@ -42,7 +42,7 @@ export default function useUsfmPreviewRenderer(props) {
           setErrorMessage("Failed to import book for rendering.")
         }
       } catch(e) {
-        console.log(e)
+        console.log(`Error calling pk.importDocument(): `, e)
         setErrorMessage("Failed to import book for rendering. See console log for details.")
       }
     }

@@ -74,14 +74,12 @@ export default function Bible({
   }
 
   const onBibleReferenceChange = (b, c, v) => {
-    console.log("CHANGING!", b, c, v)
     if (b != bookId) {
       setBookId(b)
       setDocumentAnchor(b)
     } else if (setDocumentAnchor) {
       c = parseInt(c)
       v = parseInt(v)
-      console.log("C: ", c, "V: ", v)
       if (c > 1 || v > 1) {
         setDocumentAnchor([b, c, v].join('-'))
       } else {
@@ -118,7 +116,7 @@ export default function Bible({
       try {
         repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, true)).tree.map(tree => tree.path)
       } catch(e) {
-        console.log(e)
+        console.log(`Error calling etRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e)
       }
 
       let sb = getSupportedBooks(catalogEntry, repoFileList)
@@ -190,7 +188,7 @@ export default function Bible({
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
       then(usfm => setUsfmText(usfm)).
       catch(e => {
-        console.log(e)
+        console.log(`Error calling getRepoContents(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
         setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
       })
     }

@@ -186,7 +186,6 @@ export default function AppWorkspace() {
           const rect = e.getBoundingClientRect()
           if (rect.top > 0 && rect.top < 150) {
             found = e.id
-            console.log("FOUND ANCHOR", e.id, scrollDocumentAnchor)
             this.currentID = e.id
             setScrollDocumentAnchor(e.id)
           }
@@ -196,7 +195,6 @@ export default function AppWorkspace() {
   }, [])
 
   useEffect(() => {
-    console.log("SETTING ANCHOR", documentAnchor)
     if (documentAnchor) {
       updateUrlHashInAddressBar(documentAnchor)
       setScrollDocumentAnchor(documentAnchor)
@@ -215,7 +213,7 @@ export default function AppWorkspace() {
               })
           )
       ).then(() => {
-        console.log("IMAGES DONE! DOC READY!")
+        console.log("IMAGES DONE. DOC READY.")
         setImagesLoaded(true)
       })
     }
@@ -224,12 +222,11 @@ export default function AppWorkspace() {
     if (html) {
       determineIfImagesLoaded()
     } else {
-      console.log("HTML IS EMPTY! DOC NOT READY!")
+      console.log("HTML IS EMPTY. DOC NOT READY.")
     }
   }, [html, view])
 
   useEffect(() => {
-    console.log("SETTING DR:", view, imagesLoaded, printPreviewState)
     setDocumentReady(
       (view == "web" && imagesLoaded) ||
         (view == "print" && printPreviewState == "rendered")
@@ -238,7 +235,6 @@ export default function AppWorkspace() {
 
   useEffect(() => {
     const scrollToLastAnchor = async () => {
-      console.log("GOING TO SCROLL TO SDA", scrollDocumentAnchor, view, waitPreviewStart)
       if (scrollDocumentAnchor) {
         if (waitPreviewStart) {
           await new Promise((r) => setTimeout(r, 500))
@@ -248,7 +244,6 @@ export default function AppWorkspace() {
           `[id='${scrollDocumentAnchor}']`
         )
         if (elementToScrollTo) {
-          console.log("SCROLLING TO", scrollDocumentAnchor)
           window.scrollTo({
             top:
               elementToScrollTo.getBoundingClientRect().top + window.scrollY - 40,
@@ -264,7 +259,6 @@ export default function AppWorkspace() {
 
   useEffect(() => {
     const scrollToUrlAnchor = async () => {
-      console.log("Scrolling to URL DA:", documentAnchor)
       if (documentAnchor) {
         if (waitPreviewStart) {
           await new Promise((r) => setTimeout(r, 1000))
@@ -274,7 +268,6 @@ export default function AppWorkspace() {
           `[id='${documentAnchor}']`
         )
         if (elementToScrollTo) {
-          console.log("SCROLLING!!!!!")
           window.scrollTo({
             top: elementToScrollTo.getBoundingClientRect().top + window.scrollY,
             behavior: "smooth",
@@ -332,8 +325,10 @@ export default function AppWorkspace() {
                 value={html && view}
                 exclusive
                 onChange={(e, value) => {
-                  setWaitPreviewStart(true)
-                  setView(value)
+                  if (value !== null) {
+                    setWaitPreviewStart(true)
+                    setView(value)
+                  }
                 }}
                 aria-label="View"
                 disabled={!html}

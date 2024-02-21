@@ -8,7 +8,6 @@ export default function PageSizeSelector({
   pageSize,
   setPageSize,
 }) {
-  // console.log("PAGE SIZES", pageSizes)
   return (
     <>
       <form>
@@ -27,7 +26,6 @@ export default function PageSizeSelector({
           onChange={(e, value) => setPageSize(value)}
         >
           {Object.entries(pageSizes).map((pf, n) => {
-            // console.log("PF", pf[0], pf[1].label, n)
             return (<Option
               key={n}
               value={pf[0]}

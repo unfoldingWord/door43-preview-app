@@ -13,7 +13,6 @@ export const PrintPreviewComponent = forwardRef(({
 }, ref) => {
   useEffect(() => {
     const generatePrintPreview = async () => {
-      console.log("IN RENDER PRINT", ref, printOptions)
       setPrintPreviewState("started")
       ref.current.innerHTML = ""
       const previewer = new Previewer()
@@ -117,7 +116,7 @@ ${printCss}
           ref.current,
         ).then(() => {
           setPrintPreviewState("rendered")
-          console.log("PRINT PREVIEW READY!!!!!")
+          console.log("PRINT PREVIEW IS READY")
         }).catch(e => {
           setPrintPreviewState("error")
           console.log("ERROR RENDERING PRINT PREVIEW: ", e)

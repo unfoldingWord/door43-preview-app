@@ -48,7 +48,7 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
                 if (!header) {
                     header = "# [NO TITLE]"
                 }
-                html += `<article class="obs-story-header"><span class="header-anchor" id="${link}-header"></span>${md.render(header)}</article>`
+                html += `<article class="obs-story-header">${md.render(header)}<span class="header-anchor" id="${link}-header"></span></article>`
             } else {
                 html += `<article class="obs-story-frame"><span class="header-anchor" id="${link}"></span>${md.render(frame)}</article>`
             }
@@ -65,8 +65,6 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
             html += `<artcile class="obs-black"><span class="header-anchor" id="obs-back"></span>${md.render(await zipFileData.file(backFilePath).async('text'))}</article>`
         }
     }
-    // html = html.replace(/<img[^>]+>/g, `<img src="https://cdn.door43.org/obs/jpg/360px/obs-en-01-01.jpg"></img>`)
-    // console.log("HTML", html)
-
+ 
     return html
 }

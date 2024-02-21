@@ -112,7 +112,7 @@ export default function RcTranslationQuestions({
       try {
         repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, false)).tree.map(tree => tree.path)
       } catch(e) {
-        console.log(e)
+        console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e)
       }
 
       let sb = getSupportedBooks(catalogEntry, repoFileList)
@@ -182,7 +182,7 @@ export default function RcTranslationQuestions({
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
       then(tsv => setTsvText(tsv)).
       catch(e => {
-        console.log(e)
+        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `: e)
         setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
       })
     }
