@@ -114,9 +114,9 @@ ${printCss}
             },
           ],
           ref.current,
-        ).then(() => {
+        ).then((flow) => {
           setPrintPreviewState("rendered")
-          console.log("PRINT PREVIEW IS READY")
+          console.log(`PRINT PREVIEW IS READY. Rendered ${flow.total} pages.`)
         }).catch(e => {
           setPrintPreviewState("error")
           console.log("ERROR RENDERING PRINT PREVIEW: ", e)
