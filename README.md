@@ -8,8 +8,7 @@
 
 # Door43 Preview
 
-#### Bible resources preview 
-- using [oce-editor-tools](https://github.com/unfoldingWord/oce-editor-tools) underneath
+#### DCS resources preview
 
 The app is available <a href="https://door43-preview.netlify.app/"><strong>here</strong></a>
 
@@ -49,8 +48,6 @@ Having trouble? Get help in the official [Open Components Ecosystem Discord](htt
 This app is basically just a wrapper  for other components (a reference implementation app).
 
 These are some of the underlying components:
-
-- [OCE Editor Tools](https://github.com/oce-editor-tools) Multiple re-usable editor and preview components packaged into a library (monorepo). These are meant to be integrated into applications for editing and viewing scripture text in USFM format.
 
 - [Epitelete-html](https://github.com/unfoldingWord/epitelete-html) HTML handling in Epitelete - as a derived sub-class. All the [original Epitelete](https://github.com/Proskomma/epitelete) parent functions are inherited and then extended with more functions for generating and parsing Html.
 

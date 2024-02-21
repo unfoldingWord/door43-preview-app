@@ -11,7 +11,7 @@ export default function RcTranslationWords({
   catalogEntry,
   zipFileData,
   updateUrlHashInAddressBar,
-  setPrintHtml,
+  setHtml,
 }) {
   const [storiesMarkdown, setStoriesMarkdown] = useState();
   const [html, setHtml] = useState("");
@@ -61,10 +61,7 @@ export default function RcTranslationWords({
     const loadMarkdownFiles = async () => {
       let markdownFiles = [];
       for (let i = 1; i < 51; ++i) {
-        const filename = `${catalogEntry.repo.name}/content/${`${i}`.padStart(
-          2,
-          "0"
-        )}.md`;
+        const filename = `${catalogEntry.repo.name}/content/${`${i}`.padStart(2, "0")}.md`;
         if (filename in zipFileData.files) {
           markdownFiles.push(await zipFileData.files[filename]?.async("text"));
         } else {
@@ -81,13 +78,12 @@ export default function RcTranslationWords({
 
   useEffect(() => {
     if (!html && storiesMarkdown) {
-      let _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`;
+      let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`;
       const md = markdownit();
       storiesMarkdown.forEach((storyMarkdown, i) => {
-        _html += `<div id="obs-${i + 1}-1">${md.render(storyMarkdown)}</div>`;
+        html += `<div id="obs-${i + 1}-1">${md.render(storyMarkdown)}</div>`;
       });
-      setHtml(_html);
-      setPrintHtml(_html);
+      setHtml(html);
     }
   }, [storiesMarkdown, html]);
 
@@ -113,46 +109,11 @@ export default function RcTranslationWords({
   }, [html]);
 
   return (
-    <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "sticky",
-          top: "0",
-          background: "inherit",
-          padding: "10px",
-        }}
-      >
-        <BibleReference
-          status={bibleReferenceState}
-          actions={bibleReferenceActions}
-        />
-      </div>
-      {html ? (
-        <>
-          <div
-            style={{
-              direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-            }}
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(html),
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <Typography color="textPrimary" gutterBottom display="inline">
-            <>
-              Converting TSV file for ${bibleReferenceState?.bookId} to HTML...{" "}
-            </>
-          </Typography>
-          <CircularProgressUI />
-        </>
-      )}
-    </>
-  );
+    <BibleReference
+      status={bibleReferenceState}
+      actions={bibleReferenceActions}
+    />
+  )
 }
 
 RcTranslationWords.propTypes = {
@@ -162,5 +123,5 @@ RcTranslationWords.propTypes = {
   updateUrlHashInAddressBar: PropTypes.func,
   setErrorMessage: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
-  setPrintHtml: PropTypes.func,
+  setHtml: PropTypes.func,
 };

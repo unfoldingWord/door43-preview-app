@@ -83,7 +83,7 @@ export default function SelectResourceToPreviewModal(
       })
       .catch(e => {
         console.log("Error fetching languages:", e)
-        setError("Failed to fetch languages")
+        setError("Failed to fetch languages from DCS")
       })
       .finally(() => {
         setIsFetching(false)
@@ -106,8 +106,8 @@ export default function SelectResourceToPreviewModal(
         setOwners({...owners, [selectedLanguage.lc]: data})
       })
       .catch(e => {
-        setError("Error fetching providers")
-        console.log(`Error fetching owners for language ${language.lc}:`, e)
+        setError("Error fetching providers from DCS")
+        console.log(`Error fetching owners for language ${selectedLanguage.lc}:`, e)
       })
       .finally(() => {
         setIsFetching(false)
@@ -128,7 +128,7 @@ export default function SelectResourceToPreviewModal(
         setRepos({...repos, [selectedOwner.username]: data})
       })
       .catch(e => {
-        setError("Error fetching repositories")
+        setError("Error fetching repositories from DCS")
         console.log(`Error fetching repos for ${selectedOwner.username}:`, e)
       })
       .finally(() => {
@@ -150,7 +150,7 @@ export default function SelectResourceToPreviewModal(
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}})
         })
         .catch(e => {
-          setError("Error fetching branches")
+          setError("Error fetching branches from DCS")
           console.log(`Error fetching branches for ${selectedRepo.full_name}:`, e)
         })
         .finally(() => {
@@ -166,7 +166,7 @@ export default function SelectResourceToPreviewModal(
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}})
         })
         .catch(e => {
-          setError("Error fetching tags")
+          setError("Error fetching tags from DCS")
           console.log(`Error fetching tags for ${selectedRepo.full_name}:`, e)
         })
         .finally(() => {
@@ -197,7 +197,7 @@ export default function SelectResourceToPreviewModal(
         }
       })
       .catch(e => {
-        setError("This is an invalid entry")
+        setError("This is an invalid catalog entry on DCS")
         console.log(`Error fetching catalog entry for ${selectedRepo.full_path}/${ref}:`, e)
       })
       .finally(() => {
@@ -330,7 +330,7 @@ export default function SelectResourceToPreviewModal(
         options={repos[selectedOwner.username]}
         autoHighlight
         clearOnEscape
-        defaultValue={selectedRepo}
+        value={selectedRepo}
         getOptionLabel={option => `${option.name} (${option.subject})`}
         renderInput={(params) => (
           <StyledTextField
@@ -358,7 +358,7 @@ export default function SelectResourceToPreviewModal(
         <FormLabel id="ref">Select Tag or Branch</FormLabel>
         <RadioGroup
           aria-labelledby="ref-radio-buttons-group-label"
-          defaultValue={refTypeChoice}
+          value={refTypeChoice}
           name="ref-radio-buttons-group"
           onChange={handleRefTypeChange}
         >

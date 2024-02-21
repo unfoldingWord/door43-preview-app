@@ -1,33 +1,54 @@
 import { useEffect } from 'react'
 import PropTypes from 'prop-types'
-import DOMPurify from 'dompurify'
 import { useBibleReference } from 'bible-reference-rcl'
 import useGenerateOpenBibleStoriesHtml from '../hooks/useGenerateOpenBibleStoriesHtml'
-import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
 import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
+import BibleReference from 'bible-reference-rcl'
+import {
+  createTheme,
+  ThemeProvider,
+} from "@mui/material";
+
+const webCss = `
+article img {
+  display: block;
+  margin: 0 auto;
+  width: 640px;
+  height: 360px;
+}
+`
+
+const printCss = `
+.obs-story-header {
+  page-break-before: always; 
+  page-break-after: always;
+  text-align: center;
+  padding-top: 300px;
+}
+`
+
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+        "*": {
+          borderBottom: "2px solid red",
+        },
+    },
+  },
+})
 
 export default function OpenBibleStories({
   urlInfo,
   catalogEntry,
-  updateUrlHashInAddressBar,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
-  onPrintClick,
+  setHtml,
+  setWebCss,
+  setPrintCss,
+  setDocumentAnchor,
 }) {
   const onBibleReferenceChange = (b, c, v) => {
-    c = parseInt(c)
-    v = parseInt(v)
-    const verseEl = document.getElementById(`${b}-${c}-${v}`)
-    if (verseEl) {
-      window.scrollTo({
-        top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-        behavior: "smooth",
-      })
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
-    }
+    setDocumentAnchor([b, c, v].join('-'))      
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } =
@@ -46,9 +67,9 @@ export default function OpenBibleStories({
     setErrorMessage(e.message)
   }
 
-  let html = ""
+  let _html = ""
   try {
-    html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
+    _html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
   } catch (e) {
     setErrorMessage(e.message)
   }
@@ -60,56 +81,21 @@ export default function OpenBibleStories({
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (html) {
-      setPrintHtml(html)
+    if (_html) {
+      setHtml(_html)
+      setWebCss(webCss)
+      setPrintCss(printCss)
       setStatusMessage("")
-      Promise.all(
-        Array.from(document.images)
-          .filter((img) => !img.complete)
-          .map(
-            (img) =>
-              new Promise((resolve) => {
-                img.onload = img.onerror = resolve
-              })
-          )
-      ).then(() => {
-        bibleReferenceActions.goToBookChapterVerse(
-          bibleReferenceState.bookId,
-          bibleReferenceState.chapter,
-          bibleReferenceState.verse
-        )
-      })
     }
-  }, [html])
+  }, [_html])
 
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && (
-        <div
-          style={{
-            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(html),
-          }}
-        />
-      )}
-    </>
+    <ThemeProvider theme={theme}>
+      <BibleReference
+        status={bibleReferenceState}
+        actions={bibleReferenceActions}
+        style={{minWidth: "auto"}}
+      />
+    </ThemeProvider>
   )
-}
-
-OpenBibleStories.propTypes = {
-  urlInfo: PropTypes.object,
-  catalogEntry: PropTypes.object,
-  updateUrlHashInAddressBar: PropTypes.func,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  setPrintHtml: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }

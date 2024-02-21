@@ -1,44 +1,106 @@
 import { useEffect } from "react"
-import PropTypes from "prop-types"
-import DOMPurify from "dompurify"
-import { useBibleReference } from "bible-reference-rcl"
+import useGenerateTranslationAcademyManuals from "../hooks/useGenerateTranslationAcademyManuals"
 import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml"
-import BibleReferencePrintBar from "../../core/components/bibleReferencePrintBar"
+import TaNavigation from "./TaNavigation"
 import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
+
+
+const webCss = `
+section > section:nth-child(1) {
+  page-break-before: avoid;
+}
+
+section > article:nth-child(1) {
+  page-break-before: avoid;
+}
+
+article + section, section + article {
+  page-break-before: always;
+}
+
+h5, h6 {
+  font-size: 1em;
+}
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: "#";
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
+}
+
+.article-body h1, .article-body h2, .article-body h3, .article-body h4 {
+  font-size: 1em;
+}
+
+hr.divider {
+  width: 100%;
+}
+
+hr.divider.depth-1 {
+  width: 90%;
+}
+
+hr.divider.depth-2 {
+  width: 80%;
+}
+
+hr.divider.depth-3 {
+  width: 70%;
+}
+
+hr.divider.depth-4 {
+  width: 60%;
+}
+
+hr.divider.depth-5 {
+  width: 40%;
+}
+
+hr.article-divider {
+  width: 50%;
+}
+
+.section-header a {
+  border-bottom: 3px double;
+}
+
+.article-header a {
+  border-bottom: 1px solid;
+}
+
+.manual > h1 {
+  text-align: center;
+}
+`
+
+const printCss = `
+.section-header a {
+  border-bottom: none;
+}
+
+.article-header a {
+  border-bottom: none;
+}
+`
 
 export default function RcTranslationAcademy({
   urlInfo,
   catalogEntry,
-  updateUrlHashInAddressBar,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
-  onPrintClick,
+  setHtml,
+  setWebCss,
+  setPrintCss,
+  setDocumentAnchor,
 }) {
-  const onBibleReferenceChange = (b, c, v) => {
-    c = parseInt(c)
-    v = parseInt(v)
-    const verseEl = document.getElementById(`${b}-${c}-${v}`)
-    if (verseEl) {
-      window.scrollTo({
-        top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-        behavior: "smooth",
-      })
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
-    }
-  }
-
-  const { state: bibleReferenceState, actions: bibleReferenceActions } =
-    useBibleReference({
-      initialBook: "obs",
-      initialChapter: urlInfo.hashParts[1] || "1",
-      initialVerse: urlInfo.hashParts[2] || "1",
-      onChange: onBibleReferenceChange,
-      addOBS: true,
-    })
-
   let zipFileData = null
   try {
     zipFileData = useFetchZipFileData({catalogEntry})
@@ -46,77 +108,39 @@ export default function RcTranslationAcademy({
     setErrorMessage(e.message)
   }
 
-  let taArticles = null
+  let taManuals = null
   try {
-    taArticles = useFetchTranslationAcademyArticles({ catalogEntry, zipFileData })
+    taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage })
   } catch (e) {
     setErrorMessage(e.message)
   }
 
-  let html = ""
+  let _html = ""
   try {
-    html = useGenerateTranslationAcademyHtml({ catalogEntry })
+    _html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals })
   } catch (e) {
     setErrorMessage(e.message)
   }
 
   useEffect(() => {
-    setStatusMessage(<>Preparing ${catalogEntry.subject} Preview.<br/>Please wait...</>)
-    bibleReferenceActions.applyBooksFilter("obs")
+    setStatusMessage(<>Preparing {catalogEntry.subject} Preview.<br/>Please wait...</>)
+    setWebCss(webCss)
+    setPrintCss(printCss)
   }, [])
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (html) {
-      setPrintHtml(html)
+    if (_html) {
+      setHtml(_html)
       setStatusMessage("")
-      Promise.all(
-        Array.from(document.images)
-          .filter((img) => !img.complete)
-          .map(
-            (img) =>
-              new Promise((resolve) => {
-                img.onload = img.onerror = resolve
-              })
-          )
-      ).then(() => {
-        bibleReferenceActions.goToBookChapterVerse(
-          bibleReferenceState.bookId,
-          bibleReferenceState.chapter,
-          bibleReferenceState.verse
-        )
-      })
     }
-  }, [html])
+  }, [_html])
 
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && (
-        <div
-          style={{
-            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(html),
-          }}
-        />
-      )}
-    </>
+    <TaNavigation
+        taManuals={taManuals} 
+        anchor={urlInfo.hash}
+        setDocumentAnchor={setDocumentAnchor}
+      />
   )
-}
-
-RcTranslationAcademy.propTypes = {
-  urlInfo: PropTypes.object,
-  catalogEntry: PropTypes.object,
-  updateUrlHashInAddressBar: PropTypes.func,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  setPrintHtml: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }

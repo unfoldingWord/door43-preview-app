@@ -16,15 +16,15 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
     }
 
     const md = markdownit()
-    let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
+    let html = `<h1 style="text-align: center" id="obs">${catalogEntry.title}</h1>\n`
 
     let frontFilePath = `${obsRootPath}/front.md`
     if (frontFilePath in zipFileData.files) {
-        html += `<artcile id="obs-front">${md.render(await zipFileData.file(frontFilePath).async('text'))}</article>`
+        html += `<artcile class="obs-front"><span class="header-anchor" id="obs-front"></span>${md.render(await zipFileData.file(frontFilePath).async('text'))}</article>`
     } else {
         frontFilePath = `${obsRootPath}/front/intro.md`
         if (frontFilePath in zipFileData.files) {
-            html += `<artcile id="obs-front">${md.render(await zipFileData.file(frontFilePath).async('text'))}</article>`
+            html += `<artcile class="obs-front"><span class="header-anchor" id="obs-front"></span>${md.render(await zipFileData.file(frontFilePath).async('text'))}</article>`
         }
     }
 
@@ -33,28 +33,40 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
       if (obsStoryFilePath in zipFileData.files) {
           markdownFiles.push(await zipFileData.file(obsStoryFilePath).async('text'))
       } else {
-          markdownFiles.push(`# ${i}. STORY NOT FOUND!\n\n`)
+          markdownFiles.push(`# ${i}. [STORY NOT FOUND]\n\n`)
       }
     }
 
     markdownFiles.forEach((storyMarkdown, storyIdx) => {
         const frames = storyMarkdown.split(/(?=\!\[)/g) // Spliting on image markdown
-        const header = frames.shift()
-        frames[0] = header + frames?.[0]
+        html += `<section id="obs-${storyIdx+1}" class="story">`
         frames.forEach((frame, frameIdx) => {
-            html += `<article id="obs-${storyIdx+1}-${frameIdx+1}" class="break-inside: avoid">${md.render(frame)}</article>`
+            frame = frame.trim()
+            const link = `obs-${storyIdx+1}-${frameIdx}`
+            if (frameIdx == 0) {
+                let header = frame.trim()
+                if (!header) {
+                    header = "# [NO TITLE]"
+                }
+                html += `<article class="obs-story-header"><span class="header-anchor" id="${link}-header"></span>${md.render(header)}</article>`
+            } else {
+                html += `<article class="obs-story-frame"><span class="header-anchor" id="${link}"></span>${md.render(frame)}</article>`
+            }
         })
+        html += `</section>`
     })
 
     let backFilePath = `${obsRootPath}/back.md`
     if (backFilePath in zipFileData.files) {
-        html += `<artcile id="obs-back">${md.render(await zipFileData.file(backFilePath).async('text'))}</article>`
+        html += `<artcile class="obs-back"><span class="header-anchor" id="obs-back"></span>${md.render(await zipFileData.file(backFilePath).async('text'))}</article>`
     } else {
         backFilePath = `${obsRootPath}/back/intro.md`
         if (frontFilePath in zipFileData.files) {
-            html += `<artcile id="obs-front">${md.render(await zipFileData.file(backFilePath).async('text'))}</article>`
+            html += `<artcile class="obs-black"><span class="header-anchor" id="obs-back"></span>${md.render(await zipFileData.file(backFilePath).async('text'))}</article>`
         }
     }
+    // html = html.replace(/<img[^>]+>/g, `<img src="https://cdn.door43.org/obs/jpg/360px/obs-en-01-01.jpg"></img>`)
+    // console.log("HTML", html)
 
     return html
 }

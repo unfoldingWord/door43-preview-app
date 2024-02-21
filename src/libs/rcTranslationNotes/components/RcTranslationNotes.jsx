@@ -8,7 +8,7 @@ import {
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
-import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
+import BibleReference from 'bible-reference-rcl'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
 import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
@@ -18,12 +18,16 @@ import MarkdownIt from 'markdown-it'
 import { verseObjectsToString } from 'uw-quote-helpers'
 
 
+const webCss = ``
+
 export default function RcTranslationNotes({
   urlInfo,
   catalogEntry,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
+  setHtml,
+  setWebCss,
+  setPrintCss,
   setCanChangeColumns,
   updateUrlHashInAddressBar,
   onPrintClick,
@@ -33,7 +37,6 @@ export default function RcTranslationNotes({
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
-  const [html, setHtml] = useState("")
 
   const renderFlags = {
     showWordAtts: false,
@@ -137,6 +140,8 @@ export default function RcTranslationNotes({
     }
 
     if (!bookId) {
+      setWebCss(webCss)
+      setCanChangeColumns(false)
       setInitialBookIdAndSupportedBooks()
     }
   }, [])
@@ -195,12 +200,13 @@ export default function RcTranslationNotes({
 
   useEffect(() => {
     const generateHtml = async () => {
-      let _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
+      let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
       let prevChapter = ""
       let prevVerse = ""
       const usfmJSON = usfm.toJSON(targetUsfm)
       const md = new MarkdownIt()
       const supportReferences = {}
+      let hasIntro = false
 
       renderedTsvData.forEach((row) => {
         if (!row || !row.ID || !row.Note) {
@@ -208,32 +214,32 @@ export default function RcTranslationNotes({
         }
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
-        _html += `<article class="tn-note">`
-        if (chapterStr != "front" && verseStr == "intro") {
-          _html += `<span id="${bibleReferenceState.bookId}-${chapterStr}-1"></span>`
-        }
+        html += `<article class="tn-note">`
+        const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}`
         if (chapterStr != prevChapter || verseStr != prevVerse) {
           const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
+          if (chapterStr != prevChapter || firstVerse != prevVerse) {
+            html += `<span class="header-anchor" id="${link}"></span>`
+          }
           if (chapterStr != "front" && firstVerse != "intro") {
             if (firstVerse != prevVerse) {
-              _html += `<h2 id="${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}" class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
+              html += `<h2 class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
             } else {
-              _html += `<h2>${chapterStr}:${verseStr}</h2>`
-            }
+              html += `<h2>${chapterStr}:${verseStr}</h2>`
+            }  
             const scripture = verseObjectsToString(
               usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects
             )
-            _html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
+            html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
           }
           prevChapter = chapterStr
           prevVerse = verseStr
         }
         if (row.GLQuote || row.Quote) {
-          _html += `<h3 id="${row.ID}" class="tn-note-header">${
+          html += `<span class="header-anchor" id="${link}-${row.ID}"></span><h3 id="${row.ID}" class="tn-note-header">${
             row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'
           }</h3>`
         }
-        console.log(row)
         if (row.SupportReference) {
           if (! (row.SupportReference in supportReferences)) {
             supportReferences[row.SupportReference] = {
@@ -243,12 +249,12 @@ export default function RcTranslationNotes({
             }
           }
           supportReferences[row.SupportReference].backRefs.push(`<a href="#${row.ID}">${row.Reference}</a>`)
-          _html += `
+          html += `
         <div class="tn-note-support-reference">
           <span style="font-weight: bold">Support Reference:</span> ${row.SupportReference}
         </div>`
         }
-        _html += `
+        html += `
         <div class="tn-note-body">
             ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
         </div>
@@ -258,11 +264,11 @@ export default function RcTranslationNotes({
 
       const taCatalogEntry = relationCatalogEntries.filter(entry => entry.subject == "Translation Academy")[0]
       if (taCatalogEntry) {
-        populateSupportReferences(supportReferences, taCatalogEntry)
+        // populateSupportReferences(supportReferences, taCatalogEntry)
       }
 
-      setHtml(_html)
-      setHtmlCache({...htmlCache, [bookIdToProcess]: _html})
+      setHtml(html)
+      setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 
     if (targetCatalogEntry && renderedTsvData && glQuotesReady) {
@@ -270,39 +276,12 @@ export default function RcTranslationNotes({
     }
   }, [targetCatalogEntry, renderedTsvData, glQuotesReady])
 
-  useEffect(() => {
-    const handlePrintSettingsAndNavigation = async () => {
-      setPrintHtml(html)
-      setStatusMessage("")
-      setCanChangeColumns(true)
-      bibleReferenceActions.goToBookChapterVerse(
-        bookId,
-        bibleReferenceState.chapter,
-        bibleReferenceState.verse
-      )
-    }
-
-    if (html) {
-      handlePrintSettingsAndNavigation()
-    } else {
-      setPrintHtml("")
-      setCanChangeColumns(false)
-    }
-  }, [html])
-
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(html),
-            }}
-          />}
-    </>
+    <BibleReference
+      status={bibleReferenceState}
+      actions={bibleReferenceActions}
+      style={{minWidth: "auto"}}
+    />
   )
 }
 
@@ -311,8 +290,9 @@ RcTranslationNotes.propTypes = {
   catalogEntry: PropTypes.object.isRequired,
   setStatusMessage: PropTypes.func,
   setErrorMessage: PropTypes.func,
-  setPrintHtml: PropTypes.func,
+  setHtml: PropTypes.func,
+  setWebCss: PropTypes.func,
+  setPrintCss: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
   updateUrlHashInAddressBar: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }

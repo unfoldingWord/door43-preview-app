@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { ThemeProvider, createTheme } from '@mui/material'
 import PropTypes from 'prop-types'
 import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
-import DOMPurify from 'dompurify'
+import BibleReference from 'bible-reference-rcl'
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
@@ -9,33 +10,62 @@ import {
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
-import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+      outline: {
+
+        "&:hover:not(.Mui-disabled):before": {
+          borderBottom: "2px solid white",
+        },
+        "&:before": {
+          borderBottom: "1px solid white",
+        },
+        "&:after": {
+          borderBottom: "2px solid white",
+        },
+      },
+    },
+  },
+});
+
+const webCss = `
+h1 {
+  column-span: all;
+}
+
+.new-page {
+  break-after: page;
+  column-span: all;
+}
+`
 
 export default function Bible({
   urlInfo,
   catalogEntry,
+  html,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
+  setHtml,
+  setWebCss,
+  setPrintCss,
   setCanChangeColumns,
-  updateUrlHashInAddressBar,
-  onPrintClick,
+  setDocumentAnchor,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [usfmText, setUsfmText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
-  const [html, setHtml] = useState("")
 
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,
     showHeadings: true,
     showIntroductions: true,
-    showFootnotes: false,
+    showFootnotes: true,
     showXrefs: false,
     showParaStyles: true,
     showCharacterMarkup: false,
@@ -44,25 +74,19 @@ export default function Bible({
   }
 
   const onBibleReferenceChange = (b, c, v) => {
+    console.log("CHANGING!", b, c, v)
     if (b != bookId) {
       setBookId(b)
-    } else {
+      setDocumentAnchor(b)
+    } else if (setDocumentAnchor) {
       c = parseInt(c)
       v = parseInt(v)
+      console.log("C: ", c, "V: ", v)
       if (c > 1 || v > 1) {
-        const verseEl = document.getElementById(`${b}-${c}-${v}`)
-        if (verseEl) {
-          window.scrollTo({
-            top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-            behavior: "smooth",
-          })
-        }
+        setDocumentAnchor([b, c, v].join('-'))
       } else {
-        window.scrollTo({ top: 0, behavior: "smooth" })
+        setDocumentAnchor(b)
       }
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
     }
   }
 
@@ -114,7 +138,9 @@ export default function Bible({
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
         sb = [_bookId, ...sb]
+        return
       }
+      setCanChangeColumns(true)
     }
 
     if (!bookId) {
@@ -180,8 +206,10 @@ export default function Bible({
         /id="chapter-(\d+)-verse-(\d+)"/g,
         `id="${bookIdToProcess}-$1-$2"`
       )
-      _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${_html}`
+      _html = 
+      _html = `<div id="paras"><h1 style="text-align: center">${catalogEntry.title}</h1><span id="${bookId}"></span>\n${_html}</div>`
       setHtml(_html)
+      setStatusMessage("")
       if (!(bookIdToProcess in htmlCache)) {
         setHtmlCache({ ...htmlCache, [bookIdToProcess]: _html })
       }
@@ -192,49 +220,11 @@ export default function Bible({
     }
   }, [htmlReady, renderedData])
 
-  useEffect(() => {
-    const handlePrintSettingsAndNavigation = async () => {
-      setPrintHtml(html)
-      setStatusMessage("")
-      setCanChangeColumns(true)
-      bibleReferenceActions.goToBookChapterVerse(
-        bookId,
-        bibleReferenceState.chapter,
-        bibleReferenceState.verse
-      )
-    }
-
-    if (html) {
-      handlePrintSettingsAndNavigation()
-    } else {
-      setPrintHtml("")
-      setCanChangeColumns(false)
-    }
-  }, [html])
-
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(html),
-            }}
-          />}
-    </>
+    <ThemeProvider theme={theme}>
+      <BibleReference
+        status={bibleReferenceState}
+        actions={bibleReferenceActions} />
+    </ThemeProvider>
   )
-}
-
-Bible.propTypes = {
-  urlInfo: PropTypes.object.isRequired,
-  catalogEntry: PropTypes.object.isRequired,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setPrintHtml: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  updateUrlHashInAddressBar: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }
