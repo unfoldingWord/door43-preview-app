@@ -180,11 +180,11 @@ export default function RcTranslationQuestions({
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
-      then(tsv => setTsvText(tsv)).
-      catch(e => {
-        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `: e)
-        setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
-      })
+        then(tsv => setTsvText(tsv)).
+        catch(e => {
+          console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
+          setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
+        })
     }
 
     if (catalogEntry && supportedBooks && bookIdToProcess && supportedBooks.includes(bookIdToProcess)) {
