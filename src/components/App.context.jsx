@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import { DCS_SERVERS, API_PATH } from '@common/constants'
-import { updateUrlHashInAddressBar } from '@utils/url'
 import { getCatalogEntry } from '@libs/core/lib/dcsApi'
 
 // Converter components
 import Bible from '@libs/Bible/components/Bible'
 import OpenBibleStories from '@libs/openBibleStories/components/OpenBibleStories'
+import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTranslationAcademy'
 import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
+import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
 
 
-export const AppContext = React.createContext();
+export const AppContext = React.createContext()
 
 export function AppContextProvider({ children }) {
   const [statusMessage, setStatusMessage] = useState(<>Preparing Preview.<br/>Please wait...</>)
@@ -21,14 +22,22 @@ export function AppContextProvider({ children }) {
   const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
   const [ResourceComponent, setResourceComponent] = useState()
+  const [htmlSections, setHtmlSections] = useState({cover: "", copyright: "", toc: "", body: ""})
+  const [webCss, setWebCss] = useState("")
+  const [printCss, setPrintCss] = useState("")
+  const [canChangeColumns, setCanChangeColumns] = useState(false)
+  const [isOpenPrint, setIsOpenPrint] = useState(false)
+  const [printOptions, setPrintOptions] = useState({})
+  const [documentReady, setDocumentReady] = useState(false)
+  const [documentAnchor, setDocumentAnchor] = useState('')
+  const [lastSeenAnchor, setLastSeenAnchor] = useState()
+
+  /*** For new resource model ***/
   const [organizations, setOrganizations] = useState()
   const [branches,setBranches] = useState()
   const [tags,setTags] = useState()
   const [repos,setRepos] = useState()
   const [languages,setLanguages] = useState()
-  const [printHtml, setPrintHtml] = useState("")
-  const [canChangeColumns, setCanChangeColumns] = useState(false)
-  const [isOpenPrint, setIsOpenPrint] = useState(false)
 
   const onPrintClick = () => {
     setIsOpenPrint(true)
@@ -72,17 +81,21 @@ export function AppContextProvider({ children }) {
     }
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/preview\/(tag|branch)/, "").split("/")
+      const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/\/preview\//, "/").replace(/\/(branch|tag)\//, "/").split("/")
       if(urlParts.length < 2) {
-        throw new Error("Home Page (under construction)")
+        setErrorMessage("Home Page (under construction)")
+        setStatusMessage("")
+        return
       }
       const info = {
         owner: urlParts[0] || "",
         repo: urlParts[1] || "",
         ref: urlParts[2] == "preview" ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
+        hash: url.hash.replace('#', ''),
         hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
       }
       setUrlInfo(info)
+      setDocumentAnchor(info.hash)
     }
 
     getServerInfo().catch(e => setErrorMessage(e.message))
@@ -91,7 +104,8 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchRepo = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`)
+      const repoUrl = `${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`
+      fetch(repoUrl)
       .then(response => {
         if (response.ok) {
           return response.json();
@@ -102,14 +116,14 @@ export function AppContextProvider({ children }) {
       .then(data => {
         setRepo(data)
       }).catch(err => {
-        setErrorMessage(err.message)
+        setErrorMessage(<>Failed to connect to DCS. Unable to fetch <a href={repoUrl} target="_blank">{urlInfo.owner}/{urlInfo.repo}</a></>)
       })
     }
 
     if (serverInfo && urlInfo) {
       fetchRepo().catch(e => setErrorMessage(e.message))
     }
-  }, [serverInfo, urlInfo]);
+  }, [serverInfo, urlInfo])
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
@@ -126,7 +140,8 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     if (catalogEntry) {
       if(!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type)  {
-        if (catalogEntry.repo?.ingredients && catalogEntry.repo?.subject && catalogEntry.repo?.metadata_type) {
+        if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
+          catalogEntry.title = catalogEntry.repo.title
           catalogEntry.subject = catalogEntry.repo.subject
           catalogEntry.ingredients = catalogEntry.repo.ingredients
           catalogEntry.metadata_type = catalogEntry.repo.metadata_type
@@ -138,17 +153,6 @@ export function AppContextProvider({ children }) {
         }
       }
       if(catalogEntry.metadata_type && catalogEntry.subject) {
-        const props = {
-          urlInfo,
-          serverInfo,
-          catalogEntry,
-          setPrintHtml,
-          setStatusMessage,
-          setErrorMessage,
-          setCanChangeColumns,
-          updateUrlHashInAddressBar,
-          onPrintClick,
-        }
         switch (catalogEntry.metadata_type) {
           case "rc":
             switch (catalogEntry.subject) {
@@ -156,19 +160,19 @@ export function AppContextProvider({ children }) {
               case "Bible":
               case "Greek New Testament":
               case "Hebrew Old Testament":
-                setResourceComponent(<Bible {...props} />)
+                setResourceComponent(() => Bible)
                 return
               case "Open Bible Stories":
-                setResourceComponent(<OpenBibleStories {...props} />)
+                setResourceComponent(() => OpenBibleStories)
                 return
               case "Translation Academy":
-                setResourceComponent(<RcTranslationAcademy {...props} />)
+                setResourceComponent(() => RcTranslationAcademy)
                 return
               case "TSV Translation Notes":
-                setResourceComponent(<RcTranslationNotes {...props} />)
+                setResourceComponent(() => RcTranslationNotes)
                 return
               case "TSV Translation Questions":
-                setResourceComponent(<RcTranslationQuestions {...props} />)
+                setResourceComponent(() => RcTranslationQuestions)
                 return
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)
@@ -179,7 +183,7 @@ export function AppContextProvider({ children }) {
               case "scripture":
                 switch (catalogEntry.flavor) {
                   case "textTranslation":
-                    setResourceComponent(<Bible {...props} />)
+                    setResourceComponent(() => Bible)
                     return
                   default:
                     setErrorMessage(`Conversion of SB flavor \`${catalogEntry.flavor}\` is not currently supported.`)
@@ -188,7 +192,7 @@ export function AppContextProvider({ children }) {
               case "gloss":
                 switch (catalogEntry.flavor) {
                   case "textStories":
-                    setResourceComponent(<OpenBibleStories {...props} />)
+                    setResourceComponent(() => OpenBibleStories)
                     return
                 }
                 return
@@ -203,7 +207,7 @@ export function AppContextProvider({ children }) {
             switch (catalogEntry.subject) {
               case "Aligned Bible":
               case "Bible":
-                setResourceComponent(<Bible {...props} />)
+                setResourceComponent(() => Bible)
                 return
               default:
                 setErrorMessage(`Conversion of translationCore \`${subject}\` repositories is currently not supported.`)
@@ -214,110 +218,6 @@ export function AppContextProvider({ children }) {
       setErrorMessage(`Not a valid repository that can be convert.`)
     }
   }, [catalogEntry])
-
-  // useEffect(() => {
-  //   const getBranches = async () => {
-  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/repos/${repo.full_name}/branches`)
-  //     .then(response => {
-  //       return response.json()
-  //     })
-  //     .then(_branches => {
-  //       setTags(_branches.map(branch => {return {label: branch.name, value: branch}}))
-  //     }).catch(e => {
-  //       console.log(`Error fetching repo's branches: ${repo.full_name}`)
-  //       console.log(e)
-  //     })
-  //   }
-
-  //   if (!loadingMainContent && repo) {
-  //       getBranches()
-  //   }
-  // }, [loadingMainContent, repo]);
-
-  // useEffect(() => {
-  //   const getTags = async () => {
-  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/repos/${repo.full_name}/tags`)
-  //     .then(response => {
-  //       return response.json()
-  //     })
-  //     .then(_tags => {
-  //       setTags(_tags.map(tag => {return {label: tag.name, value: tag}}))
-  //     }).catch(e => {
-  //       console.log(`Error fetching repo's tags: ${repo.full_name}`)
-  //       console.log(e)
-  //     })
-  //   }
-
-  //   if (! loadingMainContent && repo) {
-  //     getTags()
-  //   }
-  // }, [loadingMainContent, repo]);
-
-  // useEffect(() => {
-  //   const getLanguages = async () => {
-  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/languages?stage=latest&metadataType=rc`)
-  //     .then(response => {
-  //       return response.json()
-  //     })
-  //     .then(({data}) => {
-  //       setLanguages(data)
-  //     }).catch(() => {
-  //       console.log("No languages found")
-  //       // setErrorMessage("No languages found")
-  //     })
-  //   }
-
-  //   if (!loadingMainContent && !languages) {
-  //     getLanguages()
-  //   }
-  // }, [loadingMainContent]);
-
-  // useEffect(() => {
-  //   const getRepos = async () => {
-  //     fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?owner=${repo.owner.username}&lang=en&metadataType=rc`)
-  //     .then(response => {
-  //       return response.json();
-  //     })
-  //     .then(({data}) => {
-  //       setRepos(data)
-  //     }).catch(() => {
-  //       console.log("No repositories found")
-  //       // setErrorMessage("No repositories found")
-  //     })
-  //   }
-
-  //   if (!loadingMainContent && repo) {
-  //     getRepos()
-  //   }
-  // }, [loadingMainContent, repo]);
-
-  // useEffect(() => {
-  //   const bibleSubjects = [
-  //     'Aligned Bible',
-  //     'Bible',
-  //     'Hebrew Old Testament',
-  //     'Greek New Testament',
-  //     'Open Bible Stories',
-  //   ]
-
-  //   const getOrgs = async() => {
-  //     // fetch(`${serverInfo?.baseUrl}/${API_PATH}/catalog/list/owners?stage=latest`)
-  //     fetch(`${serverInfo?.baseUrl}/${API_PATH}/orgs?subject=Open%20Bible%20Stories&subject=Bible&subject=Aligned%20Bible&subject=TSV%20Translation%20Notes&subject=TSV%20Translation%20Questions&subject=Translation%20Words&subject=Translation%20Academy&subject=TSV%20Translation%20Words%20Links`)
-  //     .then(response => {
-  //       return response.json()
-  //     })
-  //     .then(_orgs => {
-  //       setOrganizations(_orgs.map(org => org.username))
-  //     }).catch(e => {
-  //       console.log(`Error fetching orgs`)
-  //       console.log(e)
-  //     })
-  //   }
-
-  //   if (! loadingMainContent && !organizations) {
-  //     getOrgs().catch(console.error)
-  //   }
-  // }, [loadingMainContent, organizations])
 
   // create the value for the context provider
   const context = {
@@ -332,20 +232,33 @@ export function AppContextProvider({ children }) {
       repo,
       repos,
       languages,
-      resourceComponent: ResourceComponent,
-      printHtml,
+      ResourceComponent,
+      htmlSections,
+      webCss,
+      printCss,
       canChangeColumns,
       buildInfo,
       serverInfo,
       isOpenPrint,
+      printOptions,
+      documentReady,
+      documentAnchor,
+      lastSeenAnchor,
     },
     actions: {
+      onPrintClick,
       setStatusMessage,
       setErrorMessage,
       clearErrorMessage,
-      setPrintHtml,
+      setHtmlSections,
+      setWebCss,
+      setPrintCss,
       setCanChangeColumns,
       setIsOpenPrint,
+      setPrintOptions,
+      setDocumentReady,
+      setDocumentAnchor,
+      setLastSeenAnchor,
     },
   }
 

@@ -74,7 +74,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
@@ -83,7 +83,7 @@ export default function SelectResourceToPreviewModal(
       })
       .catch(e => {
         console.log("Error fetching languages:", e)
-        setError("Failed to fetch languages")
+        setError("Failed to fetch languages from DCS")
       })
       .finally(() => {
         setIsFetching(false)
@@ -98,7 +98,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
@@ -106,8 +106,8 @@ export default function SelectResourceToPreviewModal(
         setOwners({...owners, [selectedLanguage.lc]: data})
       })
       .catch(e => {
-        setError("Error fetching providers")
-        console.log(`Error fetching owners for language ${language.lc}:`, e)
+        setError("Error fetching providers from DCS")
+        console.log(`Error fetching owners for language ${selectedLanguage.lc}:`, e)
       })
       .finally(() => {
         setIsFetching(false)
@@ -122,13 +122,13 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "no-cache"})
       .then(response => response.json())
       .then(({data}) => {
         setRepos({...repos, [selectedOwner.username]: data})
       })
       .catch(e => {
-        setError("Error fetching repositories")
+        setError("Error fetching repositories from DCS")
         console.log(`Error fetching repos for ${selectedOwner.username}:`, e)
       })
       .finally(() => {
@@ -144,13 +144,13 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchBranches = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`, {cache: "no-cache"})
         .then(response => response.json())
         .then(branches => {
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}})
         })
         .catch(e => {
-          setError("Error fetching branches")
+          setError("Error fetching branches from DCS")
           console.log(`Error fetching branches for ${selectedRepo.full_name}:`, e)
         })
         .finally(() => {
@@ -160,13 +160,13 @@ export default function SelectResourceToPreviewModal(
 
     const fetchTags = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`, {cache: "no-cache"})
         .then(response => response.json())
         .then(tags => {
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}})
         })
         .catch(e => {
-          setError("Error fetching tags")
+          setError("Error fetching tags from DCS")
           console.log(`Error fetching tags for ${selectedRepo.full_name}:`, e)
         })
         .finally(() => {
@@ -188,7 +188,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {cache: "no-cache"})
       .then(response => response.json())
       .then((entry) => {
         setCatalogEntry(entry)
@@ -197,7 +197,7 @@ export default function SelectResourceToPreviewModal(
         }
       })
       .catch(e => {
-        setError("This is an invalid entry")
+        setError("This is an invalid catalog entry on DCS")
         console.log(`Error fetching catalog entry for ${selectedRepo.full_path}/${ref}:`, e)
       })
       .finally(() => {
@@ -249,12 +249,6 @@ export default function SelectResourceToPreviewModal(
     setError()
     setRefTypeChoice(event.target.value)
   }
-
-  const styles = {
-    labelAsterisk: {
-      color: "red"
-    }
-  };
 
   return(
     <Dialog
@@ -336,7 +330,7 @@ export default function SelectResourceToPreviewModal(
         options={repos[selectedOwner.username]}
         autoHighlight
         clearOnEscape
-        defaultValue={selectedRepo}
+        value={selectedRepo}
         getOptionLabel={option => `${option.name} (${option.subject})`}
         renderInput={(params) => (
           <StyledTextField
@@ -364,7 +358,7 @@ export default function SelectResourceToPreviewModal(
         <FormLabel id="ref">Select Tag or Branch</FormLabel>
         <RadioGroup
           aria-labelledby="ref-radio-buttons-group-label"
-          defaultValue={refTypeChoice}
+          value={refTypeChoice}
           name="ref-radio-buttons-group"
           onChange={handleRefTypeChange}
         >

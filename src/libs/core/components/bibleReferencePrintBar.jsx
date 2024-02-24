@@ -34,12 +34,7 @@ export default function BibleReferencePrintBar({
               disabled={!printEnabled}
               onClick={onPrintClick}
             >
-              <PrintIcon
-                sx={{
-                  extendedIcon: { marginRight: (theme) => theme.spacing(1) },
-                }}
-              />
-              <Box sx={{ display: { xs: 'none', md: 'block' } }} >Print</Box>
+              <PrintIcon />
             </Fab>
           </Toolbar>
         </AppBar>)

@@ -96,3 +96,45 @@ code {
   font-family: CharisSIL, Noto Sans;
   font-size: 100%;
 }
+
+header {
+  z-index: 1;
+}
+
+#print-preview {
+  background-color: grey;
+  width: 100%;
+}
+
+#print-preview > * {
+  background-color: white;
+}
+
+.pagedjs_pages {
+  background-color: transparent !important;
+}
+
+.pagedjs_page {
+  margin: 10px auto;
+  background-color: white;
+}
+
+section, article {
+  page-break-before: always;
+}
+
+section > :first-child, article > :first-child {
+  page-break-before: avoid !important;
+}
+
+section > section:first-of-type, section > article:first-of-type {
+  page-break-before: avoid !important;
+}
+
+.header-title {
+  display: none;
+}
+
+.cover-page {
+  text-align: center;
+}

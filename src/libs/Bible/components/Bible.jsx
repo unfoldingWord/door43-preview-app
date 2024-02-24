@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { ThemeProvider, createTheme } from '@mui/material'
 import PropTypes from 'prop-types'
 import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
-import DOMPurify from 'dompurify'
+import BibleReference from 'bible-reference-rcl'
 import {
   getLtrPreviewStyle,
   getRtlPreviewStyle,
@@ -9,33 +10,100 @@ import {
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
-import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+      outline: {
+
+        "&:hover:not(.Mui-disabled):before": {
+          borderBottom: "2px solid white",
+        },
+        "&:before": {
+          borderBottom: "1px solid white",
+        },
+        "&:after": {
+          borderBottom: "2px solid white",
+        },
+      },
+    },
+  },
+});
+
+const webCss = `
+h1 {
+  column-span: all;
+}
+
+.new-page {
+  break-after: page;
+  column-span: all;
+}
+`
+
+const printCss = `
+@page {
+  @footnote { 
+    float: bottom;
+    border-top: solid black 1px;
+    padding-top: 1em;
+    margin-top: 1em;
+ }
+}
+
+span.footnote {
+  float: footnote;
+  position: note(footnotes);
+}
+  
+::footnote-call { 
+  font-weight: 700;
+  font-size: 1em;
+  line-height: 0; 
+}
+  
+::footnote-marker {
+  /* content: counter(footnote, lower-alpha) ". "; */
+  font-weight: 700;
+  line-height: 0; 
+  font-style: italic !important;
+}
+
+.pagedjs_footnote_area * {
+  background-color: white !important;
+}
+
+a.footnote {
+  font-style: italic !important;
+}
+`
 
 export default function Bible({
   urlInfo,
   catalogEntry,
+  htmlSections,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
+  setHtmlSections,
+  setWebCss,
+  setPrintCss,
   setCanChangeColumns,
-  updateUrlHashInAddressBar,
-  onPrintClick,
+  setDocumentAnchor,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
+  const [bookTitle, setBookTitle] = useState()
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [usfmText, setUsfmText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
-  const [html, setHtml] = useState("")
 
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,
     showHeadings: true,
     showIntroductions: true,
-    showFootnotes: false,
+    showFootnotes: true,
     showXrefs: false,
     showParaStyles: true,
     showCharacterMarkup: false,
@@ -46,23 +114,15 @@ export default function Bible({
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
       setBookId(b)
-    } else {
+      setDocumentAnchor(b)
+    } else if (setDocumentAnchor) {
       c = parseInt(c)
       v = parseInt(v)
       if (c > 1 || v > 1) {
-        const verseEl = document.getElementById(`${b}-${c}-${v}`)
-        if (verseEl) {
-          window.scrollTo({
-            top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-            behavior: "smooth",
-          })
-        }
+        setDocumentAnchor([b, c, v].join('-'))
       } else {
-        window.scrollTo({ top: 0, behavior: "smooth" })
+        setDocumentAnchor(b)
       }
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
     }
   }
 
@@ -94,7 +154,7 @@ export default function Bible({
       try {
         repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, true)).tree.map(tree => tree.path)
       } catch(e) {
-        console.log(e)
+        console.log(`Error calling etRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e)
       }
 
       let sb = getSupportedBooks(catalogEntry, repoFileList)
@@ -114,7 +174,9 @@ export default function Bible({
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
         sb = [_bookId, ...sb]
+        return
       }
+      setCanChangeColumns(true)
     }
 
     if (!bookId) {
@@ -126,12 +188,13 @@ export default function Bible({
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
       if (bookId in htmlCache) {
-        setHtml(htmlCache[bookId])
+        setHtmlSections({...htmlSections, toc: "", body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
-        let bookTitle = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setStatusMessage(<>Preparing preview for {bookTitle}.<br/>Please wait...</>)
+        const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
+        setBookTitle(title)
+        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
         setUsfmText("")
-        setHtml("")
+        setHtmlSections({...htmlSections, toc: "", body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -164,7 +227,7 @@ export default function Bible({
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
       then(usfm => setUsfmText(usfm)).
       catch(e => {
-        console.log(e)
+        console.log(`Error calling getRepoContents(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
         setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
       })
     }
@@ -180,8 +243,13 @@ export default function Bible({
         /id="chapter-(\d+)-verse-(\d+)"/g,
         `id="${bookIdToProcess}-$1-$2"`
       )
-      _html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n${_html}`
-      setHtml(_html)
+      _html = _html.replaceAll(/ id="chapter-(\d+)"/gi, ` id="${bookId}-$1" data-toc-title="${bookTitle} $1"`)
+      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`)
+      _html = `<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">${_html}</section>`
+      setHtmlSections({...htmlSections, cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: "", body: _html})
+      setStatusMessage("")
+      setWebCss(webCss)
+      setPrintCss(printCss)
       if (!(bookIdToProcess in htmlCache)) {
         setHtmlCache({ ...htmlCache, [bookIdToProcess]: _html })
       }
@@ -192,49 +260,11 @@ export default function Bible({
     }
   }, [htmlReady, renderedData])
 
-  useEffect(() => {
-    const handlePrintSettingsAndNavigation = async () => {
-      setPrintHtml(html)
-      setStatusMessage("")
-      setCanChangeColumns(true)
-      bibleReferenceActions.goToBookChapterVerse(
-        bookId,
-        bibleReferenceState.chapter,
-        bibleReferenceState.verse
-      )
-    }
-
-    if (html) {
-      handlePrintSettingsAndNavigation()
-    } else {
-      setPrintHtml("")
-      setCanChangeColumns(false)
-    }
-  }, [html])
-
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && <div
-            dangerouslySetInnerHTML={{
-              __html: DOMPurify.sanitize(html),
-            }}
-          />}
-    </>
+    <ThemeProvider theme={theme}>
+      <BibleReference
+        status={bibleReferenceState}
+        actions={bibleReferenceActions} />
+    </ThemeProvider>
   )
-}
-
-Bible.propTypes = {
-  urlInfo: PropTypes.object.isRequired,
-  catalogEntry: PropTypes.object.isRequired,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setPrintHtml: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  updateUrlHashInAddressBar: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }
