@@ -1,9 +1,7 @@
 import { cloneDeep } from 'lodash' // cherry pick just the function we need so webpack can strip unneeded parts
 
-import {
-  renderStyles,
-  renderStylesRtl,
-} from '@oce-editor-tools/base'
+import { renderStyles } from './renderStyles'
+import { renderStylesRtl } from './renderStylesRtl'
 
 export function getRtlPreviewStyle() {
   const _renderStyles = cloneDeep(renderStylesRtl) // make clone to allow for modification without breaking original

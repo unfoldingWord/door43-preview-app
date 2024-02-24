@@ -1,33 +1,62 @@
 import { useEffect } from 'react'
 import PropTypes from 'prop-types'
-import DOMPurify from 'dompurify'
 import { useBibleReference } from 'bible-reference-rcl'
 import useGenerateOpenBibleStoriesHtml from '../hooks/useGenerateOpenBibleStoriesHtml'
-import BibleReferencePrintBar from '@libs/core/components/bibleReferencePrintBar'
 import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
+import BibleReference from 'bible-reference-rcl'
+import {
+  createTheme,
+  ThemeProvider,
+} from "@mui/material";
+
+const webCss = `
+article img {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 640px;
+}
+`
+
+const printCss = `
+@media print {
+  .obs-story-title {
+    page-break-after: always !important;
+    text-align: center;
+    padding-top: 300px;
+  }
+
+  article + article {
+    page-break-before: unset !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+`
+
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+        "*": {
+          borderBottom: "2px solid red",
+        },
+    },
+  },
+})
 
 export default function OpenBibleStories({
   urlInfo,
+  htmlSections,
   catalogEntry,
-  updateUrlHashInAddressBar,
   setStatusMessage,
   setErrorMessage,
-  setPrintHtml,
-  onPrintClick,
+  setHtmlSections,
+  setWebCss,
+  setPrintCss,
+  setDocumentAnchor,
 }) {
   const onBibleReferenceChange = (b, c, v) => {
-    c = parseInt(c)
-    v = parseInt(v)
-    const verseEl = document.getElementById(`${b}-${c}-${v}`)
-    if (verseEl) {
-      window.scrollTo({
-        top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-        behavior: "smooth",
-      })
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
-    }
+    setDocumentAnchor([b, c, v].join('-'))      
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } =
@@ -46,9 +75,9 @@ export default function OpenBibleStories({
     setErrorMessage(e.message)
   }
 
-  let html = ""
+  let obsHtmlSections = ""
   try {
-    html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
+    obsHtmlSections = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
   } catch (e) {
     setErrorMessage(e.message)
   }
@@ -60,56 +89,21 @@ export default function OpenBibleStories({
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (html) {
-      setPrintHtml(html)
+    if (obsHtmlSections) {
+      setHtmlSections({...htmlSections, ...obsHtmlSections})
+      setWebCss(webCss)
+      setPrintCss(printCss)
       setStatusMessage("")
-      Promise.all(
-        Array.from(document.images)
-          .filter((img) => !img.complete)
-          .map(
-            (img) =>
-              new Promise((resolve) => {
-                img.onload = img.onerror = resolve
-              })
-          )
-      ).then(() => {
-        bibleReferenceActions.goToBookChapterVerse(
-          bibleReferenceState.bookId,
-          bibleReferenceState.chapter,
-          bibleReferenceState.verse
-        )
-      })
     }
-  }, [html])
+  }, [obsHtmlSections])
 
   return (
-    <>
-      <BibleReferencePrintBar 
-        bibleReferenceState={bibleReferenceState} 
-        bibleReferenceActions={bibleReferenceActions}
-        onPrintClick={onPrintClick} 
-        printEnabled={html != ""} />
-      {html && (
-        <div
-          style={{
-            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: DOMPurify.sanitize(html),
-          }}
-        />
-      )}
-    </>
+    <ThemeProvider theme={theme}>
+      <BibleReference
+        status={bibleReferenceState}
+        actions={bibleReferenceActions}
+        style={{minWidth: "auto"}}
+      />
+    </ThemeProvider>
   )
-}
-
-OpenBibleStories.propTypes = {
-  urlInfo: PropTypes.object,
-  catalogEntry: PropTypes.object,
-  updateUrlHashInAddressBar: PropTypes.func,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  setPrintHtml: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }
