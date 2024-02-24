@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { usePkBookPreviewRenderer } from '@oce-editor-tools/base'
 import { Proskomma } from 'proskomma-core'
 
+
 export default function useUsfmPreviewRenderer(props) {
   const {
     bookId,

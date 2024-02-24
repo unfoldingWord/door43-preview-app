@@ -22,7 +22,7 @@ export function AppContextProvider({ children }) {
   const [repo, setRepo] = useState()
   const [catalogEntry, setCatalogEntry] = useState()
   const [ResourceComponent, setResourceComponent] = useState()
-  const [html, setHtml] = useState("")
+  const [htmlSections, setHtmlSections] = useState({cover: "", copyright: "", toc: "", body: ""})
   const [webCss, setWebCss] = useState("")
   const [printCss, setPrintCss] = useState("")
   const [canChangeColumns, setCanChangeColumns] = useState(false)
@@ -30,6 +30,7 @@ export function AppContextProvider({ children }) {
   const [printOptions, setPrintOptions] = useState({})
   const [documentReady, setDocumentReady] = useState(false)
   const [documentAnchor, setDocumentAnchor] = useState('')
+  const [lastSeenAnchor, setLastSeenAnchor] = useState()
 
   /*** For new resource model ***/
   const [organizations, setOrganizations] = useState()
@@ -152,22 +153,6 @@ export function AppContextProvider({ children }) {
         }
       }
       if(catalogEntry.metadata_type && catalogEntry.subject) {
-        const props = {
-          urlInfo,
-          serverInfo,
-          catalogEntry,
-          html,
-          setHtml,
-          webCss,
-          setWebCss,
-          printCss,
-          setPrintCss,
-          setStatusMessage,
-          setErrorMessage,
-          setCanChangeColumns,
-          onPrintClick,
-          setDocumentAnchor,
-        }
         switch (catalogEntry.metadata_type) {
           case "rc":
             switch (catalogEntry.subject) {
@@ -175,19 +160,19 @@ export function AppContextProvider({ children }) {
               case "Bible":
               case "Greek New Testament":
               case "Hebrew Old Testament":
-                setResourceComponent(<Bible {...props} />)
+                setResourceComponent(() => Bible)
                 return
               case "Open Bible Stories":
-                setResourceComponent(<OpenBibleStories {...props} />)
+                setResourceComponent(() => OpenBibleStories)
                 return
               case "Translation Academy":
-                setResourceComponent(<RcTranslationAcademy {...props} />)
+                setResourceComponent(() => RcTranslationAcademy)
                 return
               case "TSV Translation Notes":
-                setResourceComponent(<RcTranslationNotes {...props} />)
+                setResourceComponent(() => RcTranslationNotes)
                 return
               case "TSV Translation Questions":
-                setResourceComponent(<RcTranslationQuestions {...props} />)
+                setResourceComponent(() => RcTranslationQuestions)
                 return
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)
@@ -198,7 +183,7 @@ export function AppContextProvider({ children }) {
               case "scripture":
                 switch (catalogEntry.flavor) {
                   case "textTranslation":
-                    setResourceComponent(<Bible {...props} />)
+                    setResourceComponent(() => Bible)
                     return
                   default:
                     setErrorMessage(`Conversion of SB flavor \`${catalogEntry.flavor}\` is not currently supported.`)
@@ -207,7 +192,7 @@ export function AppContextProvider({ children }) {
               case "gloss":
                 switch (catalogEntry.flavor) {
                   case "textStories":
-                    setResourceComponent(<OpenBibleStories {...props} />)
+                    setResourceComponent(() => OpenBibleStories)
                     return
                 }
                 return
@@ -222,7 +207,7 @@ export function AppContextProvider({ children }) {
             switch (catalogEntry.subject) {
               case "Aligned Bible":
               case "Bible":
-                setResourceComponent(<Bible {...props} />)
+                setResourceComponent(() => Bible)
                 return
               default:
                 setErrorMessage(`Conversion of translationCore \`${subject}\` repositories is currently not supported.`)
@@ -247,8 +232,8 @@ export function AppContextProvider({ children }) {
       repo,
       repos,
       languages,
-      resourceComponent: ResourceComponent,
-      html,
+      ResourceComponent,
+      htmlSections,
       webCss,
       printCss,
       canChangeColumns,
@@ -258,12 +243,14 @@ export function AppContextProvider({ children }) {
       printOptions,
       documentReady,
       documentAnchor,
+      lastSeenAnchor,
     },
     actions: {
+      onPrintClick,
       setStatusMessage,
       setErrorMessage,
       clearErrorMessage,
-      setHtml,
+      setHtmlSections,
       setWebCss,
       setPrintCss,
       setCanChangeColumns,
@@ -271,6 +258,7 @@ export function AppContextProvider({ children }) {
       setPrintOptions,
       setDocumentReady,
       setDocumentAnchor,
+      setLastSeenAnchor,
     },
   }
 

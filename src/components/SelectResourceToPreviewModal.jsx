@@ -74,7 +74,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
@@ -98,7 +98,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
@@ -122,7 +122,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "no-cache"})
       .then(response => response.json())
       .then(({data}) => {
         setRepos({...repos, [selectedOwner.username]: data})
@@ -144,7 +144,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchBranches = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`, {cache: "no-cache"})
         .then(response => response.json())
         .then(branches => {
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}})
@@ -160,7 +160,7 @@ export default function SelectResourceToPreviewModal(
 
     const fetchTags = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`, {cache: "no-cache"})
         .then(response => response.json())
         .then(tags => {
           setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}})
@@ -188,7 +188,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`)
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {cache: "no-cache"})
       .then(response => response.json())
       .then((entry) => {
         setCatalogEntry(entry)

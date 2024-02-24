@@ -13,17 +13,24 @@ const webCss = `
 article img {
   display: block;
   margin: 0 auto;
-  width: 640px;
-  height: 360px;
+  width: 100%;
+  max-width: 640px;
 }
 `
 
 const printCss = `
-.obs-story-header {
-  page-break-before: always; 
-  page-break-after: always;
-  text-align: center;
-  padding-top: 300px;
+@media print {
+  .obs-story-title {
+    page-break-after: always !important;
+    text-align: center;
+    padding-top: 300px;
+  }
+
+  article + article {
+    page-break-before: unset !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
 `
 
@@ -39,10 +46,11 @@ const theme = createTheme({
 
 export default function OpenBibleStories({
   urlInfo,
+  htmlSections,
   catalogEntry,
   setStatusMessage,
   setErrorMessage,
-  setHtml,
+  setHtmlSections,
   setWebCss,
   setPrintCss,
   setDocumentAnchor,
@@ -67,9 +75,9 @@ export default function OpenBibleStories({
     setErrorMessage(e.message)
   }
 
-  let _html = ""
+  let obsHtmlSections = ""
   try {
-    _html = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
+    obsHtmlSections = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
   } catch (e) {
     setErrorMessage(e.message)
   }
@@ -81,13 +89,13 @@ export default function OpenBibleStories({
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (_html) {
-      setHtml(_html)
+    if (obsHtmlSections) {
+      setHtmlSections({...htmlSections, ...obsHtmlSections})
       setWebCss(webCss)
       setPrintCss(printCss)
       setStatusMessage("")
     }
-  }, [_html])
+  }, [obsHtmlSections])
 
   return (
     <ThemeProvider theme={theme}>

@@ -30,25 +30,26 @@ import { useReactToPrint } from "react-to-print";
 import { updateUrlHashInAddressBar } from "@utils/url";
 import { WebPreviewComponent } from "./WebPreviewComponent";
 import { PrintPreviewComponent } from "./PrintPreviewComponent";
-import { random } from "lodash";
+import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
+
 
 export default function AppWorkspace() {
-  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false);
-  const [scrollDocumentAnchor, setScrollDocumentAnchor] = useState();
-  const [view, setView] = useState("web");
-  const [waitPreviewStart, setWaitPreviewStart] = useState(true);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [printPreviewState, setPrintPreviewState] = useState("not started");
+  const [initialized, setInitialized] = useState(false)
+  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
+  const [view, setView] = useState("web")
+  const [waitPreviewStart, setWaitPreviewStart] = useState(true)
+  const [imagesLoaded, setImagesLoaded] = useState(false)
+  const [printPreviewState, setPrintPreviewState] = useState("not started")
 
   const {
     state: {
       repo,
       urlInfo,
       catalogEntry,
-      resourceComponent,
+      ResourceComponent,
       statusMessage,
       errorMessages,
-      html,
+      htmlSections,
       webCss,
       printCss,
       canChangeColumns,
@@ -58,19 +59,28 @@ export default function AppWorkspace() {
       printOptions,
       documentReady,
       documentAnchor,
+      lastSeenAnchor,
     },
     actions: {
+      onPrintClick,
       clearErrorMessage,
+      setWebCss,
+      setPrintCss,
+      setStatusMessage,
+      setErrorMessage,
+      setCanChangeColumns,
+      setHtmlSections,
       setIsOpenPrint,
       setPrintOptions,
-      setErrorMessage,
+      setDocumentAnchor,
       setDocumentReady,
+      setLastSeenAnchor,
     },
   } = useContext(AppContext)
 
   const webPreviewRef = useRef()
   const printPreviewRef = useRef()
-  const printReachtComponent = useReactToPrint({
+  const printReactComponent = useReactToPrint({
     content: () => printPreviewRef.current,
   })
   const handlePrint = () => {
@@ -78,7 +88,7 @@ export default function AppWorkspace() {
       alert("The document is not yet ready to print. Please wait...")
       return false
     }
-    printReachtComponent()
+    printReactComponent()
   }
 
   // const handlePrint = () => {
@@ -95,7 +105,7 @@ export default function AppWorkspace() {
   // }
 
   const printDrawerProps = {
-    openPrintDrawer: isOpenPrint && html != "",
+    openPrintDrawer: isOpenPrint && htmlSections?.body != "",
     onClosePrintDrawer: () => {
       setIsOpenPrint(false)
     },
@@ -107,6 +117,10 @@ export default function AppWorkspace() {
     handlePrint,
   }
 
+  const onUpArrowClick = (e) => {
+    window.scrollTo({top: 0})
+  }
+  
   let dcsRef = ""
   let infoLine = null
   if (urlInfo && serverInfo?.baseUrl) {
@@ -162,42 +176,76 @@ export default function AppWorkspace() {
     backdropFilter: "none",
   }
 
+  const scrollToAnchor = async (anchor) => {
+    if (anchor) {
+      if (waitPreviewStart) {
+        await new Promise((r) => setTimeout(r, 500))
+        setWaitPreviewStart(false)
+      }
+      const elementToScrollTo = document.querySelector(
+        `#${view}-preview [id='${anchor}']`
+      )
+      if (elementToScrollTo) {
+        window.scrollTo({
+          top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
+        })
+      }
+    }
+  }
+
   useEffect(() => {
+    const initalizeApp = async() => {
+    setInitialized(true)
+    document.querySelector('#root').addEventListener('click', (e) => {
+      const href = e.target.getAttribute('href')?.replace(/^#/, '')
+      if (e.target.tagName === 'A' && href) {
+        if (! href.startsWith('note-')) {
+          console.log("SET DOCUMENT ANCHOR", href)
+          setDocumentAnchor(href)
+        } else {
+          console.log("Scrolling without setting to: ", href)
+          scrollToAnchor(href)
+        }
+        e.stopPropagation()
+        return false
+      }
+    })
+
     document.addEventListener("scroll", {
-      currentId: "",
-      handleEvent: function (e) {
-        if (this.currentID) {
-          const currentElement = document.querySelector(
-            `[id='${this.currentID}']`
-          )
-          if (currentElement) {
-            const currentRect = currentElement.getBoundingClientRect()
-            if (currentRect.top > 0 && currentRect.top < 150) {
+      timer: null,
+      handleEvent: function() {
+        if(this.timer !== null) {
+          clearTimeout(this.timer);        
+        }
+        this.timer = setTimeout(function() {
+          let found = false
+          const elements = document.querySelectorAll("section, article, span")
+          elements.forEach((e) => {
+            if (found || ! e.id || e.id.startsWith("note-")) {
               return
             }
-          }
-        }
-        let found = ""
-        const elements = document.querySelectorAll(".header-anchor")
-        elements.forEach((e) => {
-          if (found) {
-            return
-          }
-          const rect = e.getBoundingClientRect()
-          if (rect.top > 0 && rect.top < 150) {
-            found = e.id
-            this.currentID = e.id
-            setScrollDocumentAnchor(e.id)
-          }
-        })
+            const rect = e.getBoundingClientRect()
+            if (rect.top > document.querySelector("header").offsetHeight && rect.top < 400) {
+              found = true
+              console.log("SETTING ANCHOR TO ", e.id)
+              setLastSeenAnchor(e.id)
+            }
+          })
+        }, 200)
       },
-    })
-  }, [])
+    }, false)
+  }
+
+    if (!initialized) {
+      setInitialized(true)
+      initalizeApp()
+    }
+  }, [initialized])
 
   useEffect(() => {
     if (documentAnchor) {
       updateUrlHashInAddressBar(documentAnchor)
-      setScrollDocumentAnchor(documentAnchor)
+      setLastSeenAnchor(documentAnchor)
     }
   }, [documentAnchor])
 
@@ -219,12 +267,12 @@ export default function AppWorkspace() {
     }
 
     setImagesLoaded(false)
-    if (html) {
+    if (htmlSections?.body) {
       determineIfImagesLoaded()
     } else {
       console.log("HTML IS EMPTY. DOC NOT READY.")
     }
-  }, [html, view])
+  }, [htmlSections?.body, view])
 
   useEffect(() => {
     setDocumentReady(
@@ -234,57 +282,36 @@ export default function AppWorkspace() {
   }, [imagesLoaded, printPreviewState])
 
   useEffect(() => {
-    const scrollToLastAnchor = async () => {
-      if (scrollDocumentAnchor) {
-        if (waitPreviewStart) {
-          await new Promise((r) => setTimeout(r, 500))
-          setWaitPreviewStart(false)
-        }
-        const elementToScrollTo = document.querySelector(
-          `[id='${scrollDocumentAnchor}']`
-        )
-        if (elementToScrollTo) {
-          window.scrollTo({
-            top:
-              elementToScrollTo.getBoundingClientRect().top + window.scrollY - 40,
-          })
-        }
-      }
+    if (htmlSections?.body && Object.keys(printOptions).length && (view == "web" || printPreviewState != "not started")) {
+      console.log("SCROLLING TO LAST SEEN ANCHOR: ", lastSeenAnchor)
+      scrollToAnchor(lastSeenAnchor)
     }
-
-    if (html && Object.keys(printOptions).length && (view == "web" || printPreviewState != "not started")) {
-      scrollToLastAnchor()
-    }
-  }, [view, printPreviewState, html, printOptions])
+  }, [view, printPreviewState, htmlSections?.body, printOptions])
 
   useEffect(() => {
-    const scrollToUrlAnchor = async () => {
-      if (documentAnchor) {
-        if (waitPreviewStart) {
-          await new Promise((r) => setTimeout(r, 1000))
-          setWaitPreviewStart(false)
-        }
-        const elementToScrollTo = document.querySelector(
-          `[id='${documentAnchor}']`
-        )
-        if (elementToScrollTo) {
-          window.scrollTo({
-            top: elementToScrollTo.getBoundingClientRect().top + window.scrollY,
-            behavior: "smooth",
-          })
-          setScrollDocumentAnchor(documentAnchor)
-        }
-      }
+    if (htmlSections?.body && documentAnchor) {
+      console.log("SCROLLING TO DOCUMENT ANCHOR: ", documentAnchor)
+      scrollToAnchor(documentAnchor)
     }
+  }, [htmlSections?.body, documentAnchor])
 
-
-    if (html && documentAnchor) {
-      scrollToUrlAnchor()
-    }
-  }, [html, documentAnchor])
-
-  const sample =
-    "https://vivliostyle.github.io/vivliostyle_doc/samples/gon/index.html"
+  const resourceComponentProps = {
+    urlInfo,
+    serverInfo,
+    catalogEntry,
+    htmlSections,
+    setHtmlSections,
+    webCss,
+    printCss,
+    lastSeenAnchor,
+    onPrintClick,
+    setWebCss,
+    setPrintCss,
+    setStatusMessage,
+    setErrorMessage,
+    setCanChangeColumns,
+    setDocumentAnchor,
+  }
 
   return (
     <Sheet>
@@ -302,10 +329,10 @@ export default function AppWorkspace() {
         />
       )}
       <Card>
-        {html && <PrintDrawer {...printDrawerProps} />}
+        {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
         <AppBar
           position="relative"
-          sx={{ backgroundColor: "white", position: "sticky", top: "0" }}
+          sx={{ backgroundColor: "white", position: "sticky", top: "0", color: "black" }}
         >
           <Toolbar
             sx={{
@@ -319,10 +346,10 @@ export default function AppWorkspace() {
             }}
           >
             <div>&nbsp;</div>
-            {resourceComponent}
+            {ResourceComponent ? <ResourceComponent {...resourceComponentProps} /> : ""}
             <div style={{ whiteSpace: "nowrap" }}>
               <ToggleButtonGroup
-                value={html && view}
+                value={view}
                 exclusive
                 onChange={(e, value) => {
                   if (value !== null) {
@@ -331,7 +358,7 @@ export default function AppWorkspace() {
                   }
                 }}
                 aria-label="View"
-                disabled={!html}
+                disabled={!htmlSections?.body}
               >
                 <ToggleButton value="web" aria-label="Web view">
                   <Tooltip title="Web view" arrow>
@@ -358,6 +385,11 @@ export default function AppWorkspace() {
                   />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Back to top" arrow>
+                <IconButton onClick={onUpArrowClick} disabled={window.scrollY==0}>
+                  <KeyboardDoubleArrowUpIcon />
+                </IconButton>     
+              </Tooltip>       
             </div>
           </Toolbar>
         </AppBar>
@@ -386,31 +418,31 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
-        {view == "web" ? (
-          <WebPreviewComponent
-            html={html}
-            webCss={webCss + printCss}
-            style={{
-              direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-            }}
-            ref={webPreviewRef}
-          />
-        ) : (
-          ""
-        )}
-          <PrintPreviewComponent
-            html={html}
-            printPreviewState={printPreviewState}
-            setPrintPreviewState={setPrintPreviewState}
-            printOptions={printOptions}
-            webCss={webCss}
-            printCss={printCss}
-            show={view == "print" || printPreviewState == "not started" || printPreviewState == "started"}
-            style={{
-              direction: catalogEntry ? catalogEntry.language_direction : "ltr",
-            }}
-            ref={printPreviewRef}
-          />
+        <WebPreviewComponent
+          html={htmlSections.body}
+          webCss={webCss + printCss}
+          style={{
+            display: view == "web" ? "block" : "none",
+            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
+          }}
+          ref={webPreviewRef}
+        />
+        <PrintPreviewComponent
+          catalogEntry={catalogEntry}
+          htmlSections={htmlSections}
+          webCss={webCss}
+          printCss={printCss}
+          printOptions={printOptions}
+          printPreviewState={printPreviewState}
+          setPrintPreviewState={setPrintPreviewState}
+          setHtmlSections={setHtmlSections}
+          style={{
+            display: view == "print" || printPreviewState == "not started" || printPreviewState == "started" ? "block" : "none",
+            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
+          }}
+          webPreviewRef={webPreviewRef}
+          ref={printPreviewRef}
+        />
         {statusMessage && !imagesLoaded && !errorMessages.length && (
           <Modal
             open={true}
@@ -438,7 +470,7 @@ export default function AppWorkspace() {
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={html != ""}
+          canLoad={htmlSections?.body != ""}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
           serverInfo={serverInfo}

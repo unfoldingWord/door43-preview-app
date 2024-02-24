@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { Autocomplete, TextField } from '@mui/material'
+import { Autocomplete, TextField, IconButton } from '@mui/material'
 import AutocompleteTocNavigation from "../../core/components/AutocompleteTocNavigation"
+
 
 export default function TaNavigation({
   taManuals,
@@ -64,7 +65,7 @@ export default function TaNavigation({
     useEffect(() => {
       if (taManuals && taManuals.length) {
         let manual = taManuals[0]
-        let section = taManuals[0]
+        let section = taManuals[0].sections[0]
         if (anchor) {
           section = findTocSection(anchor, taManuals)
         }
@@ -77,10 +78,10 @@ export default function TaNavigation({
             }
           }
         }
-        setSelectedManual(taManuals[0])
+        setSelectedManual(manual)
         setSelectedTocSection(taManuals[0].sections[0])
       }
-    }, [taManuals])
+    }, [anchor, taManuals])
 
     return (
           selectedManual && selectedTocSection ? 

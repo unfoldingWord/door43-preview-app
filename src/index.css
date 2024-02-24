@@ -119,27 +119,22 @@ header {
   background-color: white;
 }
 
-article {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-
-section {
+section, article {
   page-break-before: always;
-  page-break-inside: avoid;
 }
 
-.header-anchor {
-  display: block;
-  position: relative;
-  top: -100px;
-  visibility: hidden;
+section > :first-child, article > :first-child {
+  page-break-before: avoid !important;
+}
+
+section > section:first-of-type, section > article:first-of-type {
+  page-break-before: avoid !important;
 }
 
 .header-title {
   display: none;
 }
 
-#cover-page {
+.cover-page {
   text-align: center;
 }

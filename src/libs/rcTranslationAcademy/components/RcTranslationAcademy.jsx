@@ -104,9 +104,11 @@ const printCss = `
 export default function RcTranslationAcademy({
   urlInfo,
   catalogEntry,
+  htmlSections,
+  lastSeenAnchor,
   setStatusMessage,
   setErrorMessage,
-  setHtml,
+  setHtmlSections,
   setWebCss,
   setPrintCss,
   setDocumentAnchor,
@@ -125,9 +127,9 @@ export default function RcTranslationAcademy({
     setErrorMessage(e.message)
   }
 
-  let _html = ""
+  let html = ""
   try {
-    _html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals })
+    html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals })
   } catch (e) {
     setErrorMessage(e.message)
   }
@@ -140,16 +142,16 @@ export default function RcTranslationAcademy({
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (_html) {
-      setHtml(_html)
+    if (html) {
+      setHtmlSections({...htmlSections, toc: "", body: html})
       setStatusMessage("")
     }
-  }, [_html])
+  }, [html])
 
   return (
     <TaNavigation
         taManuals={taManuals} 
-        anchor={urlInfo.hash}
+        anchor={lastSeenAnchor}
         setDocumentAnchor={setDocumentAnchor}
       />
   )

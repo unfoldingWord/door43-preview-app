@@ -42,13 +42,50 @@ h1 {
 }
 `
 
+const printCss = `
+@page {
+  @footnote { 
+    float: bottom;
+    border-top: solid black 1px;
+    padding-top: 1em;
+    margin-top: 1em;
+ }
+}
+
+span.footnote {
+  float: footnote;
+  position: note(footnotes);
+}
+  
+::footnote-call { 
+  font-weight: 700;
+  font-size: 1em;
+  line-height: 0; 
+}
+  
+::footnote-marker {
+  /* content: counter(footnote, lower-alpha) ". "; */
+  font-weight: 700;
+  line-height: 0; 
+  font-style: italic !important;
+}
+
+.pagedjs_footnote_area * {
+  background-color: white !important;
+}
+
+a.footnote {
+  font-style: italic !important;
+}
+`
+
 export default function Bible({
   urlInfo,
   catalogEntry,
-  html,
+  htmlSections,
   setStatusMessage,
   setErrorMessage,
-  setHtml,
+  setHtmlSections,
   setWebCss,
   setPrintCss,
   setCanChangeColumns,
@@ -56,6 +93,7 @@ export default function Bible({
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
+  const [bookTitle, setBookTitle] = useState()
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [usfmText, setUsfmText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
@@ -150,12 +188,13 @@ export default function Bible({
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
       if (bookId in htmlCache) {
-        setHtml(htmlCache[bookId])
+        setHtmlSections({...htmlSections, toc: "", body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
-        let bookTitle = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setStatusMessage(<>Preparing preview for {bookTitle}.<br/>Please wait...</>)
+        const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
+        setBookTitle(title)
+        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
         setUsfmText("")
-        setHtml("")
+        setHtmlSections({...htmlSections, toc: "", body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -204,10 +243,13 @@ export default function Bible({
         /id="chapter-(\d+)-verse-(\d+)"/g,
         `id="${bookIdToProcess}-$1-$2"`
       )
-      _html = 
-      _html = `<div id="paras"><h1 style="text-align: center">${catalogEntry.title}</h1><span id="${bookId}"></span>\n${_html}</div>`
-      setHtml(_html)
+      _html = _html.replaceAll(/ id="chapter-(\d+)"/gi, ` id="${bookId}-$1" data-toc-title="${bookTitle} $1"`)
+      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`)
+      _html = `<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">${_html}</section>`
+      setHtmlSections({...htmlSections, cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: "", body: _html})
       setStatusMessage("")
+      setWebCss(webCss)
+      setPrintCss(printCss)
       if (!(bookIdToProcess in htmlCache)) {
         setHtmlCache({ ...htmlCache, [bookIdToProcess]: _html })
       }

@@ -10,11 +10,11 @@ export default function RcTranslationWords({
   urlInfo,
   catalogEntry,
   zipFileData,
+  htmlSections,
   updateUrlHashInAddressBar,
-  setHtml,
+  setHtmlSections,
 }) {
   const [storiesMarkdown, setStoriesMarkdown] = useState();
-  const [html, setHtml] = useState("");
 
   const onBibleReferenceChange = (b, c, v) => {
     const storyNum = parseInt(c);
@@ -83,7 +83,7 @@ export default function RcTranslationWords({
       storiesMarkdown.forEach((storyMarkdown, i) => {
         html += `<div id="obs-${i + 1}-1">${md.render(storyMarkdown)}</div>`;
       });
-      setHtml(html);
+      setHtmlSections({...htmlSections, toc: "", body: html});
     }
   }, [storiesMarkdown, html]);
 

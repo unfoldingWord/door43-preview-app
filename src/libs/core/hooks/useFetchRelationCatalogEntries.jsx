@@ -14,20 +14,20 @@ export default function useFetchRelationCatalogEntries({
         throw new Error("Catalog entry is invalid")
       }
       const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}`;
-      fetch(metadataUrl).
+      fetch(metadataUrl, {cache: "no-cache"}).
         then(response => {
           if (!response.ok) {
             throw Error(`Bad response from DCS for ${metadataUrl}`)
           }
-          response.json()
+          return response.json()
         }).then(metadata => {
           if (!metadata) {
-            throw new Error("No manifest.yaml file found for this resource.");
+            throw new Error("No metadata found for this resource.");
           }
           if (!metadata?.dublin_core?.relation) {
             throw new Error("There is no dublin_core.relation property in the manifest.yaml file.");
           }
-          getRelationCatalogEntries(
+          return getRelationCatalogEntries(
             catalogApiUrl,
             metadata.dublin_core.relation,
             [catalogEntry.repo.owner.username, "unfoldingword", "door43-catalog"],

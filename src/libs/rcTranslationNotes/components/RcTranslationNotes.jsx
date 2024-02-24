@@ -23,9 +23,10 @@ const webCss = ``
 export default function RcTranslationNotes({
   urlInfo,
   catalogEntry,
+  htmlSections,
   setStatusMessage,
   setErrorMessage,
-  setHtml,
+  setHtmlSections,
   setWebCss,
   setPrintCss,
   setCanChangeColumns,
@@ -34,6 +35,7 @@ export default function RcTranslationNotes({
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
+  const [bookTitle, setBookTitle] = useState()
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
@@ -150,12 +152,13 @@ export default function RcTranslationNotes({
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
       if (bookId in htmlCache) {
-        setHtml(htmlCache[bookId])
+        setHtmlSections({...setHtmlSections, toc: "", body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
-        let bookTitle = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setStatusMessage(<>Preparing preview for {bookTitle}.<br/>Please wait...</>)
+        const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
+        setBookTitle(title)
+        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
         setTsvText("")
-        setHtml("")
+        setHtmlSections({...htmlSections, toc: "", body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -200,7 +203,10 @@ export default function RcTranslationNotes({
 
   useEffect(() => {
     const generateHtml = async () => {
-      let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
+      let html = `
+<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">
+  <h1 style="text-align: center">${catalogEntry.title}</h1>
+`
       let prevChapter = ""
       let prevVerse = ""
       const usfmJSON = usfm.toJSON(targetUsfm)
@@ -214,23 +220,33 @@ export default function RcTranslationNotes({
         }
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
-        html += `<article class="tn-note">`
         const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}`
+        if (chapterStr != prevChapter) {
+          if (prevChapter) {
+            html += `
+</section>
+`
+          }
+          html += `
+<section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+`
+        }
+        html += `<article class="tn-note" id="${link}">`
         if (chapterStr != prevChapter || verseStr != prevVerse) {
           const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
-          if (chapterStr != prevChapter || firstVerse != prevVerse) {
-            html += `<span class="header-anchor" id="${link}"></span>`
-          }
           if (chapterStr != "front" && firstVerse != "intro") {
             if (firstVerse != prevVerse) {
               html += `<h2 class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
             } else {
               html += `<h2>${chapterStr}:${verseStr}</h2>`
-            }  
+            }
             const scripture = verseObjectsToString(
               usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects
             )
+            html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
             html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
+          } else {
+            html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
           }
           prevChapter = chapterStr
           prevVerse = verseStr
@@ -261,13 +277,17 @@ export default function RcTranslationNotes({
         <hr style="width: 75%"/>
       </article>`
       })
+      html += `
+  </section>
+</section>
+`
 
       const taCatalogEntry = relationCatalogEntries.filter(entry => entry.subject == "Translation Academy")[0]
       if (taCatalogEntry) {
         // populateSupportReferences(supportReferences, taCatalogEntry)
       }
 
-      setHtml(html)
+      setHtmlSections({...htmlSections, toc: "", body: html})
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 

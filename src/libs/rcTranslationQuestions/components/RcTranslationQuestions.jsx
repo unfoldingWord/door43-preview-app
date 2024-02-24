@@ -21,9 +21,10 @@ import { verseObjectsToString } from "uw-quote-helpers";
 export default function RcTranslationQuestions({
   urlInfo,
   catalogEntry,
+  htmlSections,
   setStatusMessage,
   setErrorMessage,
-  setHtml,
+  setHtmlSections,
   setCanChangeColumns,
   updateUrlHashInAddressBar,
   onPrintClick,
@@ -144,12 +145,12 @@ export default function RcTranslationQuestions({
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
       if (bookId in htmlCache) {
-        setHtml(htmlCache[bookId])
+        setHtmlSections({...htmlSections, toc: "", body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
         let bookTitle = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
         setStatusMessage(<>Preparing preview for {bookTitle}.<br/>Please wait...</>)
         setTsvText("")
-        setHtml("")
+        setHtmlSections({...htmlSections, toc: "", body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -237,7 +238,7 @@ export default function RcTranslationQuestions({
             <hr style="width: 75%"/>
           </article>`
       })
-      setHtml(html)
+      setHtmlSections({...htmlSections, toc: "", body: html})
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 
@@ -248,7 +249,7 @@ export default function RcTranslationQuestions({
 
   useEffect(() => {
     const handlePrintSettingsAndNavigation = async () => {
-      setHtml(html)
+      setHtmlSections({...htmlSections, toc: "", body: html})
       setStatusMessage("")
       setCanChangeColumns(true)
       bibleReferenceActions.goToBookChapterVerse(
@@ -261,7 +262,7 @@ export default function RcTranslationQuestions({
     if (html) {
       handlePrintSettingsAndNavigation()
     } else {
-      setHtml("")
+      setHtmlSections({})
       setCanChangeColumns(false)
     }
   }, [html])
