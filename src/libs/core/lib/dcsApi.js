@@ -18,9 +18,7 @@ export const getRepoContentsContent = async (repoApiUrl, filePath, ref, recursiv
         if (! response || ! response.ok) {
           throw new Error(`Unable to get contents of repo on DCS.`)
         }
-        else {
-            return response.json()
-        }
+        return response.json()
     }).then(json => base64.decode(json.content))
 }
 
