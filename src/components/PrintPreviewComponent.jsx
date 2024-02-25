@@ -40,10 +40,10 @@ function generateToc(content) {
   let html = ""
   elements.forEach(element => {
     const title = element.getAttribute('data-toc-title')
-    if (title) {
+    if (title && element.id) {
       html += `
 <li class="toc-entry">
-  <a class="toc-element" href="#${element.id}"><span class="toc-element-title">${title}</span></a>
+  <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
 </li>
 `
     }
@@ -91,7 +91,12 @@ export const PrintPreviewComponent = forwardRef(({
 `
       }
       const cover = generateCover(catalogEntry, htmlSections.cover)
-      const body = htmlSections.body || ""
+      let body = htmlSections.body || ""
+      body = webPreviewRef.current.cloneNode(true)
+      body.querySelectorAll('[id][data-toc-title]').forEach(e => {
+        e.id = `print-${e.id}`
+      })
+      // console.log(webPreviewRef.current.innerHTML)
       const previewer = new Previewer()
       previewer.preview(
         `
@@ -99,7 +104,7 @@ ${cover}
 ${copyright}
 ${toc}
 <section id="body">
-${body}
+${body.innerHTML}
 </section>
 `,
         [
@@ -271,7 +276,6 @@ section > section:first-of-type, section > article:first-of-type {
 h1 {
   font-size: 1.6em;
 }
-
 
 ${webCss}
 

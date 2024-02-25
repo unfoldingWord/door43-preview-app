@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import DOMPurify from 'dompurify'
-import {
-  getLtrPreviewStyle,
-  getRtlPreviewStyle,
-} from "@libs/core/lib/previewStyling.js"
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
@@ -18,7 +13,30 @@ import MarkdownIt from 'markdown-it'
 import { verseObjectsToString } from 'uw-quote-helpers'
 
 
-const webCss = ``
+const webCss = `
+.tn-entry h1 {
+  font-size: 1.4em;
+  margin: 10px 0;
+}
+
+.tn-entry h2 {
+  font-size: 1.2em;
+  margin: 10px 0;
+}
+
+.tn-entry h3, .tn-entry h4 {
+  font-size: 1.1em;
+  margin: 10px 0;
+}
+
+article + article {
+  page-break-before: avoid !important;
+}
+
+hr {
+  page-break-before: avoid !important;
+}
+`
 
 export default function RcTranslationNotes({
   urlInfo,
@@ -26,6 +44,7 @@ export default function RcTranslationNotes({
   htmlSections,
   setStatusMessage,
   setErrorMessage,
+  setDocumentAnchor,
   setHtmlSections,
   setWebCss,
   setPrintCss,
@@ -56,6 +75,7 @@ export default function RcTranslationNotes({
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
       setBookId(b)
+      setDocumentAnchor(b)
     } else {
       c = parseInt(c)
       v = parseInt(v)
@@ -151,14 +171,14 @@ export default function RcTranslationNotes({
   useEffect(() => {
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
+      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
+      setBookTitle(title)
       if (bookId in htmlCache) {
-        setHtmlSections({...setHtmlSections, toc: "", body: htmlCache[bookId]})
+        setHtmlSections({...setHtmlSections, cover: `<h3>${title}</h3>`, body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
-        const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setBookTitle(title)
         setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
         setTsvText("")
-        setHtmlSections({...htmlSections, toc: "", body: ""})
+        setHtmlSections({...htmlSections, body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -204,7 +224,7 @@ export default function RcTranslationNotes({
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">
+<section class="tn-book" id="${bookId}" data-toc-title="${bookTitle}">
   <h1 style="text-align: center">${catalogEntry.title}</h1>
 `
       let prevChapter = ""
@@ -214,70 +234,88 @@ export default function RcTranslationNotes({
       const supportReferences = {}
       let hasIntro = false
 
-      renderedTsvData.forEach((row) => {
+      renderedTsvData.forEach(row => {
         if (!row || !row.ID || !row.Note) {
           return
         }
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
-        const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}`
+        const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
         if (chapterStr != prevChapter) {
           if (prevChapter) {
             html += `
-</section>
+    </section>
+  </section>
 `
           }
           html += `
-<section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+  <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
 `
         }
-        html += `<article class="tn-note" id="${link}">`
-        if (chapterStr != prevChapter || verseStr != prevVerse) {
-          const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
-          if (chapterStr != "front" && firstVerse != "intro") {
-            if (firstVerse != prevVerse) {
-              html += `<h2 class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
-            } else {
-              html += `<h2>${chapterStr}:${verseStr}</h2>`
-            }
-            const scripture = verseObjectsToString(
-              usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects
-            )
-            html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
-            html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
-          } else {
-            html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
+        if (chapterStr != prevChapter || firstVerse != prevVerse) {
+          if (chapterStr == prevChapter) {
+            html += `
+    </section>
+`
           }
-          prevChapter = chapterStr
-          prevVerse = verseStr
-        }
-        if (row.GLQuote || row.Quote) {
-          html += `<span class="header-anchor" id="${link}-${row.ID}"></span><h3 id="${row.ID}" class="tn-note-header">${
-            row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'
-          }</h3>`
-        }
-        if (row.SupportReference) {
-          if (! (row.SupportReference in supportReferences)) {
-            supportReferences[row.SupportReference] = {
-              backRefs: [],
-              title: "",
-              html: "",
-            }
-          }
-          supportReferences[row.SupportReference].backRefs.push(`<a href="#${row.ID}">${row.Reference}</a>`)
           html += `
-        <div class="tn-note-support-reference">
-          <span style="font-weight: bold">Support Reference:</span> ${row.SupportReference}
-        </div>`
-        }
-        html += `
-        <div class="tn-note-body">
-            ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+    <section class="tn-verse" id="${bookId}-${chapterStr}-${firstVerse}">
+`
+          if (chapterStr != "front" && firstVerse != "intro" && firstVerse in usfmJSON.chapters[chapterStr]) {
+            const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
+            html += `
+      <article class="tn-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
+        <h2 class="tn-scripture-header">${bookTitle} ${chapterStr}:${firstVerse}</h2>
+        <div class="tn-scripture-verse">
+          <p>
+            <span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: 
+            <em>${scripture}</em>
+          </p>
         </div>
         <hr style="width: 75%"/>
-      </article>`
+      </article>
+`
+          }
+        }
+
+        html += `
+      <article class="tn-entry" id="${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}">
+`
+        if ((chapterStr != "front" || verseStr != "intro") && (row.GLQuote || row.Quote)) {
+          html += `
+        <h3 class="tn-entry-header">
+          ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'}
+        </h3>
+`
+          if (row.SupportReference) {
+            if (! (row.SupportReference in supportReferences)) {
+              supportReferences[row.SupportReference] = {
+                backRefs: [],
+                title: "",
+                html: "",
+              }
+            }
+            supportReferences[row.SupportReference].backRefs.push(`<a href="#${row.ID}">${row.Reference}</a>`)
+            html += `
+          <div class="tn-note-support-reference">
+            <span style="font-weight: bold">Support Reference:</span> [[${row.SupportReference}]]
+          </div>
+  `
+          }
+        }
+        html += `
+          <div class="tn-entry-body">
+            ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+          </div>
+          <hr style="width: 75%"/>
+        </article>
+`
+        prevChapter = chapterStr
+        prevVerse = firstVerse
       })
+
       html += `
+    </section>
   </section>
 </section>
 `
@@ -287,7 +325,7 @@ export default function RcTranslationNotes({
         // populateSupportReferences(supportReferences, taCatalogEntry)
       }
 
-      setHtmlSections({...htmlSections, toc: "", body: html})
+      setHtmlSections({...htmlSections, cover: `<h3>${bookTitle}</h3>`, body: html})
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 

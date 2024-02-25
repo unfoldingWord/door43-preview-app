@@ -182,9 +182,14 @@ export default function AppWorkspace() {
         await new Promise((r) => setTimeout(r, 500))
         setWaitPreviewStart(false)
       }
-      const elementToScrollTo = document.querySelector(
+      let elementToScrollTo = document.querySelector(
         `#${view}-preview [id='${anchor}']`
       )
+      if (!elementToScrollTo) {
+        elementToScrollTo = document.querySelector(
+          `#${view}-preview [id='${view}-${anchor}']`
+        )
+      }
       if (elementToScrollTo) {
         window.scrollTo({
           top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
@@ -196,18 +201,23 @@ export default function AppWorkspace() {
   useEffect(() => {
     const initalizeApp = async() => {
     setInitialized(true)
-    document.querySelector('#root').addEventListener('click', (e) => {
-      const href = e.target.getAttribute('href')?.replace(/^#/, '')
-      if (e.target.tagName === 'A' && href) {
+    document.querySelector('#root').addEventListener('click', e => {
+      console.log(e)
+      const a = e.target.closest("a")
+      if (! a) {
+        return
+      }
+      const href = a.getAttribute('href')?.replace(/^#/, '')
+      if (href) {
         if (! href.startsWith('note-')) {
           console.log("SET DOCUMENT ANCHOR", href)
-          setDocumentAnchor(href)
+          setDocumentAnchor(href.replace(/^print-/, ''))
         } else {
           console.log("Scrolling without setting to: ", href)
           scrollToAnchor(href)
         }
+        e.preventDefault()
         e.stopPropagation()
-        return false
       }
     })
 
@@ -227,8 +237,8 @@ export default function AppWorkspace() {
             const rect = e.getBoundingClientRect()
             if (rect.top > document.querySelector("header").offsetHeight && rect.top < 400) {
               found = true
-              console.log("SETTING ANCHOR TO ", e.id)
-              setLastSeenAnchor(e.id)
+              console.log("SETTING ANCHOR TO ", e.id.replace(/^print-/, ''))
+              setLastSeenAnchor(e.id.replace(/^print-/, ''))
             }
           })
         }, 200)

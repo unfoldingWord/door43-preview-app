@@ -1,22 +1,27 @@
-import { useState, useEffect } from "react"
-import PropTypes from "prop-types"
-import DOMPurify from "dompurify"
-import {
-  getLtrPreviewStyle,
-  getRtlPreviewStyle,
-} from "../../core/lib/previewStyling.js"
-import { useBibleReference } from "bible-reference-rcl"
-import { BibleBookData } from "../../../common/books"
-import { getSupportedBooks } from "../../core/lib/books"
+import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+import { useBibleReference } from 'bible-reference-rcl'
+import { BibleBookData } from '@common/books'
+import { getSupportedBooks } from '@libs/core/lib/books'
 import BibleReference from 'bible-reference-rcl'
-import { getRepoContentsContent, getRepoGitTrees } from "../../core/lib/dcsApi"
-import useFetchRelationCatalogEntries from "../../core/hooks/useFetchRelationCatalogEntries"
-import useFetchBookFileBySubject from "../../core/hooks/useFetchBookFileBySubject"
-import useTsvGLQuoteAdder from "../../core/hooks/useTsvGLQuoteAdder"
-import usfm from "usfm-js";
-import MarkdownIt from "markdown-it";
-import { verseObjectsToString } from "uw-quote-helpers";
+import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
+import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
+import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
+import usfm from 'usfm-js'
+import MarkdownIt from 'markdown-it'
+import { verseObjectsToString } from 'uw-quote-helpers'
+import Papa from 'papaparse'
 
+const webCss = `
+.tq-question {
+  font-weight: bold;
+}
+
+article + article {
+  page-break-before: avoid !important;
+  break-brefore: avoid !important;
+}
+`
 
 export default function RcTranslationQuestions({
   urlInfo,
@@ -24,13 +29,17 @@ export default function RcTranslationQuestions({
   htmlSections,
   setStatusMessage,
   setErrorMessage,
+  setDocumentAnchor,
   setHtmlSections,
+  setWebCss,
+  setPrintCss,
   setCanChangeColumns,
   updateUrlHashInAddressBar,
   onPrintClick,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
+  const [bookTitle, setBookTitle] = useState()
   const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
   const [htmlCache, setHtmlCache] = useState({})
@@ -51,6 +60,7 @@ export default function RcTranslationQuestions({
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
       setBookId(b)
+      setDocumentAnchor(b)
     } else {
       c = parseInt(c)
       v = parseInt(v)
@@ -83,24 +93,11 @@ export default function RcTranslationQuestions({
     catalogEntry,
   })
 
-  const { fileContents: sourceUsfm } = useFetchBookFileBySubject({
-    catalogEntries: relationCatalogEntries,
-    bookId: bookIdToProcess,
-    subject: BibleBookData[bookIdToProcess]?.testament == "old" ? "Hebrew Old Testament" : "Greek New Testament",
-  })
-
   const { fileContents: targetUsfm, catalogEntry: targetCatalogEntry } = useFetchBookFileBySubject({
     catalogEntries: relationCatalogEntries,
     bookId: bookIdToProcess,
     subject: "Aligned Bible",
   })
-
-  const { renderedData: renderedTsvData, ready: glQuotesReady } =
-    useTsvGLQuoteAdder({
-      tsvText,
-      sourceUsfm,
-      targetUsfm,
-    })
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
@@ -137,6 +134,8 @@ export default function RcTranslationQuestions({
     }
 
     if (!bookId) {
+      setWebCss(webCss)
+      setCanChangeColumns(false)
       setInitialBookIdAndSupportedBooks()
     }
   }, [])
@@ -144,13 +143,14 @@ export default function RcTranslationQuestions({
   useEffect(() => {
     const handleSelectedBook = async () => {
       // setting a new book, so clear all and get html from cache if exists
+      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
+      setBookTitle(title)
       if (bookId in htmlCache) {
-        setHtmlSections({...htmlSections, toc: "", body: htmlCache[bookId]})
+        setHtmlSections({...setHtmlSections, cover: `<h3 class="cover-book-title">${title}</h3>`, body: htmlCache[bookId]})
       } else if (supportedBooks.includes(bookId)) {
-        let bookTitle = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setStatusMessage(<>Preparing preview for {bookTitle}.<br/>Please wait...</>)
+        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
         setTsvText("")
-        setHtmlSections({...htmlSections, toc: "", body: ""})
+        setHtmlSections({...htmlSections, cover: `<h3 class="cover-book-title">${title}</h3>`, body: ""})
         setBookIdToProcess(bookId)
         bibleReferenceActions.applyBooksFilter(supportedBooks)
       } else {
@@ -181,11 +181,11 @@ export default function RcTranslationQuestions({
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
-        then(tsv => setTsvText(tsv)).
-        catch(e => {
-          console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-          setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
-        })
+      then(tsv => setTsvText(tsv)).
+      catch(e => {
+        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
+        setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
+      })
     }
 
     if (catalogEntry && supportedBooks && bookIdToProcess && supportedBooks.includes(bookIdToProcess)) {
@@ -195,82 +195,82 @@ export default function RcTranslationQuestions({
 
   useEffect(() => {
     const generateHtml = async () => {
-      let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`
+      let html = `
+<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">
+  <h1 style="text-align: center">${catalogEntry.title}</h1>
+`
       let prevChapter = ""
       let prevVerse = ""
       const usfmJSON = usfm.toJSON(targetUsfm)
       const md = new MarkdownIt()
 
-      renderedTsvData.forEach((row) => {
-        if (!row || !row.ID || !row.Note) {
+      const rows = Papa.parse(tsvText, {delimiter: '\t', header: true}).data
+
+      rows.forEach((row) => {
+        if (!row || !row.ID || !row.Question || !row.Response) {
           return
         }
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
-        html += `<article class="tn-note">`
-        if (chapterStr != "front" && verseStr == "intro") {
-          html += `<span id="${bibleReferenceState.bookId}-${chapterStr}-1"></span>`
+        const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}`
+        if (chapterStr != prevChapter) {
+          if (prevChapter) {
+            html += `
+</section>
+`
+          }
+          html += `
+<section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+`
         }
+        html += `<article class="tq-entry" id="${link}">`
         if (chapterStr != prevChapter || verseStr != prevVerse) {
           const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
-          if (chapterStr != "front" && firstVerse != "intro") {
-            if (firstVerse != prevVerse) {
-              html += `<h2 id="${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}" class="tn-chapter-header">${chapterStr}:${verseStr}</h2>`
-            } else {
-              html += `<h2>${chapterStr}:${verseStr}</h2>`
-            }
-            const scripture = verseObjectsToString(
+          if (firstVerse != prevVerse) {
+            html += `<h2 class="tq-chapter-header">${chapterStr}:${verseStr}</h2>`
+          } else {
+            html += `<h2>${chapterStr}:${verseStr}</h2>`
+          }
+          let scripture = ""
+          if (usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects) {
+            scripture = verseObjectsToString(
               usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects
             )
-            html += `<div class="tn-chapter-verse-scripture"><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></div>`
           }
+          html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
+          html += `<div class="tq-chapter-verse-scripture"><p><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></p></div><hr style="width: 75%"/>`
           prevChapter = chapterStr
           prevVerse = verseStr
         }
-        if (row.GLQuote || row.Quote) {
-          html += `<h3 class="tn-note-header">${
-            row.GLQuote || row.Quote
-          }</h3>`
-        }
-        html += `<div class="tn-note-body">${md.render(
-          row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n")
-        )}</div>
-            <hr style="width: 75%"/>
-          </article>`
+        html += `
+        <div class="tq-question">
+            ${md.render(row.Question.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+        </div>
+        <div class="tq-responpse">
+            ${md.render(row.Response.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+        </div>
+        <hr style="width: 75%"/>
+      </article>`
       })
-      setHtmlSections({...htmlSections, toc: "", body: html})
+      html += `
+  </section>
+</section>
+`
+      setHtmlSections({...htmlSections, body: html})
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 
-    if (targetCatalogEntry && renderedTsvData && glQuotesReady) {
+    if (targetCatalogEntry && tsvText && targetUsfm) {
       generateHtml()
     }
-  }, [targetCatalogEntry, renderedTsvData, glQuotesReady])
-
-  useEffect(() => {
-    const handlePrintSettingsAndNavigation = async () => {
-      setHtmlSections({...htmlSections, toc: "", body: html})
-      setStatusMessage("")
-      setCanChangeColumns(true)
-      bibleReferenceActions.goToBookChapterVerse(
-        bookId,
-        bibleReferenceState.chapter,
-        bibleReferenceState.verse
-      )
-    }
-
-    if (html) {
-      handlePrintSettingsAndNavigation()
-    } else {
-      setHtmlSections({})
-      setCanChangeColumns(false)
-    }
-  }, [html])
+  }, [targetCatalogEntry, tsvText, targetUsfm])
 
   return (
     <BibleReference
       status={bibleReferenceState}
-      actions={bibleReferenceActions} />
+      actions={bibleReferenceActions}
+      style={{minWidth: "auto"}}
+    />
   )
 }
 
@@ -279,8 +279,9 @@ RcTranslationQuestions.propTypes = {
   catalogEntry: PropTypes.object.isRequired,
   setStatusMessage: PropTypes.func,
   setErrorMessage: PropTypes.func,
-  setHtml: PropTypes.func,
+  setHtmlSections: PropTypes.func,
+  setWebCss: PropTypes.func,
+  setPrintCss: PropTypes.func,
   setCanChangeColumns: PropTypes.func,
   updateUrlHashInAddressBar: PropTypes.func,
-  onPrintClick: PropTypes.func,
 }
