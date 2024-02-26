@@ -41,11 +41,17 @@ function generateToc(content) {
   elements.forEach(element => {
     const title = element.getAttribute('data-toc-title')
     if (title && element.id) {
+//       html += `
+// <li class="toc-entry">
+//   <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
+// </li>
+// `
       html += `
 <li class="toc-entry">
-  <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
+  <a class="toc-element" href="#${element.id}"><span class="toc-element-title">${title}</span></a>
 </li>
 `
+
     }
     const subHtml = generateToc(element)
     if (subHtml) {
@@ -93,10 +99,9 @@ export const PrintPreviewComponent = forwardRef(({
       const cover = generateCover(catalogEntry, htmlSections.cover)
       let body = htmlSections.body || ""
       body = webPreviewRef.current.cloneNode(true)
-      body.querySelectorAll('[id][data-toc-title]').forEach(e => {
-        e.id = `print-${e.id}`
-      })
-      // console.log(webPreviewRef.current.innerHTML)
+      // body.querySelectorAll('[id][data-toc-title]').forEach(e => {
+      //   e.id = `print-${e.id}`
+      // })
       const previewer = new Previewer()
       previewer.preview(
         `
@@ -194,7 +199,7 @@ section > section:first-of-type, section > article:first-of-type {
   break-before: avoid;
 }
 
-.cover-page {
+.cover-page, .title-page {
   page: cover-page;
   padding-top: 100px;
 }

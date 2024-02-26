@@ -81,6 +81,7 @@ export default function AppWorkspace() {
   const webPreviewRef = useRef()
   const printPreviewRef = useRef()
   const printReactComponent = useReactToPrint({
+    documentTitle: `${catalogEntry?.owner}--${catalogEntry?.repo.name}--${catalogEntry?.branch_or_tag_name}`,
     content: () => printPreviewRef.current,
   })
   const handlePrint = () => {
@@ -185,11 +186,11 @@ export default function AppWorkspace() {
       let elementToScrollTo = document.querySelector(
         `#${view}-preview [id='${anchor}']`
       )
-      if (!elementToScrollTo) {
-        elementToScrollTo = document.querySelector(
-          `#${view}-preview [id='${view}-${anchor}']`
-        )
-      }
+      // if (!elementToScrollTo) {
+      //   elementToScrollTo = document.querySelector(
+      //     `#${view}-preview [id='${view}-${anchor}']`
+      //   )
+      // }
       if (elementToScrollTo) {
         window.scrollTo({
           top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
@@ -202,7 +203,6 @@ export default function AppWorkspace() {
     const initalizeApp = async() => {
     setInitialized(true)
     document.querySelector('#root').addEventListener('click', e => {
-      console.log(e)
       const a = e.target.closest("a")
       if (! a) {
         return
@@ -232,7 +232,7 @@ export default function AppWorkspace() {
           let found = false
           const elements = document.querySelectorAll("section, article, span")
           elements.forEach((e) => {
-            if (found || ! e.id || e.id.startsWith("note-")) {
+            if (found || ! e.id) {
               return
             }
             const rect = e.getBoundingClientRect()
@@ -429,6 +429,7 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
+        {view == "web" ?
         <WebPreviewComponent
           html={htmlSections.body}
           webCss={webCss + printCss}
@@ -437,7 +438,7 @@ export default function AppWorkspace() {
             direction: catalogEntry ? catalogEntry.language_direction : "ltr",
           }}
           ref={webPreviewRef}
-        />
+        />: ""}
         <PrintPreviewComponent
           catalogEntry={catalogEntry}
           htmlSections={htmlSections}

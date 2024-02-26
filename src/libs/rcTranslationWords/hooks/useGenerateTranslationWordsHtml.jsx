@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { encodeHTML } from '@utils/html'
 
-export default function useGenerateTranslationAcademyHtml({
-  catalogEntry,
+export default function useGenerateTranslationWordsHtml({
   taManuals,
 }) {
   const [html, setHtml] = useState()

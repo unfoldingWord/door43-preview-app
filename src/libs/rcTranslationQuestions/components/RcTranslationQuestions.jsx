@@ -6,7 +6,8 @@ import { getSupportedBooks } from '@libs/core/lib/books'
 import BibleReference from 'bible-reference-rcl'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
-import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
+import useFetchCatalogEntryBySubject from '@libs/core/hooks/useFetchCatalogEntryBySubject'
+import useFetchBookFile from '@libs/core/hooks/useFetchBookFile'
 import usfm from 'usfm-js'
 import { verseObjectsToString } from 'uw-quote-helpers'
 import Papa from 'papaparse'
@@ -32,12 +33,40 @@ const webCss = `
   margin: 10px 0;
 }
 
-article + article {
+hr {
   page-break-before: avoid !important;
 }
 
-hr {
-  page-break-before: avoid !important;
+section.tq-verse + section.tq-verse {
+  page-break-before: auto !important;
+  page-break-inside: auto !important;
+}
+
+section.tq-verse > article + article {
+  page-break-before: auto !important;
+  page-break-inside: avoid !important;
+}
+
+article.tq-scripture, article.tq-entry {
+  page-break-inside: avoid !important;
+}
+
+section.tq-verse > article {
+  page-break-before: auto !important;
+}
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: "#";
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
 }
 `
 
@@ -107,14 +136,19 @@ export default function RcTranslationQuestions({
       onChange: onBibleReferenceChange,
     })
 
-  const { relationCatalogEntries } = useFetchRelationCatalogEntries({
+  const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
   })
 
-  const { fileContents: targetUsfm, catalogEntry: targetCatalogEntry } = useFetchBookFileBySubject({
+  const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
-    bookId: bookIdToProcess,
     subject: "Aligned Bible",
+    bookId: bookIdToProcess,
+  })
+
+  const targetUsfm = useFetchBookFile({
+    catalogEntry: targetBibleCatalogEntry,
+    bookId: bookIdToProcess,
   })
 
   useEffect(() => {
@@ -238,6 +272,11 @@ export default function RcTranslationQuestions({
           }
           html += `
   <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+    <h2>
+      <a class="header-link" href="#${bookId}-${chapterStr}">
+        ${bookTitle} ${chapterStr}
+      </a>
+    </h2>
 `
         }
         if (chapterStr != prevChapter || firstVerse != prevVerse) {
@@ -249,14 +288,20 @@ export default function RcTranslationQuestions({
           html += `
     <section class="tq-verse" id="${bookId}-${chapterStr}-${firstVerse}">
 `
-          if (firstVerse in usfmJSON.chapters[chapterStr]) {
+          if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
+            const link = `${bookId}-${chapterStr}-${firstVerse}`
             html += `
-      <article class="tq-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
-        <h2 class="tq-scripture-header">${bookTitle} ${chapterStr}:${firstVerse}</h2>
+      <article class="tq-scripture" id="${link}-scripture">
+        <h3 class="tq-scripture-header">
+          <a class="header-link" href="#${link}">
+            ${bookTitle} ${chapterStr}:${firstVerse}
+          </a>
+        </h3>
+        <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
         <div class="tq-scripture-verse">
           <p>
-            <span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: 
+            <span style="font-weight: bold">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</span>: 
             <em>${scripture}</em>
           </p>
         </div>
@@ -266,11 +311,14 @@ export default function RcTranslationQuestions({
           }
         }
         if (row.Question && row.Response) {
+          const link = `${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}-${row.ID}`
           html += `
-      <article class="tq-entry" id="${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}">
-        <h3 class="tq-entry-question">
-          ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
-        </h3>
+      <article class="tq-entry" id="${link}">
+        <h4 class="tq-entry-question">
+          <a class="header-link" href="#${link}">
+            ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
+          </a>
+        </h4>
         <div class="tq-entry-response">
           ${row.Response}
         </div>
@@ -291,10 +339,10 @@ export default function RcTranslationQuestions({
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 
-    if (targetCatalogEntry && tsvText && targetUsfm) {
+    if (targetBibleCatalogEntry && tsvText && targetUsfm) {
       generateHtml()
     }
-  }, [targetCatalogEntry, tsvText, targetUsfm])
+  }, [targetBibleCatalogEntry, tsvText, targetUsfm])
 
   return (
     <BibleReference
