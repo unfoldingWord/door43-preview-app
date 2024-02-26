@@ -232,7 +232,6 @@ export default function RcTranslationNotes({
       const usfmJSON = usfm.toJSON(targetUsfm)
       const md = new MarkdownIt()
       const supportReferences = {}
-      let hasIntro = false
 
       renderedTsvData.forEach(row => {
         if (!row || !row.ID || !row.Note) {
@@ -261,7 +260,7 @@ export default function RcTranslationNotes({
           html += `
     <section class="tn-verse" id="${bookId}-${chapterStr}-${firstVerse}">
 `
-          if (chapterStr != "front" && firstVerse != "intro" && firstVerse in usfmJSON.chapters[chapterStr]) {
+          if (firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
             html += `
       <article class="tn-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
@@ -297,18 +296,18 @@ export default function RcTranslationNotes({
             }
             supportReferences[row.SupportReference].backRefs.push(`<a href="#${row.ID}">${row.Reference}</a>`)
             html += `
-          <div class="tn-note-support-reference">
-            <span style="font-weight: bold">Support Reference:</span> [[${row.SupportReference}]]
-          </div>
+        <div class="tn-note-support-reference">
+          <span style="font-weight: bold">Support Reference:</span> [[${row.SupportReference}]]
+        </div>
   `
           }
         }
         html += `
-          <div class="tn-entry-body">
-            ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
-          </div>
-          <hr style="width: 75%"/>
-        </article>
+        <div class="tn-entry-body">
+          ${md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+        </div>
+        <hr style="width: 75%"/>
+      </article>
 `
         prevChapter = chapterStr
         prevVerse = firstVerse

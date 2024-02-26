@@ -8,18 +8,36 @@ import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
 import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
 import usfm from 'usfm-js'
-import MarkdownIt from 'markdown-it'
 import { verseObjectsToString } from 'uw-quote-helpers'
 import Papa from 'papaparse'
+
 
 const webCss = `
 .tq-question {
   font-weight: bold;
 }
 
+.tq-entry h1 {
+  font-size: 1.4em;
+  margin: 10px 0;
+}
+
+.tq-entry h2 {
+  font-size: 1.2em;
+  margin: 10px 0;
+}
+
+.tq-entry h3, .tq-entry h4 {
+  font-size: 1.1em;
+  margin: 10px 0;
+}
+
 article + article {
   page-break-before: avoid !important;
-  break-brefore: avoid !important;
+}
+
+hr {
+  page-break-before: avoid !important;
 }
 `
 
@@ -196,63 +214,76 @@ export default function RcTranslationQuestions({
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">
+<section class="tq-book" id="${bookId}" data-toc-title="${bookTitle}">
   <h1 style="text-align: center">${catalogEntry.title}</h1>
 `
       let prevChapter = ""
       let prevVerse = ""
       const usfmJSON = usfm.toJSON(targetUsfm)
-      const md = new MarkdownIt()
-
       const rows = Papa.parse(tsvText, {delimiter: '\t', header: true}).data
 
-      rows.forEach((row) => {
+      rows.forEach(row => {
         if (!row || !row.ID || !row.Question || !row.Response) {
           return
         }
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
-        const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}`
+        const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
         if (chapterStr != prevChapter) {
           if (prevChapter) {
             html += `
-</section>
+    </section>
+  </section>
 `
           }
           html += `
-<section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+  <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
 `
         }
-        html += `<article class="tq-entry" id="${link}">`
-        if (chapterStr != prevChapter || verseStr != prevVerse) {
-          const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
-          if (firstVerse != prevVerse) {
-            html += `<h2 class="tq-chapter-header">${chapterStr}:${verseStr}</h2>`
-          } else {
-            html += `<h2>${chapterStr}:${verseStr}</h2>`
+        if (chapterStr != prevChapter || firstVerse != prevVerse) {
+          if (chapterStr == prevChapter) {
+            html += `
+    </section>
+`
           }
-          let scripture = ""
-          if (usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects) {
-            scripture = verseObjectsToString(
-              usfmJSON.chapters[chapterStr][firstVerse]?.verseObjects
-            )
-          }
-          html += `<span class="header-title">${bookTitle} ${chapterStr}:${verseStr}</span>`
-          html += `<div class="tq-chapter-verse-scripture"><p><span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: <em>${scripture}</em></p></div><hr style="width: 75%"/>`
-          prevChapter = chapterStr
-          prevVerse = verseStr
-        }
-        html += `
-        <div class="tq-question">
-            ${md.render(row.Question.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
-        </div>
-        <div class="tq-responpse">
-            ${md.render(row.Response.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))}
+          html += `
+    <section class="tq-verse" id="${bookId}-${chapterStr}-${firstVerse}">
+`
+          if (firstVerse in usfmJSON.chapters[chapterStr]) {
+            const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
+            html += `
+      <article class="tq-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
+        <h2 class="tq-scripture-header">${bookTitle} ${chapterStr}:${firstVerse}</h2>
+        <div class="tq-scripture-verse">
+          <p>
+            <span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: 
+            <em>${scripture}</em>
+          </p>
         </div>
         <hr style="width: 75%"/>
-      </article>`
+      </article>
+`
+          }
+        }
+        if (row.Question && row.Response) {
+          html += `
+      <article class="tq-entry" id="${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}">
+        <h3 class="tq-entry-question">
+          ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
+        </h3>
+        <div class="tq-entry-response">
+          ${row.Response}
+        </div>
+        <hr style="width: 75%"/>
+      </article>
+`
+        }
+        prevChapter = chapterStr
+        prevVerse = firstVerse
       })
+
       html += `
+    </section>
   </section>
 </section>
 `

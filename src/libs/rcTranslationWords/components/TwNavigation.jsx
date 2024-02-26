@@ -4,8 +4,8 @@ import { Autocomplete, TextField, IconButton } from '@mui/material'
 import AutocompleteTocNavigation from "../../core/components/AutocompleteTocNavigation"
 
 
-export default function TaNavigation({
-  taManuals,
+export default function TwNavigation({
+  twManuals,
   anchor,
   setDocumentAnchor,
 }) {
@@ -16,9 +16,9 @@ export default function TaNavigation({
       if(option && option.link) {
         const manualId = option.link.split('--')[0]
         if (!selectedManual || selectedManual.link != `${manualId}--${manualId}`) {
-          for(let i = 0; i < taManuals.length; i++) {
-            if (taManuals[i].link == `${manualId}--${manualId}`) {
-              setSelectedManual(taManuals[i])
+          for(let i = 0; i < twManuals.length; i++) {
+            if (twManuals[i].link == `${manualId}--${manualId}`) {
+              setSelectedManual(twManuals[i])
               break
             }
           }
@@ -52,25 +52,25 @@ export default function TaNavigation({
     }
 
     useEffect(() => {
-      if (taManuals && taManuals.length) {
-        let manual = taManuals[0]
-        let section = taManuals[0].sections[0]
+      if (twManuals && twManuals.length) {
+        let manual = twManuals[0]
+        let section = twManuals[0].sections[0]
         if (anchor) {
-          section = findTocSection(anchor, taManuals)
+          section = findTocSection(anchor, twManuals)
         }
         if (section) {
-          for(let i = 0; i < taManuals.length; i++) {
-            if (taManuals[i].id == section.manual_id) {
+          for(let i = 0; i < twManuals.length; i++) {
+            if (twManuals[i].id == section.manual_id) {
               setSelectedTocSection(section)
-              setSelectedManual(taManuals[i])
+              setSelectedManual(twManuals[i])
               return
             }
           }
         }
         setSelectedManual(manual)
-        setSelectedTocSection(taManuals[0].sections[0])
+        setSelectedTocSection(twManuals[0].sections[0])
       }
-    }, [anchor, taManuals])
+    }, [anchor, twManuals])
 
     return (
           selectedManual && selectedTocSection ? 
@@ -78,7 +78,7 @@ export default function TaNavigation({
             <Autocomplete
               id="manual-select"
               sx={{ width: "30%", paddingTop: "5px", display: "inline-block" }}
-              options={taManuals}
+              options={twManuals}
               autoHighlight
               clearOnEscape
               value={selectedManual}
@@ -109,7 +109,7 @@ export default function TaNavigation({
             />
             <AutocompleteTocNavigation
                 sx={{ width: "60%", paddingTop: "5px", paddingLeft: "5px", display: "inline-block" }}
-                tocSections={taManuals}
+                tocSections={twManuals}
                 value={selectedTocSection}
                 onChange={onTocSectionSelectionChange}
             />
