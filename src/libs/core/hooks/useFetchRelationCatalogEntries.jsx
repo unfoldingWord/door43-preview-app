@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import PropTypes from 'prop-types'
 import { getRelationCatalogEntries } from '../lib/dcsCatalog'
 
 export default function useFetchRelationCatalogEntries({
@@ -45,9 +44,5 @@ export default function useFetchRelationCatalogEntries({
     }
   }, [catalogEntry])
 
-  return { relationCatalogEntries }
-}
-
-useFetchRelationCatalogEntries.propTypes = {
-  catalogEntry: PropTypes.object,
+  return relationCatalogEntries
 }

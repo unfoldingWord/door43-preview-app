@@ -1,6 +1,5 @@
 // eslint-disable-next-line no-unused-vars
 import { useState, useEffect } from 'react'
-import PropTypes from 'prop-types'
 import Papa from 'papaparse'
 import { getParsedUSFM, getTargetQuoteFromSourceQuote} from 'uw-quote-helpers'
 
@@ -11,12 +10,9 @@ export default function useTsvGLQuoteAdder({
   quoteTokenDelimiter = " … ",
 }) {
   const [renderedData, setRenderedData] = useState()
-  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     async function doAddGLQuotes() {
-      // setRenderedData(tsvText)
-      // setReady(true)
       const data = Papa.parse(tsvText, {delimiter: '\t', header: true})
       const rows = data.data
 
@@ -70,7 +66,6 @@ export default function useTsvGLQuoteAdder({
       })
 
       setRenderedData(rows)
-      setReady(true)
     }
 
     if (tsvText && sourceUsfm && targetUsfm) {
@@ -78,13 +73,5 @@ export default function useTsvGLQuoteAdder({
     }
   }, [tsvText, sourceUsfm, targetUsfm])
 
-  return {renderedData, ready}
-}
-
-useTsvGLQuoteAdder.propTypes = {
-  bookId: PropTypes.string,
-  tsvText: PropTypes.string,
-  sourceUsfm: PropTypes.string,
-  targetUsfm: PropTypes.string,
-  quoteTokenDelimiter: PropTypes.string,
+  return renderedData
 }

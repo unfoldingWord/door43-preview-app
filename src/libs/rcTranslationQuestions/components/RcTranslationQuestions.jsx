@@ -6,7 +6,8 @@ import { getSupportedBooks } from '@libs/core/lib/books'
 import BibleReference from 'bible-reference-rcl'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 import useFetchRelationCatalogEntries from '@libs/core/hooks/useFetchRelationCatalogEntries'
-import useFetchBookFileBySubject from '@libs/core/hooks/useFetchBookFileBySubject'
+import useFetchCatalogEntryBySubject from '@libs/core/hooks/useFetchCatalogEntryBySubject'
+import useFetchBookFile from '@libs/core/hooks/useFetchBookFile'
 import usfm from 'usfm-js'
 import { verseObjectsToString } from 'uw-quote-helpers'
 import Papa from 'papaparse'
@@ -107,14 +108,19 @@ export default function RcTranslationQuestions({
       onChange: onBibleReferenceChange,
     })
 
-  const { relationCatalogEntries } = useFetchRelationCatalogEntries({
+  const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
   })
 
-  const { fileContents: targetUsfm, catalogEntry: targetCatalogEntry } = useFetchBookFileBySubject({
+  const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
-    bookId: bookIdToProcess,
     subject: "Aligned Bible",
+    bookId: bookIdToProcess,
+  })
+
+  const targetUsfm = useFetchBookFile({
+    catalogEntry: targetBibleCatalogEntry,
+    bookId: bookIdToProcess,
   })
 
   useEffect(() => {
@@ -249,14 +255,14 @@ export default function RcTranslationQuestions({
           html += `
     <section class="tq-verse" id="${bookId}-${chapterStr}-${firstVerse}">
 `
-          if (firstVerse in usfmJSON.chapters[chapterStr]) {
+          if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
             html += `
       <article class="tq-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
         <h2 class="tq-scripture-header">${bookTitle} ${chapterStr}:${firstVerse}</h2>
         <div class="tq-scripture-verse">
           <p>
-            <span style="font-weight: bold">${targetCatalogEntry.abbreviation.toUpperCase()}</span>: 
+            <span style="font-weight: bold">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</span>: 
             <em>${scripture}</em>
           </p>
         </div>
@@ -291,10 +297,10 @@ export default function RcTranslationQuestions({
       setHtmlCache({...htmlCache, [bookIdToProcess]: html})
     }
 
-    if (targetCatalogEntry && tsvText && targetUsfm) {
+    if (targetBibleCatalogEntry && tsvText && targetUsfm) {
       generateHtml()
     }
-  }, [targetCatalogEntry, tsvText, targetUsfm])
+  }, [targetBibleCatalogEntry, tsvText, targetUsfm])
 
   return (
     <BibleReference
