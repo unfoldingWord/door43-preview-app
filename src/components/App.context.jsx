@@ -9,6 +9,7 @@ import OpenBibleStories from '@libs/openBibleStories/components/OpenBibleStories
 import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTranslationAcademy'
 import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
 import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
+import RcTranslationWords from '@libs/rcTranslationWords/components/RcTranslationWords'
 
 
 export const AppContext = React.createContext()
@@ -173,6 +174,9 @@ export function AppContextProvider({ children }) {
                 return
               case "TSV Translation Questions":
                 setResourceComponent(() => RcTranslationQuestions)
+                return
+              case "Translation Words":
+                setResourceComponent(() => RcTranslationWords)
                 return
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)

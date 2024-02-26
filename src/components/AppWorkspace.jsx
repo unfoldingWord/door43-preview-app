@@ -207,8 +207,9 @@ export default function AppWorkspace() {
       if (! a) {
         return
       }
-      const href = a.getAttribute('href')?.replace(/^#/, '')
-      if (href) {
+      let href = a.getAttribute('href')
+      if (href && href.startsWith('#')) {
+        href = href.replace(/^#/, '')
         if (! href.startsWith('note-')) {
           console.log("SET DOCUMENT ANCHOR", href)
           setDocumentAnchor(href.replace(/^print-/, ''))
@@ -378,7 +379,7 @@ export default function AppWorkspace() {
                 <ToggleButton
                   value="print"
                   aria-label="Print view"
-                  disabled={!imagesLoaded}
+                  disabled={!htmlSections?.body}
                 >
                   <Tooltip title="Print view" arrow>
                     <MenuBookIcon />
@@ -386,7 +387,7 @@ export default function AppWorkspace() {
                 </ToggleButton>
               </ToggleButtonGroup>
               <Tooltip title="Print" arrow>
-                <IconButton disabled={!imagesLoaded}>
+                <IconButton disabled={!htmlSections.body}>
                   <PrintIcon
                     onClick={() => {
                       setView("print")

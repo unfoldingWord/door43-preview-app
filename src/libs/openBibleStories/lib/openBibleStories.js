@@ -59,7 +59,7 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
 `
         frames.forEach((frame, frameIdx) => {
             frame = frame.trim()
-            const link = `obs-${storyIdx+1}-${frameIdx}`
+            const link = `obs-${storyIdx+1}-${frameIdx+1}`
             html += `
 <article class="obs-story-frame" id="${link}">
     ${md.render(frame)}

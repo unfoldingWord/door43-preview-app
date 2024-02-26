@@ -1,127 +1,158 @@
-import { useState, useEffect, useContext } from "react";
-import PropTypes from "prop-types";
-import Typography from "@mui/joy/Typography";
-import DOMPurify from "dompurify";
-import CircularProgressUI from "@mui/joy/CircularProgress";
-import BibleReference, { useBibleReference } from "bible-reference-rcl";
-import markdownit from "markdown-it";
+import { useEffect } from "react"
+import useGenerateTranslationWordsManuals from "../hooks/useGenerateTranslationWordsManuals"
+import useGenerateTranslationWordsHtml from "../hooks/useGenerateTranslationWordsHtml"
+import TwNavigation from "./TwNavigation"
+import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
+
+
+const webCss = `
+section > section:nth-child(1) {
+  page-break-before: avoid;
+}
+
+section > article:nth-child(1) {
+  page-break-before: avoid;
+}
+
+article + section, section + article {
+  page-break-before: always;
+}
+
+h5, h6 {
+  font-size: 1em;
+}
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: "#";
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
+}
+
+.article-body h1, .article-body h2, .article-body h3, .article-body h4 {
+  font-size: 1em;
+}
+
+hr.divider {
+  width: 100%;
+}
+
+hr.divider.depth-1 {
+  width: 90%;
+}
+
+hr.divider.depth-2 {
+  width: 80%;
+}
+
+hr.divider.depth-3 {
+  width: 70%;
+}
+
+hr.divider.depth-4 {
+  width: 60%;
+}
+
+hr.divider.depth-5 {
+  width: 40%;
+}
+
+hr.article-divider {
+  width: 50%;
+}
+
+.section-header a {
+  border-bottom: 3px double;
+}
+
+.article-header a {
+  border-bottom: 1px solid;
+}
+
+.manual > h1 {
+  text-align: center;
+}
+`
+
+const printCss = `
+.pagedjs_pages .section-header a {
+  border-bottom: none;
+}
+
+.pagedjs_pages .article-header a {
+  border-bottom: none;
+}
+
+.pagedjs_pages hr.article-divider {
+  display: none;
+}
+
+.pagedjs_pages a,
+.pagedjs_pages a:hover,
+.pagedjs_pages a:visited {
+  color: inherit;
+}
+`
 
 export default function RcTranslationWords({
   urlInfo,
   catalogEntry,
-  zipFileData,
   htmlSections,
-  updateUrlHashInAddressBar,
+  lastSeenAnchor,
+  setStatusMessage,
+  setErrorMessage,
   setHtmlSections,
+  setWebCss,
+  setPrintCss,
+  setDocumentAnchor,
 }) {
-  const [storiesMarkdown, setStoriesMarkdown] = useState();
+  let zipFileData = null
+  try {
+    zipFileData = useFetchZipFileData({catalogEntry})
+  } catch (e) {
+    setErrorMessage(e.message)
+  }
 
-  const onBibleReferenceChange = (b, c, v) => {
-    const storyNum = parseInt(c);
-    const frameNum = parseInt(v);
-    const story = document.getElementById(`obs-${storyNum}-1`);
-    if ((storyNum == 1 && frameNum == 1) || !story) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (story) {
-      let frame = story;
-      if (frameNum > 1 && story.children[frameNum * 2]) {
-        frame = story.children[frameNum * 2 - 1]; // *2 because 2 elements for every frame: image & text; -1 because one title element
-      }
-      if (frame) {
-        window.scrollTo({
-          top: frame.getBoundingClientRect().top + window.scrollY - 80,
-          behavior: "smooth",
-        });
-      }
-    }
-    if (updateUrlHashInAddressBar) {
-      let hashParts = [b];
-      if (
-        c != "1" ||
-        v != "1" ||
-        urlInfo.hashParts[1] ||
-        urlInfo.hashParts[2]
-      ) {
-        hashParts = [b, c, v];
-      }
-      updateUrlHashInAddressBar(hashParts);
-    }
-  };
-  const { state: bibleReferenceState, actions: bibleReferenceActions } =
-    useBibleReference({
-      initialBook: "obs",
-      initialChapter: urlInfo.hashParts[1] || "1",
-      initialVerse: urlInfo.hashParts[2] || "1",
-      onChange: onBibleReferenceChange,
-      addOBS: true,
-    });
-  bibleReferenceActions.applyBooksFilter("obs");
+  let twManuals = null
+  try {
+    twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData, setErrorMessage })
+  } catch (e) {
+    setErrorMessage(e.message)
+  }
+
+  let html = ""
+  try {
+    html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals })
+  } catch (e) {
+    setErrorMessage(e.message)
+  }
 
   useEffect(() => {
-    const loadMarkdownFiles = async () => {
-      let markdownFiles = [];
-      for (let i = 1; i < 51; ++i) {
-        const filename = `${catalogEntry.repo.name}/content/${`${i}`.padStart(2, "0")}.md`;
-        if (filename in zipFileData.files) {
-          markdownFiles.push(await zipFileData.files[filename]?.async("text"));
-        } else {
-          markdownFiles.push(`# ${i}. STORY NOT FOUND!\n\n`);
-        }
-      }
-      setStoriesMarkdown(markdownFiles);
-    };
-
-    if (catalogEntry && zipFileData) {
-      loadMarkdownFiles();
-    }
-  }, [catalogEntry, zipFileData]);
+    setStatusMessage(<>Preparing {catalogEntry.subject} Preview.<br/>Please wait...</>)
+    setWebCss(webCss)
+    setPrintCss(printCss)
+  }, [])
 
   useEffect(() => {
-    if (!html && storiesMarkdown) {
-      let html = `<h1 style="text-align: center">${catalogEntry.title}</h1>\n`;
-      const md = markdownit();
-      storiesMarkdown.forEach((storyMarkdown, i) => {
-        html += `<div id="obs-${i + 1}-1">${md.render(storyMarkdown)}</div>`;
-      });
-      setHtmlSections({...htmlSections, toc: "", body: html});
-    }
-  }, [storiesMarkdown, html]);
-
-  useEffect(() => {
+    // Handle Print Preview & Status & Navigation
     if (html) {
-      Promise.all(
-        Array.from(document.images)
-          .filter((img) => !img.complete)
-          .map(
-            (img) =>
-              new Promise((resolve) => {
-                img.onload = img.onerror = resolve;
-              })
-          )
-      ).then(() => {
-        bibleReferenceActions.goToBookChapterVerse(
-          bibleReferenceState.bookId,
-          bibleReferenceState.chapter,
-          bibleReferenceState.verse
-        );
-      });
+      setHtmlSections({...htmlSections, toc: "", body: html})
+      setStatusMessage("")
     }
-  }, [html]);
+  }, [html])
 
   return (
-    <BibleReference
-      status={bibleReferenceState}
-      actions={bibleReferenceActions}
-    />
+    <TwNavigation
+        twManuals={twManuals} 
+        anchor={lastSeenAnchor}
+        setDocumentAnchor={setDocumentAnchor}
+      />
   )
 }
-
-RcTranslationWords.propTypes = {
-  urlInfo: PropTypes.object,
-  catalogEntry: PropTypes.object,
-  zipFileData: PropTypes.object,
-  updateUrlHashInAddressBar: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  setHtml: PropTypes.func,
-};
