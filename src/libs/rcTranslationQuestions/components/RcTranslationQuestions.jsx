@@ -33,12 +33,40 @@ const webCss = `
   margin: 10px 0;
 }
 
-article + article {
+hr {
   page-break-before: avoid !important;
 }
 
-hr {
-  page-break-before: avoid !important;
+section.tq-verse + section.tq-verse {
+  page-break-before: auto !important;
+  page-break-inside: auto !important;
+}
+
+section.tq-verse > article + article {
+  page-break-before: auto !important;
+  page-break-inside: avoid !important;
+}
+
+article.tq-scripture, article.tq-entry {
+  page-break-inside: avoid !important;
+}
+
+section.tq-verse > article {
+  page-break-before: auto !important;
+}
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: "#";
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
 }
 `
 
@@ -244,6 +272,11 @@ export default function RcTranslationQuestions({
           }
           html += `
   <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+    <h2>
+      <a class="header-link" href="#${bookId}-${chapterStr}">
+        ${bookTitle} ${chapterStr}
+      </a>
+    </h2>
 `
         }
         if (chapterStr != prevChapter || firstVerse != prevVerse) {
@@ -257,9 +290,15 @@ export default function RcTranslationQuestions({
 `
           if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
+            const link = `${bookId}-${chapterStr}-${firstVerse}`
             html += `
-      <article class="tq-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
-        <h2 class="tq-scripture-header">${bookTitle} ${chapterStr}:${firstVerse}</h2>
+      <article class="tq-scripture" id="${link}-scripture">
+        <h3 class="tq-scripture-header">
+          <a class="header-link" href="#${link}">
+            ${bookTitle} ${chapterStr}:${firstVerse}
+          </a>
+        </h3>
+        <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
         <div class="tq-scripture-verse">
           <p>
             <span style="font-weight: bold">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</span>: 
@@ -272,11 +311,14 @@ export default function RcTranslationQuestions({
           }
         }
         if (row.Question && row.Response) {
+          const link = `${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}-${row.ID}`
           html += `
-      <article class="tq-entry" id="${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}">
-        <h3 class="tq-entry-question">
-          ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
-        </h3>
+      <article class="tq-entry" id="${link}">
+        <h4 class="tq-entry-question">
+          <a class="header-link" href="#${link}">
+            ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
+          </a>
+        </h4>
         <div class="tq-entry-response">
           ${row.Response}
         </div>
