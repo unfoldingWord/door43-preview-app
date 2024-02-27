@@ -74,7 +74,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
@@ -98,7 +98,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=branch&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "no-cache"})
       .then(response => {
         return response.json()
       })
