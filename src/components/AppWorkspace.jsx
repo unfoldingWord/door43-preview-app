@@ -341,7 +341,7 @@ export default function AppWorkspace() {
       )}
       <Card>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
-        <AppBar
+        {urlInfo && <AppBar
           position="relative"
           sx={{ backgroundColor: "white", position: "sticky", top: "0", color: "black" }}
         >
@@ -403,7 +403,7 @@ export default function AppWorkspace() {
               </Tooltip>       
             </div>
           </Toolbar>
-        </AppBar>
+        </AppBar>}
         {errorMessages.map((message, i) => (
           <Alert
             key={`errorMessage${i}`}
@@ -429,6 +429,10 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
+        {!urlInfo && <div>
+            <h1>Home Page</h1>
+            <p>Click the top right open icon to find a resource</p>
+          </div>}
         {view == "web" ?
         <WebPreviewComponent
           html={htmlSections.body}
@@ -482,7 +486,7 @@ export default function AppWorkspace() {
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != ""}
+          canLoad={htmlSections?.body != "" || errorMessages.length > 0 || !urlInfo}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
           serverInfo={serverInfo}
