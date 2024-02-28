@@ -68,6 +68,14 @@ a.header-link:hover::after {
   color: blue;
   display: inline-block;
 }
+
+.tq-entry-show-checkbox + .tq-entry-response {
+  display:none;
+}
+
+#tq-entry-show-checkbox:checked + .tq-entry-response {
+  display:block;
+}
 `
 
 export default function RcTranslationQuestions({
@@ -319,6 +327,10 @@ export default function RcTranslationQuestions({
             ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
           </a>
         </h4>
+        <label class="tq-entry-show-label">
+          <i class="arrow down"></i>
+        </label>
+        <input type="checkbox" id="tq-entry-show-checkbox" style="display:none;">
         <div class="tq-entry-response">
           ${row.Response}
         </div>

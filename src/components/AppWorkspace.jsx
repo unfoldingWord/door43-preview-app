@@ -28,6 +28,7 @@ import SelectResourceToPreviewModal from "./SelectResourceToPreviewModal";
 import { APP_NAME, DCS_SERVERS, API_PATH } from "@common/constants";
 import { useReactToPrint } from "react-to-print";
 import { updateUrlHashInAddressBar } from "@utils/url";
+import { ResourcesCardGrid } from "./ResourcesCardGrid"
 import { WebPreviewComponent } from "./WebPreviewComponent";
 import { PrintPreviewComponent } from "./PrintPreviewComponent";
 import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
@@ -429,10 +430,7 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
-        {!urlInfo && <div>
-            <h1>Home Page</h1>
-            <p>Click the top right open icon to find a resource</p>
-          </div>}
+        {!urlInfo && serverInfo && <ResourcesCardGrid serverInfo={serverInfo} />}
         {view == "web" ?
         <WebPreviewComponent
           html={htmlSections.body}
