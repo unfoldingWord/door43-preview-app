@@ -117,7 +117,7 @@ export default function SelectResourceToPreviewModal(
     if (serverInfo && selectedLanguage && !(selectedLanguage.lc in owners) && canLoad) {
       fetchOwners()
     }
-  }, [serverInfo, selectedLanguage])
+  }, [serverInfo, selectedLanguage, canLoad])
 
   useEffect(() => {
     const fetchRepos = async () => {
@@ -226,7 +226,7 @@ export default function SelectResourceToPreviewModal(
       } else if (refTypeChoice == "latest" && selectedRepo.catalog.latest) {
         ref = selectedRepo.catalog.latest.branch_or_tag_name
       }
-      window.location.href = `/${selectedRepo.full_name}/${ref}${selectedBook ? `#${selectedBook.identifier}` : ""}`
+      window.open(`/${selectedRepo.full_name}/${ref}${selectedBook ? `#${selectedBook.identifier}` : ""}`)
     }
     setShowModal(false)
   }
@@ -304,7 +304,7 @@ export default function SelectResourceToPreviewModal(
         renderInput={(params) => (
           <StyledTextField
             {...params}
-            label="Provider"
+            label="Owner"
             variant="outlined"
             required
           />

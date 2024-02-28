@@ -291,7 +291,7 @@ export const ResourcesCardGrid = ({
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Provider"
+            label="Owner"
             variant="outlined"
           />
         )}
@@ -341,14 +341,14 @@ export const ResourcesCardGrid = ({
                 id="category-a"
                 sx={{ fontSize: '12px', textAlign: 'center' }}
               >
-                <a href={`/u/${entry.full_name}/${entry.branch_or_tag_name}`} target="_blank">{entry.title}</a>
+                <a href={`/u/${entry.full_name}/${entry.branch_or_tag_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
               </Box>
               <Box component="div" aria-labelledby="category-a" sx={{ pl: 2 }}>
                 <div>&nbsp;</div>
-                <div><a style={styles.filterLink} href={`?subject=${encodeURI(entry.subject)}`}>{entry.subject}</a> ({entry.abbreviation})</div>
                 <div><a style={styles.filterLink} href={`?lang=${entry.language}`}>{entry.language_title} ({entry.language})</a></div>
-                <div>Provider: <a style={styles.filterLink} href={`?owner=${encodeURI(entry.owner)}`}>{entry.repo.owner.full_name ? entry.repo.owner.full_name : entry.owner}</a></div>
-                <div>Updated {getRelativeTimeString(entry.released)}</div>
+                <div><a style={styles.filterLink} href={`?owner=${encodeURI(entry.owner)}`}>{entry.repo.owner.full_name ? entry.repo.owner.full_name : entry.owner}</a></div>
+                <div><a style={styles.filterLink} href={`?subject=${encodeURI(entry.subject)}`}>{entry.subject}</a></div>
+                <div style={{textAlign: "center", fontStyle: "italic"}}>{entry.ref_type == "branch" ? "Updated" : "Released"} {getRelativeTimeString(entry.released)}</div>
               </Box>
             </Item>
           </Grid>)}
