@@ -90,7 +90,6 @@ export const ResourcesCardGrid = ({
 
   useEffect(() => {
     if(! urlParams.get("lang") && ! urlParams.get("owner") && ! urlParams.get("subject")) {
-        console.log("Setting defaults")
         setSelectedLanguages(['en'])
         setSelectedOwners(['unfoldingWord'])
     } else {
@@ -187,7 +186,6 @@ export const ResourcesCardGrid = ({
             setUrlParams(params)
             setGotAllEntries(false)
             window.history.replaceState({id: "100"}, '', `${window.location.href.split('?')[0]}?${params.toString()}`)
-            console.log("PARAMS!", params.toString())
         } else {
             p++
         }
@@ -197,8 +195,6 @@ export const ResourcesCardGrid = ({
 
         const url = new URL(`${serverInfo.baseUrl}/${API_PATH}/catalog/search`);
         url.search = params
-        console.log("URL", url)
-        console.log("URL STR", url.toString())
         fetch(url)
           .then(response => response.json())
           .then(({data}) => {
@@ -206,9 +202,7 @@ export const ResourcesCardGrid = ({
                 setError("No projects found meeting that criteria")
             } else {
                 setCatalogEntries([...entries, ...data])
-                console.log("DATA.LENGTH", data.length)
                 if (data.length < 100) {
-                    console.log("SETTING GOT ALL ENTRIES")
                     setGotAllEntries(true)
                 }
             }
@@ -274,7 +268,6 @@ export const ResourcesCardGrid = ({
         // isOptionEqualToValue={(option, value) => option.lc === value}
         onChange={
           (event, selected) => {
-            console.log(selected)
             setSelectedLanguages(selected)
           }
         }
@@ -320,7 +313,6 @@ export const ResourcesCardGrid = ({
         )}
         onChange={
           (event, selected) => {
-            console.log(selected)
             setSelectedSubjects(selected)
           }
         }
