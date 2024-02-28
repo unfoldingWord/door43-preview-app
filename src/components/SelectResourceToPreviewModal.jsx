@@ -41,7 +41,7 @@ export default function SelectResourceToPreviewModal(
   const [availableBooks, setAvailableBooks] = useState({})
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState()
-  const [selectedLanguage, setSelectedLanguage] = useState({lc: "en", ang: "English"})
+  const [selectedLanguage, setSelectedLanguage] = useState()
   const [selectedOwner, setSelectedOwner] = useState()
   const [selectedRepo, setSelectedRepo] = useState()
   const [refTypeChoice, setRefTypeChoice] = useState('')
