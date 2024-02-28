@@ -333,7 +333,8 @@ export const ResourcesCardGrid = ({
                 id="category-a"
                 sx={{ fontSize: '12px', textAlign: 'center' }}
               >
-                <a href={`/u/${entry.full_name}/${entry.branch_or_tag_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
+                <a style={{textDecoration: "none"}} href={`/u/${entry.full_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
+                <div>{Object.values(entry.repo?.catalog || {"latest": {branch_or_tag_name: entry.branch_or_tag_name}}).filter(c => c).map((c, i) => <>{i == 0 ? "" : ", "}<a style={{textDecoration: "none"}} key={c.branch_or_tag_name} href={`/u/${entry.full_name}/${c.branch_or_tag_name}`} target="_blank">{c.branch_or_tag_name}</a></>)}</div>
               </Box>
               <Box component="div" aria-labelledby="category-a" sx={{ pl: 2 }}>
                 <div>&nbsp;</div>
