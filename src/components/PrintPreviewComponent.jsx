@@ -81,6 +81,7 @@ export const PrintPreviewComponent = forwardRef(({
 }, ref) => {
   useEffect(() => {
     const generatePrintPreview = async () => {
+      console.log("STARTING PRINT RENDERING")
       setPrintPreviewState("started")
       ref.current.innerHTML = ""
       let copyright = htmlSections.copyright || ""
@@ -298,10 +299,10 @@ ${printCss}
       })
     }
 
-    if (webPreviewRef?.current?.innerHTML && htmlSections?.body && Object.keys(printOptions).length) {
+    if (htmlSections?.body && Object.keys(printOptions).length) {
       generatePrintPreview()
     }
-  }, [webPreviewRef?.current?.innerHTML, htmlSections?.body, printOptions])
+  }, [htmlSections?.body, printOptions])
 
   return (
     <div id="print-preview" style={style} ref={ref} />

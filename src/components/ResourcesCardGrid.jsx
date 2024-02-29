@@ -326,25 +326,39 @@ export const ResourcesCardGrid = ({
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={2}>
         <Grid container xs={12} spacing={4}>
-        {catalogEntries.map(entry => 
-          <Grid xs={6} lg={3} key={entry.id}>
+        {catalogEntries.map(entry => {
+          let releasedStr = ""
+          if (entry.repo.catalog?.prod) {
+            releasedStr = `Released ${getRelativeTimeString(entry.repo.catalog.prod.released)}`
+          } else if (entry.repo.catalog?.preprod) {
+            releasedStr = `Pre-Released ${getRelativeTimeString(entry.repo.catalog.preprod.released)}`
+          } else {
+            releasedStr = `${entry.ref_type == "branch" ? "Last updated" : "Released"} ${getRelativeTimeString(entry.released)}`
+          }
+          return (<Grid xs={6} lg={3} key={entry.id}>
             <Item sx={styles[entry.language_direction]}>
               <Box
                 id="category-a"
                 sx={{ fontSize: '12px', textAlign: 'center' }}
               >
-                <a style={{textDecoration: "none"}} href={`/u/${entry.full_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
-                <div>{Object.values(entry.repo?.catalog || {"latest": {branch_or_tag_name: entry.branch_or_tag_name}}).filter(c => c).map((c, i) => <>{i == 0 ? "" : ", "}<a style={{textDecoration: "none"}} key={c.branch_or_tag_name} href={`/u/${entry.full_name}/${c.branch_or_tag_name}`} target="_blank">{c.branch_or_tag_name}</a></>)}</div>
+                <a key="title" style={{textDecoration: "none"}} href={`/u/${entry.full_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
+                <div key="stages">
+                  {Object.values(entry.repo?.catalog || {"latest": {branch_or_tag_name: entry.branch_or_tag_name}}).filter(c => c).map((c, i) => 
+                  <span key={c.branch_or_tag_name}>
+                    {i == 0 ? "" : ", "}
+                    <a style={{textDecoration: "none"}} key={c.branch_or_tag_name} href={`/u/${entry.full_name}/${c.branch_or_tag_name}`} target="_blank">{c.branch_or_tag_name}</a>
+                  </span>)
+                }</div>
               </Box>
               <Box component="div" aria-labelledby="category-a" sx={{ pl: 2 }}>
-                <div>&nbsp;</div>
-                <div><a style={styles.filterLink} href={`?lang=${entry.language}`}>{entry.language_title} ({entry.language})</a></div>
-                <div><a style={styles.filterLink} href={`?owner=${encodeURI(entry.owner)}`}>{entry.repo.owner.full_name ? entry.repo.owner.full_name : entry.owner}</a></div>
-                <div><a style={styles.filterLink} href={`?subject=${encodeURI(entry.subject)}`}>{entry.subject}</a></div>
-                <div style={{textAlign: "center", fontStyle: "italic"}}>{entry.ref_type == "branch" ? "Updated" : "Released"} {getRelativeTimeString(entry.released)}</div>
+                <div key="space">&nbsp;</div>
+                <div key="lang"><a style={styles.filterLink} href={`?lang=${entry.language}`}>{entry.language_title} ({entry.language})</a></div>
+                <div key="owner"><a style={styles.filterLink} href={`?owner=${encodeURI(entry.owner)}`}>{entry.owner}</a></div>
+                <div key="subject"><a style={styles.filterLink} href={`?subject=${encodeURI(entry.subject)}`}>{entry.subject}</a></div>
+                <div key="release" style={{textAlign: "center", fontStyle: "italic"}}>{releasedStr}</div>
               </Box>
             </Item>
-          </Grid>)}
+          </Grid>)})}
         </Grid>
       </Grid>
     </Box>
