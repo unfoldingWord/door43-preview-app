@@ -23,13 +23,11 @@ function generateCover(catalogEntry, extra) {
     logo = `logo-${abbreviationToLogoMap[catalogEntry.abbreviation]}-256.png`
   }
   const cover = `
-<section class="cover-page" id="cover-page">
   <span class="header-title"></span>
-  <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/${logo}">
-  <h1 clsas="cover-header section-header">${catalogEntry.title}
+  <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/${logo}" alt="${logo}">
+  <h1 class="cover-header section-header">${catalogEntry.title}</h1>
   <h3 class="cover-version">${catalogEntry.branch_or_tag_name}</h3>
   ${extra}
-</section>  
 `
   return cover
 }
@@ -85,18 +83,17 @@ export const PrintPreviewComponent = forwardRef(({
       ref.current.innerHTML = ""
       let copyright = htmlSections.copyright || ""
       const body = htmlSections.body
-      const doc = new DOMParser().parseFromString(body, "text/xml")
+      const doc = new DOMParser().parseFromString(body, "text/html")
 
       let toc = htmlSections.toc || ""
       if (!toc) {
         toc = `
-<section id="toc" class="toc">
   <h1 class="toc-header">Table of Contents</h1>
   <div id="toc-contents">
-  <ul class="toc-section top-toc-section">
-    ${generateToc(doc)}
-  </ul>
-</section>
+    <ul class="toc-section top-toc-section">
+      ${generateToc(doc.firstChild)}
+    </ul>
+  </div>
 `
       }
       const cover = generateCover(catalogEntry, htmlSections.cover)
@@ -124,13 +121,19 @@ export const PrintPreviewComponent = forwardRef(({
   }
 }
 
-@page :blank, @page :cover-page {
+@page :blank {
   @bottom-center {content: none}
   @top-center {content: none}
   @top-left { content: none}
   @top-right {content: none}
 }
 
+@page :cover-page {
+  @bottom-center {content: none}
+  @top-center {content: none}
+  @top-left { content: none}
+  @top-right {content: none}
+}
 
 @page :left {
   margin-right: 30mm;
@@ -170,6 +173,11 @@ section.bible-book {
   section, 
   article {
     break-after: page;
+  }
+
+  section.toc,
+  section.copyright {
+    break-before: page;
   }
 }
 
@@ -262,12 +270,16 @@ ${printCss}
 `
       const htmlStr = `
 <div id="pagedjs-print" data-direction="${catalogEntry.language_direction}">
-  ${cover}
-  ${copyright}
-  ${toc}
-  <section id="body">
-    ${body}
+  <section class="cover-page" id="cover-page">
+    ${cover}
   </section>
+  <section id="copyright" class="copyright-page">
+    ${copyright}
+  </section>
+  <section id="toc" class="toc">
+    ${toc}
+  </section>
+  ${body}
 </div>
 `
       // console.log(`<html><head><style>${cssStr}</style></head><body class="pagedjs_pages">${htmlStr}</body></html>`)

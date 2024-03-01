@@ -12,7 +12,7 @@ section > article:nth-child(1) {
 }
 
 article + section, section + article {
-  break-after: always;
+  break-after: page;
 }
 
 h5, h6 {

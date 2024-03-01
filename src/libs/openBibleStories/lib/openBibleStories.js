@@ -25,14 +25,14 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
     let copyright = ""
     if (frontFilePath in zipFileData.files) {
         copyright = `
-<artcile class="obs-front" id="obs-front" data-toc-title"Front">
+<article class="obs-front" id="obs-front" data-toc-title="Front">
     ${md.render(await zipFileData.file(frontFilePath).async('text'))}
 </article>`
     } else {
         frontFilePath = `${obsRootPath}/front/intro.md`
         if (frontFilePath in zipFileData.files) {
             copyright = `
-<artcile class="obs-front" id="obs-front" data-toc-title"Front">
+<article class="obs-front" id="obs-front" data-toc-title="Front">
     ${md.render(await zipFileData.file(frontFilePath).async('text'))}
 </article>`
         }
@@ -71,17 +71,21 @@ export default async function convertOpenBibleStories(catalogEntry, zipFileData)
     let backFilePath = `${obsRootPath}/back.md`
     if (backFilePath in zipFileData.files) {
         html += `
-<artcile class="obs-back" id="obs-back">
-    ${md.render(await zipFileData.file(backFilePath).async('text'))}
-</article>
+<section class="obs-back-section" data-toc-title="Back Matter">
+    <article class="obs-back-article" id="obs-back-article">
+        ${md.render(await zipFileData.file(backFilePath).async('text'))}
+    </article>
+</section>
 `
     } else {
         backFilePath = `${obsRootPath}/back/intro.md`
         if (frontFilePath in zipFileData.files) {
             html += `
-<artcile class="obs-black" id="obs-back">
-    ${md.render(await zipFileData.file(backFilePath).async('text'))}
-</article>
+<section class="obs-back-section" data-toc-title="Back Matter">
+    <article class="obs-back-article" id="obs-back-article">
+        ${md.render(await zipFileData.file(backFilePath).async('text'))}
+    </article>
+</section>
 `
         }
     }
