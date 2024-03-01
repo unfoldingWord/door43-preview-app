@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react'
-
-
-function encodeHTML(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-}
-
+import { encodeHTML } from '@utils/html'
 
 export default function useGenerateTranslationAcademyHtml({
   catalogEntry,

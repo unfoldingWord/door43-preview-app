@@ -404,8 +404,8 @@ export default function RcTranslationNotes({
 <section class="appendex ta" id="notes-ta" data-toc-title="${encodeHTML(taCatalogEntry.title)}">
   <article class="title-page">
     <span class="header-title"></span>
-    <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png">
-    <h1 clsas="cover-header section-header">${taCatalogEntry.title}
+    <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
+    <h1 class="cover-header section-header">${taCatalogEntry.title}</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </article>  
 `

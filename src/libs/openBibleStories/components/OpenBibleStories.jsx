@@ -24,13 +24,17 @@ const printCss = `
 }
 
 #pagedjs-print .obs-story-title {
-  break-after: always !important;
+  break-after: page !important;
   padding-top: 300px;
 }
 
 article {
   break-before: auto;
   break-after: auto;
+}
+
+section {
+  break-after: page;
 }
 `
 
