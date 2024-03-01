@@ -63,12 +63,56 @@ a.header-link:hover::after {
   display: inline-block;
 }
 
-.tq-entry-show-checkbox + .tq-entry-response {
-  display:none;
+.tq-entry {
+  margin-left: 30px;
 }
 
-#tq-entry-show-checkbox:checked + .tq-entry-response {
-  display:block;
+#web-preview h4.tq-entry-question {
+  display:inline-block;
+}
+
+#web-preview label.response-show-label {
+  margin-left: 20px;
+  display: inline-box;
+}
+
+.response-show-checkbox {
+  display: none;
+}
+
+#web-preview .response-show-checkbox ~ div.tq-entry-response {
+  display: none;
+  clear: both;
+  margin-bottom: 20px;
+}
+
+#web-preview .response-show-checkbox:checked ~ div.tq-entry-response {
+  display: block;
+}
+
+#web-preview label.response-show-label::after {
+  background-color: white;
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 10px;
+  display: inline-block;
+  height: 10px;
+  transform: rotate(45deg);
+  -webkit-transform: scale(1) rotate(45deg) translate(0px, 0px);
+  -moz-transform: rotate(45deg) scale(1.0);
+  -o-transform: rotate(45deg) scale(1.0);
+  margin-top: 10px;
+  content: "";
+  margin-left: 5px;
+}
+
+#web-preview .response-show-checkbox:checked ~ label.response-show-label::after {
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  transform: rotate(-135deg);
+  -webkit-transform: scale(1) rotate(-135deg) translate(0px, 0px);
+  -moz-transform: rotate(-135deg) scale(1.0);
+  -o-transform: rotate(-135deg) scale(1.0);
 }
 `
 
@@ -321,10 +365,8 @@ export default function RcTranslationQuestions({
             ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.Question}
           </a>
         </h4>
-        <label class="tq-entry-show-label">
-          <i class="arrow down"></i>
-        </label>
-        <input type="checkbox" id="tq-entry-show-checkbox" style="display:none;">
+        <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
+        <label class="response-show-label" for="checkbox-${row.ID}"></label>
         <div class="tq-entry-response">
           ${row.Response}
         </div>
