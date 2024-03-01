@@ -6,16 +6,13 @@ import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
 
 
 const webCss = `
-section > section:nth-child(1) {
-  page-break-before: avoid;
-}
-
+section > section:nth-child(1),
 section > article:nth-child(1) {
-  page-break-before: avoid;
+  break-before: avoid;
 }
 
 article + section, section + article {
-  page-break-before: always;
+  break-after: always;
 }
 
 h5, h6 {
@@ -82,21 +79,21 @@ hr.article-divider {
 `
 
 const printCss = `
-.pagedjs_pages .section-header a {
+#pagedjs-print .section-header a {
   border-bottom: none;
 }
 
-.pagedjs_pages .article-header a {
+#pagedjs-print .article-header a {
   border-bottom: none;
 }
 
-.pagedjs_pages hr.article-divider {
+#pagedjs-print hr.article-divider {
   display: none;
 }
 
-.pagedjs_pages a,
-.pagedjs_pages a:hover,
-.pagedjs_pages a:visited {
+#pagedjs-print a,
+#pagedjs-print a:hover,
+#pagedjs-print a:visited {
   color: inherit;
 }
 `

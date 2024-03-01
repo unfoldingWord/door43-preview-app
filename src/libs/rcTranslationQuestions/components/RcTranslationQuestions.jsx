@@ -34,25 +34,19 @@ const webCss = `
 }
 
 hr {
-  page-break-before: avoid !important;
+  break-before: avoid !important;
 }
 
-section.tq-verse + section.tq-verse {
-  page-break-before: auto !important;
-  page-break-inside: auto !important;
+article.tq-scripture,
+article.tq-entry,
+section.tq-verse {
+  break-before: auto !important;
+  break-inside: avoid !important;
+  break-after: auto !important
 }
 
-section.tq-verse > article + article {
-  page-break-before: auto !important;
-  page-break-inside: avoid !important;
-}
-
-article.tq-scripture, article.tq-entry {
-  page-break-inside: avoid !important;
-}
-
-section.tq-verse > article {
-  page-break-before: auto !important;
+section.book-chapter {
+  break-after: page !important;
 }
 
 a.header-link {

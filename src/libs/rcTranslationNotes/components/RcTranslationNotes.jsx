@@ -32,12 +32,23 @@ const webCss = `
   margin: 10px 0;
 }
 
-article + article {
-  page-break-before: avoid !important;
-}
+@media print {
+  section.tn-verse,
+  section.book-chapter{
+    break-after: page;
+  }
 
-hr {
-  page-break-before: avoid !important;
+  article {
+    break-after: avoid-page !important;
+  }
+
+  hr {
+    break-before: avoid-page !important;
+  }
+
+  .ta.appendex article {
+    break-after: page !important;
+  }  
 }
 
 a.header-link {
@@ -56,10 +67,6 @@ a.header-link:hover::after {
 
 .ta.appendex .article-body h1, .article-body h2, .article-body h3, .article-body h4 {
   font-size: 1em;
-}
-
-.ta.appendex article + article {
-  page-break-before: always !important;
 }
 
 .title-page {
