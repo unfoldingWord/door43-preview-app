@@ -19,18 +19,18 @@ article img {
 `
 
 const printCss = `
-@media print {
-  .obs-story-title {
-    page-break-after: always !important;
-    text-align: center;
-    padding-top: 300px;
-  }
+.obs-story-title {
+  text-align: center;
+}
 
-  article + article {
-    page-break-before: unset !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
+#pagedjs-print .obs-story-title {
+  break-after: always !important;
+  padding-top: 300px;
+}
+
+article {
+  break-before: auto;
+  break-after: auto;
 }
 `
 

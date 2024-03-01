@@ -119,22 +119,15 @@ header {
   background-color: white;
 }
 
-section, article {
-  page-break-before: always;
-}
-
-section > :first-child, article > :first-child {
-  page-break-before: avoid !important;
-}
-
-section > section:first-of-type, section > article:first-of-type {
-  page-break-before: avoid !important;
-}
-
 .header-title {
   display: none;
 }
 
 .cover-page {
   text-align: center;
+}
+
+section,
+article {
+  break-after: page;
 }

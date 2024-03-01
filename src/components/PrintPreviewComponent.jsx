@@ -77,7 +77,6 @@ export const PrintPreviewComponent = forwardRef(({
   webCss,
   printCss,
   setPrintPreviewState,
-  webPreviewRef,
 }, ref) => {
   useEffect(() => {
     const generatePrintPreview = async () => {
@@ -85,37 +84,23 @@ export const PrintPreviewComponent = forwardRef(({
       setPrintPreviewState("started")
       ref.current.innerHTML = ""
       let copyright = htmlSections.copyright || ""
+      let body = htmlSections.body || "" 
       let toc = htmlSections.toc || ""
       if (!toc) {
+        const doc = new DOMParser().parseFromString(body, "text/xml")
         toc = `
 <section id="toc" class="toc">
   <h1 class="toc-header">Table of Contents</h1>
   <div id="toc-contents">
   <ul class="toc-section top-toc-section">
-    ${generateToc(webPreviewRef.current)}
+    ${generateToc(doc)}
   </ul>
 </section>
 `
       }
       const cover = generateCover(catalogEntry, htmlSections.cover)
-      let body = htmlSections.body || ""
-      body = webPreviewRef.current.cloneNode(true)
-      // body.querySelectorAll('[id][data-toc-title]').forEach(e => {
-      //   e.id = `print-${e.id}`
-      // })
-      const previewer = new Previewer()
-      previewer.preview(
-        `
-${cover}
-${copyright}
-${toc}
-<section id="body">
-${body.innerHTML}
-</section>
-`,
-        [
-          {
-            _: `
+
+      const cssStr = `
 @page {
   size: ${printOptions.pageWidth} ${printOptions.pageHeight};
   margin: 1cm;
@@ -169,45 +154,30 @@ ${body.innerHTML}
 }
 
 section.bible-book {
-  columns: ${printOptions.columns};
+  columns: ${printOptions?.columns || "1"};
 }
 
 .header-title {
   position: running(titleRunning);
 }
 
-h1 {
-  break-before: avoid;
-  page-break-before: avoid;
+@media print {
+  h1 {
+    break-before: avoid-page;
+  }
+
+  section, 
+  article {
+    break-after: page;
+  }
 }
 
-section, article {
-  page-break-before: always;
-  break-before: always;  
-}
-
-
-section > :first-child, article > :first-child {
-  page-break-before: avoid !important;
-}
-
-section > section:first-of-type, section > article:first-of-type {
-  page-break-before: avoid !important;
-}
-
-.section-header + section, .section-header + article, .header + section, .header + article {
-  page-break-before: avoid;
-  break-before: avoid;
-}
-
-.cover-page, .title-page {
+  .cover-page, 
+.title-page {
   page: cover-page;
   padding-top: 100px;
 }
 
-
-
-@media print {
 #toc {
     font-size: 12px;
 }
@@ -227,7 +197,7 @@ section > section:first-of-type, section > article:first-of-type {
     padding-left: 10px;
 }
 
-[dir="rtl"] #toc-contents ul ul {
+[data-direction="rtl"] #toc-contents ul ul {
     padding-left: 0;
     padding-right: 10px;
 }
@@ -238,6 +208,7 @@ section > section:first-of-type, section > article:first-of-type {
     padding-bottom: 2px;
     line-height: 1.1em;
 }
+
 #toc-contents ul a {
     display: inline-block;
     width: 100%;
@@ -247,16 +218,18 @@ section > section:first-of-type, section > article:first-of-type {
     /* margin-left: 20px;
     text-indent: -20px; */
 }
+
 #toc-contents > ul > li > a {
     font-weight: bold;
 }
+
 #toc-contents ul a span {
     background-color: white;
     margin: 0 25px 0 0;
     padding: 0 2px 3px 0;
 }
 
-[dir="rtl"] #toc-contents ul a span {
+[data-direction="rtl"] #toc-contents ul a span {
     margin: 0 0 0 25px;
     padding: 0 0 3px 2px;
 }
@@ -271,12 +244,11 @@ section > section:first-of-type, section > article:first-of-type {
     padding-right: 10px;
 }
 
-[dir="rtl"] #toc-contents ul a::after {
+[data-direction="rtl"] #toc-contents ul a::after {
     left: 0 !important;
     right: auto !important;
     padding-right: 2px;
     padding-left: 30px;
-}
 }
 
 h1 {
@@ -286,7 +258,25 @@ h1 {
 ${webCss}
 
 ${printCss}
-`,
+`
+      const htmlStr = `
+<div id="pagedjs-print" data-direction="${catalogEntry.language_direction}">
+  ${cover}
+  ${copyright}
+  ${toc}
+  <section id="body">
+    ${body}
+  </section>
+</div>
+`
+      // console.log(`<html><head><style>${cssStr}</style></head><body class="pagedjs_pages">${htmlStr}</body></html>`)
+
+      const previewer = new Previewer()
+      previewer.preview(
+        htmlStr,
+        [
+          {
+            _: cssStr,
           },
         ],
         ref.current,
