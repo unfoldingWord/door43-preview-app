@@ -84,10 +84,11 @@ export const PrintPreviewComponent = forwardRef(({
       setPrintPreviewState("started")
       ref.current.innerHTML = ""
       let copyright = htmlSections.copyright || ""
-      let body = htmlSections.body || "" 
+      const body = htmlSections.body
+      const doc = new DOMParser().parseFromString(body, "text/xml")
+
       let toc = htmlSections.toc || ""
       if (!toc) {
-        const doc = new DOMParser().parseFromString(body, "text/xml")
         toc = `
 <section id="toc" class="toc">
   <h1 class="toc-header">Table of Contents</h1>
