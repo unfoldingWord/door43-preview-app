@@ -38,7 +38,6 @@ export default function AppWorkspace() {
   const [initialized, setInitialized] = useState(false)
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
   const [view, setView] = useState("web")
-  const [waitPreviewStart, setWaitPreviewStart] = useState(true)
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const [printPreviewState, setPrintPreviewState] = useState("not started")
 
@@ -180,10 +179,6 @@ export default function AppWorkspace() {
 
   const scrollToAnchor = async (anchor) => {
     if (anchor) {
-      if (waitPreviewStart) {
-        await new Promise((r) => setTimeout(r, 500))
-        setWaitPreviewStart(false)
-      }
       let elementToScrollTo = document.querySelector(`[id='web-${anchor}']`)
       if (!elementToScrollTo) {
         elementToScrollTo = document.querySelector(`[id='print-${anchor}']`)
@@ -229,6 +224,9 @@ export default function AppWorkspace() {
           clearTimeout(this.timer);        
         }
         this.timer = setTimeout(function() {
+          if(window.scrollY < 100) {
+            return
+          }
           let found = false
           const elements = document.querySelectorAll("section[id], article[id], span[id]")
           elements.forEach((e) => {
@@ -242,7 +240,7 @@ export default function AppWorkspace() {
               setLastSeenAnchor(e.id.replace(/^(web|print)-/, ''))
             }
           })
-        }, 200)
+        }, 1000)
       },
     }, false)
   }
@@ -296,6 +294,9 @@ export default function AppWorkspace() {
     if (htmlSections?.body && Object.keys(printOptions).length && (view == "web" || printPreviewState != "not started")) {
       console.log("SCROLLING TO LAST SEEN ANCHOR: ", lastSeenAnchor)
       scrollToAnchor(lastSeenAnchor)
+      setTimeout(function() {
+        scrollToAnchor(lastSeenAnchor)
+      }, 200)
     }
   }, [view, printPreviewState, htmlSections?.body, printOptions])
 
@@ -364,7 +365,6 @@ export default function AppWorkspace() {
                 exclusive
                 onChange={(e, value) => {
                   if (value !== null) {
-                    setWaitPreviewStart(true)
                     setView(value)
                   }
                 }}
