@@ -84,7 +84,7 @@ export const PrintPreviewComponent = forwardRef(({
       let copyright = htmlSections.copyright || ""
       const body = htmlSections.body
       const doc = new DOMParser().parseFromString(body, "text/html")
-
+      doc.querySelectorAll("[id]").forEach(e => e.id = `print-${e.id}`)
       let toc = htmlSections.toc || ""
       if (!toc) {
         toc = `
@@ -279,7 +279,7 @@ ${printCss}
   <section id="toc" class="toc">
     ${toc}
   </section>
-  ${body}
+  ${doc.documentElement.innerHTML}
 </div>
 `
       // console.log(`<html><head><style>${cssStr}</style></head><body class="pagedjs_pages">${htmlStr}</body></html>`)

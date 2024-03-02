@@ -4,7 +4,8 @@ import { getRepoContentsContent } from "../lib/dcsApi";
 
 export default function useFetchBookFile({
   catalogEntry,
-  bookId
+  bookId,
+  setErrorMessage,
 }) {
   const [fileContents, setFileContents] = useState();
 
@@ -17,9 +18,8 @@ export default function useFetchBookFile({
         }
       });
       if (!filePath) {
-        throw new Error(
-          `The required related resource ${catalogEntry.full_name} (${catalogEntry.subject}) does not contain a project for \`${bookId}\`.`
-        )
+        setErrorMessage(`The required related resource ${catalogEntry.full_name} (${catalogEntry.subject}) does not contain a project for \`${bookId}\`.`)
+        return
       }
       getRepoContentsContent(
         catalogEntry.repo.url,

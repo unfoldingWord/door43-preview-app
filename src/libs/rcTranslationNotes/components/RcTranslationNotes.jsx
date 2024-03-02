@@ -116,20 +116,7 @@ export default function RcTranslationNotes({
     } else {
       c = parseInt(c)
       v = parseInt(v)
-      if (c > 1 || v > 1) {
-        const verseEl = document.getElementById(`${b}-${c}-${v}`)
-        if (verseEl) {
-          window.scrollTo({
-            top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-            behavior: "smooth",
-          })
-        }
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" })
-      }
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
+      setDocumentAnchor(`${b}-${c}-${v}`)
     }
   }
 
@@ -149,22 +136,27 @@ export default function RcTranslationNotes({
     catalogEntries: relationCatalogEntries,
     subject: BibleBookData[bookIdToProcess]?.testament == "old" ? "Hebrew Old Testament" : "Greek New Testament",
     bookId: bookIdToProcess,
+    setErrorMessage,
   })
 
+  
   const sourceUsfm = useFetchBookFile({
     catalogEntry: sourceBibleCatalogEntry,
     bookId: bookIdToProcess,
+    setErrorMessage,
   })
 
   const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
     subject: "Aligned Bible",
     bookId: bookIdToProcess,
+    setErrorMessage,
   })
 
   const targetUsfm = useFetchBookFile({
     catalogEntry: targetBibleCatalogEntry,
     bookId: bookIdToProcess,
+    setErrorMessage,
   })
 
   const renderedTsvData = useTsvGLQuoteAdder({
@@ -176,6 +168,7 @@ export default function RcTranslationNotes({
   const taCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
     subject: "Translation Academy",
+    setErrorMessage,
   })
 
   const taZipFileData = useFetchZipFileData({

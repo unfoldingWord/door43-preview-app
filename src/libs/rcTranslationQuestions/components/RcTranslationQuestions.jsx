@@ -155,22 +155,7 @@ export default function RcTranslationQuestions({
       setBookId(b)
       setDocumentAnchor(b)
     } else {
-      c = parseInt(c)
-      v = parseInt(v)
-      if (c > 1 || v > 1) {
-        const verseEl = document.getElementById(`${b}-${c}-${v}`)
-        if (verseEl) {
-          window.scrollTo({
-            top: verseEl.getBoundingClientRect().top + window.scrollY - 80,
-            behavior: "smooth",
-          })
-        }
-      } else {
-        window.scrollTo({ top: 0, behavior: "smooth" })
-      }
-    }
-    if (updateUrlHashInAddressBar) {
-      updateUrlHashInAddressBar([b, c, v])
+      setDocumentAnchor(`${b}-${c}-${v}`)
     }
   }
 
