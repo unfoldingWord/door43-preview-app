@@ -60,7 +60,7 @@ export default function OpenBibleStories({
   setDocumentAnchor,
 }) {
   const onBibleReferenceChange = (b, c, v) => {
-    setDocumentAnchor([b, c, v].join('-'))      
+    setDocumentAnchor(`${b}-${c}-${v}`)
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } =

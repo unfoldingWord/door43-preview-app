@@ -5,11 +5,12 @@ export default function useFetchCatalogEntryBySubject({
   catalogEntries,
   subject,
   bookId,
+  setErrorMessage,
 }) {
     const [catalogEntry, setCatalogEntry] = useState()
 
     useEffect(() => {
-        const determineCatalogEntryBySubject = async () => {
+        const determineCatalogEntryBySubject = () => {
           let _catalogEntry = null
           catalogEntries.forEach(entry => {
             if (!_catalogEntry && entry.subject == subject) {
@@ -21,7 +22,8 @@ export default function useFetchCatalogEntryBySubject({
             }
           })
           if (!_catalogEntry) {
-            throw new Error(`No relation found of subject \`${sourceSubject}\` for this resource for book \`${bookId}\`.`)
+            setErrorMessage(`No relation found of subject \`${subject}\` for this resource for book \`${bookId}\`.`)
+            return
           }
           setCatalogEntry(_catalogEntry)
         }

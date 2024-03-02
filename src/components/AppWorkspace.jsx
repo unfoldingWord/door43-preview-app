@@ -184,14 +184,13 @@ export default function AppWorkspace() {
         await new Promise((r) => setTimeout(r, 500))
         setWaitPreviewStart(false)
       }
-      let elementToScrollTo = document.querySelector(
-        `#${view}-preview [id='${anchor}']`
-      )
-      // if (!elementToScrollTo) {
-      //   elementToScrollTo = document.querySelector(
-      //     `#${view}-preview [id='${view}-${anchor}']`
-      //   )
-      // }
+      let elementToScrollTo = document.querySelector(`[id='web-${anchor}']`)
+      if (!elementToScrollTo) {
+        elementToScrollTo = document.querySelector(`[id='print-${anchor}']`)
+      }
+      if (!elementToScrollTo) {
+        elementToScrollTo = document.querySelector(`[id='${anchor}']`)
+      }
       if (elementToScrollTo) {
         window.scrollTo({
           top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
@@ -231,7 +230,7 @@ export default function AppWorkspace() {
         }
         this.timer = setTimeout(function() {
           let found = false
-          const elements = document.querySelectorAll("section, article, span")
+          const elements = document.querySelectorAll("section[id], article[id], span[id]")
           elements.forEach((e) => {
             if (found || ! e.id) {
               return
@@ -239,8 +238,8 @@ export default function AppWorkspace() {
             const rect = e.getBoundingClientRect()
             if (rect.top > document.querySelector("header").offsetHeight && rect.top < 400) {
               found = true
-              console.log("SETTING ANCHOR TO ", e.id.replace(/^print-/, ''))
-              setLastSeenAnchor(e.id.replace(/^print-/, ''))
+              console.log("SETTING ANCHOR TO ", e.id.replace(/^(web|print)-/, ''))
+              setLastSeenAnchor(e.id.replace(/^(web|print)-/, ''))
             }
           })
         }, 200)

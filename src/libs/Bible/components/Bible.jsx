@@ -116,13 +116,7 @@ export default function Bible({
       setBookId(b)
       setDocumentAnchor(b)
     } else if (setDocumentAnchor) {
-      c = parseInt(c)
-      v = parseInt(v)
-      if (c > 1 || v > 1) {
-        setDocumentAnchor([b, c, v].join('-'))
-      } else {
-        setDocumentAnchor(b)
-      }
+      setDocumentAnchor(`${b}-${c}-${v}`)
     }
   }
 
