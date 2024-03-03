@@ -190,6 +190,7 @@ export default function AppWorkspace() {
         window.scrollTo({
           top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
         })
+        return true
       }
     }
   }
@@ -291,13 +292,21 @@ export default function AppWorkspace() {
   }, [imagesLoaded, printPreviewState])
 
   useEffect(() => {
-    if (htmlSections?.body && Object.keys(printOptions).length && (view == "web" || printPreviewState != "not started")) {
-      console.log("SCROLLING TO LAST SEEN ANCHOR: ", lastSeenAnchor)
-      scrollToAnchor(lastSeenAnchor)
-      setTimeout(function() {
-        scrollToAnchor(lastSeenAnchor)
-      }, 200)
+    const scrollToLastPlaceRead = async () => {
+      if (lastSeenAnchor && htmlSections?.body && Object.keys(printOptions).length) {
+        console.log("SCROLLING TO LAST SEEN ANCHOR: ", lastSeenAnchor)
+        let didScroll
+        let tries = 0
+        while (! didScroll && tries < 3) {
+          await new Promise(r => setTimeout(r, 200))
+          ++tries
+          didScroll = await scrollToAnchor(lastSeenAnchor)
+          console.log(didScroll, tries)
+        }
+      }
     }
+
+    scrollToLastPlaceRead()
   }, [view, printPreviewState, htmlSections?.body, printOptions])
 
   useEffect(() => {
@@ -451,7 +460,6 @@ export default function AppWorkspace() {
           setHtmlSections={setHtmlSections}
           style={{
             display: view == "print" || printPreviewState == "not started" || printPreviewState == "started" ? "block" : "none",
-            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
           }}
           webPreviewRef={webPreviewRef}
           ref={printPreviewRef}

@@ -34,6 +34,7 @@ article {
 }
 
 section {
+  break-before: page;
   break-after: page;
 }
 `

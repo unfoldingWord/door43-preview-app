@@ -13,7 +13,7 @@ export default function useFetchCatalogEntryBySubject({
         const determineCatalogEntryBySubject = () => {
           let _catalogEntry = null
           catalogEntries.forEach(entry => {
-            if (!_catalogEntry && entry.subject == subject) {
+            if (! _catalogEntry && entry.subject == subject) {
               entry.ingredients.forEach(ingredient => {
                 if (!bookId || ingredient.identifier == bookId) {
                   _catalogEntry = entry
@@ -21,7 +21,7 @@ export default function useFetchCatalogEntryBySubject({
               })
             }
           })
-          if (!_catalogEntry) {
+          if (! _catalogEntry) {
             setErrorMessage(`No relation found of subject \`${subject}\` for this resource for book \`${bookId}\`.`)
             return
           }
