@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ThemeProvider, createTheme } from '@mui/material'
-import PropTypes from 'prop-types'
+import usfm from 'usfm-js'
 import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
 import BibleReference from 'bible-reference-rcl'
 import {
@@ -219,7 +219,16 @@ export default function Bible({
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
-      then(usfm => setUsfmText(usfm)).
+      then(_usfmText => {
+        const usfmJSON = usfm.toJSON(_usfmText)
+        for(let i = 0; i < usfmJSON?.headers?.length; ++i) {
+          if (usfmJSON.headers[i].tag == "h" || usfmJSON.headers[i].tag.startsWith("toc")) {
+            setBookTitle(usfmJSON.headers[i].content)
+            break
+          }
+        }
+        setUsfmText(_usfmText)
+      }).
       catch(e => {
         console.log(`Error calling getRepoContents(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
         setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
@@ -252,7 +261,7 @@ export default function Bible({
     if (htmlReady && renderedData && !(bookIdToProcess in htmlCache)) {
       handleRenderedDataFromUsfmToHtmlHook()
     }
-  }, [htmlReady, renderedData])
+  }, [htmlReady, renderedData, bookTitle])
 
   return (
     <ThemeProvider theme={theme}>
