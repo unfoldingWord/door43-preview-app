@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useEffect, forwardRef } from "react";
 import { Previewer } from "pagedjs";
 
 
@@ -175,13 +175,13 @@ section.bible-book {
     break-after: page;
   }
 
-  section.toc,
-  section.copyright {
+  section.toc-page,
+  section.copyright-page {
     break-before: page;
   }
 }
 
-  .cover-page, 
+.cover-page,
 .title-page {
   page: cover-page;
   padding-top: 100px;
@@ -269,14 +269,14 @@ ${webCss}
 ${printCss}
 `
       const htmlStr = `
-<div id="pagedjs-print" data-direction="${catalogEntry.language_direction}">
-  <section class="cover-page" id="cover-page">
+<div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
+  <section class="cover-page">
     ${cover}
   </section>
-  <section id="copyright" class="copyright-page">
+  <section id="copyright-page">
     ${copyright}
   </section>
-  <section id="toc" class="toc">
+  <section class="toc-page">
     ${toc}
   </section>
   ${doc.documentElement.innerHTML}
@@ -300,10 +300,19 @@ ${printCss}
         setPrintPreviewState("error")
         console.log("ERROR RENDERING PRINT PREVIEW: ", e)
       })
+
     }
 
     if (htmlSections?.body && Object.keys(printOptions).length) {
       generatePrintPreview()
+      return () => {
+        // Clean style elements created by PagedJS
+        const pagedStyleElements = document.querySelectorAll(
+          "style[data-pagedjs-inserted-styles]"
+        )
+        pagedStyleElements.forEach((element) => element.remove())
+        previewElement.remove()
+      }
     }
   }, [htmlSections?.body, printOptions])
 

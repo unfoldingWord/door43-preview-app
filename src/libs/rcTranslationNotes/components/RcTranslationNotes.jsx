@@ -85,9 +85,7 @@ export default function RcTranslationNotes({
   setDocumentAnchor,
   setHtmlSections,
   setWebCss,
-  setPrintCss,
   setCanChangeColumns,
-  updateUrlHashInAddressBar,
 }) {
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
@@ -120,6 +118,8 @@ export default function RcTranslationNotes({
     }
   }
 
+  const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', "Translation Words List", 'Hebrew Old Testament', 'Greek New Testament']
+
   const { state: bibleReferenceState, actions: bibleReferenceActions } =
     useBibleReference({
       initialBook: bookId || urlInfo.hashParts[0] || "gen",
@@ -130,6 +130,7 @@ export default function RcTranslationNotes({
 
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
+    setErrorMessage,
   })
 
   const sourceBibleCatalogEntry = useFetchCatalogEntryBySubject({
