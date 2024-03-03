@@ -301,7 +301,6 @@ export default function AppWorkspace() {
           await new Promise(r => setTimeout(r, 200))
           ++tries
           didScroll = await scrollToAnchor(lastSeenAnchor)
-          console.log(didScroll, tries)
         }
       }
     }
