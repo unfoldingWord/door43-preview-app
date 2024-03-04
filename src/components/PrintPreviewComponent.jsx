@@ -311,7 +311,6 @@ ${printCss}
           "style[data-pagedjs-inserted-styles]"
         )
         pagedStyleElements.forEach((element) => element.remove())
-        previewElement.remove()
       }
     }
   }, [htmlSections?.body, printOptions])
