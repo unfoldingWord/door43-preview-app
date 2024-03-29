@@ -12,7 +12,7 @@ import useGetOBSData from '../../openBibleStories/hooks/useGetOBSData'
 import Papa from 'papaparse'
 import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
 import useGenerateTranslationAcademyFileContents from '@libs/rcTranslationAcademy/hooks/useGenerateTranslationAcademyFileContents'
-import { getOBSImgURL } from '../../OpenBibleStories/lib/openBibleStories'
+import { getOBSImgURL } from '../../openBibleStories/lib/openBibleStories'
 
 
 const webCss = `
