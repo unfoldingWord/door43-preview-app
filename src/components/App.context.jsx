@@ -10,7 +10,7 @@ import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTransl
 import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
 import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
 import RcTranslationWords from '@libs/rcTranslationWords/components/RcTranslationWords'
-import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcOBSTranslationNotes'
+import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcObsTranslationNotes'
 
 
 export const AppContext = React.createContext()
