@@ -1,4 +1,4 @@
-import React, { useEffect, useState} from 'react';
+import { useEffect, useState} from 'react';
 import { API_PATH } from '@common/constants'
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -8,7 +8,6 @@ import {
     AppBar,
     Button,
     IconButton,
-    Chip,
   } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search'
 import TextField from '@mui/material/TextField'
@@ -341,12 +340,12 @@ export const ResourcesCardGrid = ({
                 id="category-a"
                 sx={{ fontSize: '12px', textAlign: 'center' }}
               >
-                <a key="title" style={{textDecoration: "none"}} href={`/u/${entry.full_name}`} target="_blank">{entry.title}</a> ({entry.abbreviation})
+                <a key="title" style={{textDecoration: "none"}} href={`/u/${entry.full_name}`} target="_blank" rel="noopener noreferrer">{entry.title}</a> ({entry.abbreviation})
                 <div key="stages">
                   {Object.values(entry.repo?.catalog || {"latest": {branch_or_tag_name: entry.branch_or_tag_name}}).filter(c => c).map((c, i) => 
                   <span key={c.branch_or_tag_name}>
                     {i == 0 ? "" : ", "}
-                    <a style={{textDecoration: "none"}} key={c.branch_or_tag_name} href={`/u/${entry.full_name}/${c.branch_or_tag_name}`} target="_blank">{c.branch_or_tag_name}</a>
+                    <a style={{textDecoration: "none"}} key={c.branch_or_tag_name} href={`/u/${entry.full_name}/${c.branch_or_tag_name}`} target="_blank" rel="noopener noreferrer">{c.branch_or_tag_name}</a>
                   </span>)
                 }</div>
               </Box>

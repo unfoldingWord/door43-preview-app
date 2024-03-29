@@ -1,4 +1,5 @@
-import React, { useState, useContext, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { API_PATH } from '@common/constants'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
@@ -38,7 +39,6 @@ export default function SelectResourceToPreviewModal(
   const [repos, setRepos] = useState({})
   const [availableRefs, setAvailableRefs] = useState({})
   const [catalogEntry, setCatalogEntry] = useState()
-  const [availableBooks, setAvailableBooks] = useState({})
   const [isFetching, setIsFetching] = useState(false)
   const [error, setError] = useState()
   const [selectedLanguage, setSelectedLanguage] = useState()
@@ -69,12 +69,12 @@ export default function SelectResourceToPreviewModal(
     if(urlInfo && urlInfo.hashParts[0]) {
       setSelectedBook({identifier: urlInfo.hashParts[0], title: urlInfo.hashParts[0].toUpperCase()})
     }
-  }, [currentCatalogEntry])
+  }, [urlInfo, currentCatalogEntry, refTypeChoice, selectedLanguage, selectedOwner, selectedRepo, selectedRef])
 
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "default"})
       .then(response => {
         return response.json()
       })
@@ -93,17 +93,17 @@ export default function SelectResourceToPreviewModal(
     if (serverInfo && canLoad && !languages) {
       getLanguages()
     }
-  }, [serverInfo, canLoad])
+  }, [serverInfo, languages, canLoad])
 
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "default"})
       .then(response => {
         return response.json()
       })
       .then(({data}) => {
-        setOwners({...owners, [selectedLanguage.lc]: data})
+        setOwners((prevState) => ({...prevState, [selectedLanguage.lc]: data}))
       })
       .catch(e => {
         setError("Error fetching providers from DCS")
@@ -117,15 +117,15 @@ export default function SelectResourceToPreviewModal(
     if (serverInfo && selectedLanguage && !(selectedLanguage.lc in owners) && canLoad) {
       fetchOwners()
     }
-  }, [serverInfo, selectedLanguage, canLoad])
+  }, [serverInfo, owners, canLoad, selectedLanguage])
 
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "default"})
       .then(response => response.json())
       .then(({data}) => {
-        setRepos({...repos, [selectedOwner.username]: data})
+        setRepos(prevState => ({...prevState, [selectedOwner.username]: data}))
       })
       .catch(e => {
         setError("Error fetching repositories from DCS")
@@ -139,15 +139,15 @@ export default function SelectResourceToPreviewModal(
     if (selectedOwner && !(selectedOwner.username in repos) && canLoad) {
       fetchRepos()
     }
-  }, [serverInfo, selectedOwner, canLoad])
+  }, [serverInfo, repos, selectedLanguage, selectedOwner, canLoad])
 
   useEffect(() => {
     const fetchBranches = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`, {cache: "default"})
         .then(response => response.json())
         .then(branches => {
-          setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}})
+          setAvailableRefs(prevState => ({...prevState, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], branch: branches.map(branch => branch.name)}}))
         })
         .catch(e => {
           setError("Error fetching branches from DCS")
@@ -160,10 +160,10 @@ export default function SelectResourceToPreviewModal(
 
     const fetchTags = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`, {cache: "default"})
         .then(response => response.json())
         .then(tags => {
-          setAvailableRefs({...availableRefs, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}})
+          setAvailableRefs((prevState) => ({...prevState, [selectedRepo.full_name]: {...availableRefs[selectedRepo.full_name], tag: tags.map(tag => tag.name)}}))
         })
         .catch(e => {
           setError("Error fetching tags from DCS")
@@ -183,12 +183,12 @@ export default function SelectResourceToPreviewModal(
         }
       }
     }
-  }, [serverInfo, selectedRepo, refTypeChoice, canLoad])
+  }, [serverInfo, availableRefs, selectedRepo, selectedOwner, refTypeChoice, canLoad])
 
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {cache: "no-cache"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {cache: "default"})
       .then(response => response.json())
       .then((entry) => {
         setCatalogEntry(entry)
@@ -214,11 +214,11 @@ export default function SelectResourceToPreviewModal(
         fetchCatalogEntry(selectedRef)
       }
     }
-  }, [serverInfo, refTypeChoice, selectedRef, canLoad])
+  }, [serverInfo, refTypeChoice, selectedRepo, selectedRef, canLoad])
 
   const nodeRef = React.useRef(null);
 
-  const handleSelectResource = (data) => {
+  const handleSelectResource = () => {
     if (selectedRepo) {
       let ref = selectedRef || ""
       if (refTypeChoice == "prod" && selectedRepo.catalog.prod) {
@@ -442,3 +442,12 @@ export default function SelectResourceToPreviewModal(
   </Dialog>
   )
 }
+
+SelectResourceToPreviewModal.propTypes = {
+  canLoad: PropTypes.bool.isRequired,
+  showModal: PropTypes.bool.isRequired,
+  setShowModal: PropTypes.func.isRequired,
+  serverInfo: PropTypes.object.isRequired,
+  urlInfo: PropTypes.object.isRequired,
+  currentCatalogEntry: PropTypes.object,
+};

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import PropTypes from 'prop-types'
+import { useState, useEffect, useContext } from 'react'
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
@@ -11,6 +10,7 @@ import useFetchBookFile from '@libs/core/hooks/useFetchBookFile'
 import usfm from 'usfm-js'
 import { verseObjectsToString } from 'uw-quote-helpers'
 import Papa from 'papaparse'
+import { AppContext } from '@components/App.context'
 
 
 const webCss = `
@@ -116,26 +116,26 @@ a.header-link:hover::after {
 }
 `
 
-export default function RcTranslationQuestions({
-  urlInfo,
-  catalogEntry,
-  htmlSections,
-  setStatusMessage,
-  setErrorMessage,
-  setDocumentAnchor,
-  setHtmlSections,
-  setWebCss,
-  setPrintCss,
-  setCanChangeColumns,
-  updateUrlHashInAddressBar,
-  onPrintClick,
-}) {
+export default function RcTranslationQuestions() {
+  const {
+    state: {
+      urlInfo,
+      catalogEntry,
+    },
+    actions: {
+      setWebCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+      setCanChangeColumns,
+    },
+  } = useContext(AppContext)
+
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
   const [bookTitle, setBookTitle] = useState()
-  const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
-  const [htmlCache, setHtmlCache] = useState({})
 
   const renderFlags = {
     showWordAtts: false,
@@ -152,8 +152,8 @@ export default function RcTranslationQuestions({
 
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
-      setBookId(b)
-      setDocumentAnchor(b)
+      window.location.hash = b;
+      window.location.reload()
     } else {
       setDocumentAnchor(`${b}-${c}-${v}`)
     }
@@ -174,12 +174,12 @@ export default function RcTranslationQuestions({
   const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
     subject: "Aligned Bible",
-    bookId: bookIdToProcess,
+    bookId,
   })
 
   const targetUsfm = useFetchBookFile({
     catalogEntry: targetBibleCatalogEntry,
-    bookId: bookIdToProcess,
+    bookId,
   })
 
   useEffect(() => {
@@ -209,72 +209,50 @@ export default function RcTranslationQuestions({
         setErrorMessage("Unable to determine a book ID to render.")
         return
       }
+      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == _bookId).map(ingredient=>ingredient.title)[0] || _bookId
       setBookId(_bookId)
+      setBookTitle(title)
+      setWebCss(webCss)
+      setCanChangeColumns(false)
+      setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
         sb = [_bookId, ...sb]
       }
     }
 
-    if (!bookId) {
-      setWebCss(webCss)
-      setCanChangeColumns(false)
-      setInitialBookIdAndSupportedBooks()
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleSelectedBook = async () => {
-      // setting a new book, so clear all and get html from cache if exists
-      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-      setBookTitle(title)
-      if (bookId in htmlCache) {
-        setHtmlSections({...setHtmlSections, cover: `<h3 class="cover-book-title">${title}</h3>`, body: htmlCache[bookId]})
-      } else if (supportedBooks.includes(bookId)) {
-        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
-        setTsvText("")
-        setHtmlSections({...htmlSections, cover: `<h3 class="cover-book-title">${title}</h3>`, body: ""})
-        setBookIdToProcess(bookId)
-        bibleReferenceActions.applyBooksFilter(supportedBooks)
-      } else {
-        setErrorMessage(`This resource does not support the rendering of the book \`${bookId}\`. Please choose another book to render.`)
-      }
-    }
-
-    if (bookId) {
-      handleSelectedBook()
-    }
-  }, [bookId])
+    setInitialBookIdAndSupportedBooks()
+  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setWebCss, setStatusMessage, setBookTitle])
 
   useEffect(() => {
     const fetchTsvFileFromDCS = async () => {
-      if (! (bookIdToProcess in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookIdToProcess}`)
+      if (! (bookId in BibleBookData)) {
+        setErrorMessage(`Invalid book: ${bookId}`)
         return
       }
 
       let filePath = ""
       catalogEntry.ingredients.forEach(ingredient => {
-        if (ingredient.identifier == bookIdToProcess) {
+        if (ingredient.identifier == bookId) {
           filePath = ingredient.path.replace(/^\.\//, "")
         }
       })
       if (! filePath) {
-        setErrorMessage(`Book \`${bookIdToProcess}\` is not in repo's project list.`)
+        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`)
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
       then(tsv => setTsvText(tsv)).
       catch(e => {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-        setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
+        setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`)
       })
     }
 
-    if (catalogEntry && supportedBooks && bookIdToProcess && supportedBooks.includes(bookIdToProcess)) {
+    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
       fetchTsvFileFromDCS()
     }
-  }, [supportedBooks, catalogEntry, bookIdToProcess])
+  }, [supportedBooks, catalogEntry, bookId, setErrorMessage])
 
   useEffect(() => {
     const generateHtml = async () => {
@@ -368,14 +346,13 @@ export default function RcTranslationQuestions({
   </section>
 </section>
 `
-      setHtmlSections({...htmlSections, body: html})
-      setHtmlCache({...htmlCache, [bookIdToProcess]: html})
+      setHtmlSections((prevState) => ({...prevState, body: html}))
     }
 
     if (targetBibleCatalogEntry && tsvText && targetUsfm) {
       generateHtml()
     }
-  }, [targetBibleCatalogEntry, tsvText, targetUsfm])
+  }, [catalogEntry, targetBibleCatalogEntry, tsvText, targetUsfm, bookId, bookTitle, bookId, supportedBooks, setHtmlSections, setStatusMessage, setErrorMessage, setBookTitle, setDocumentAnchor])
 
   return (
     <BibleReference
@@ -384,16 +361,4 @@ export default function RcTranslationQuestions({
       style={{minWidth: "auto"}}
     />
   )
-}
-
-RcTranslationQuestions.propTypes = {
-  urlInfo: PropTypes.object.isRequired,
-  catalogEntry: PropTypes.object.isRequired,
-  setStatusMessage: PropTypes.func,
-  setErrorMessage: PropTypes.func,
-  setHtmlSections: PropTypes.func,
-  setWebCss: PropTypes.func,
-  setPrintCss: PropTypes.func,
-  setCanChangeColumns: PropTypes.func,
-  updateUrlHashInAddressBar: PropTypes.func,
 }

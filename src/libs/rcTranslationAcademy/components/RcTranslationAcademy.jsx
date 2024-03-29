@@ -1,8 +1,9 @@
-import { useEffect } from "react"
+import { useEffect, useContext } from "react"
 import useGenerateTranslationAcademyManuals from "../hooks/useGenerateTranslationAcademyManuals"
 import useGenerateTranslationAcademyHtml from "../hooks/useGenerateTranslationAcademyHtml"
 import TaNavigation from "./TaNavigation"
-import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
+import useFetchZipFileData from "@libs/core/hooks/useFetchZipFileData"
+import { AppContext } from "@components/App.context"
 
 
 const webCss = `
@@ -65,13 +66,13 @@ hr.article-divider {
   width: 50%;
 }
 
-.section-header a {
-  border-bottom: 3px double;
-}
+// .section-header a {
+//   border-bottom: 3px double;
+// }
 
-.article-header a {
-  border-bottom: 1px solid;
-}
+// .article-header a {
+//   border-bottom: 1px solid;
+// }
 
 .manual > h1 {
   text-align: center;
@@ -98,39 +99,28 @@ const printCss = `
 }
 `
 
-export default function RcTranslationAcademy({
-  urlInfo,
-  catalogEntry,
-  htmlSections,
-  lastSeenAnchor,
-  setStatusMessage,
-  setErrorMessage,
-  setHtmlSections,
-  setWebCss,
-  setPrintCss,
-  setDocumentAnchor,
-}) {
-  let zipFileData = null
-  try {
-    zipFileData = useFetchZipFileData({catalogEntry})
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+export default function RcTranslationAcademy() {
+  const {
+    state: {
+      catalogEntry,
+      documentAnchor,
+    },
+    actions: {
+      setWebCss,
+      setPrintCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+    },
+  } = useContext(AppContext)
 
-  let taManuals = null
-  try {
-    taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage })
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  const zipFileData = useFetchZipFileData({catalogEntry})
 
-  let html = ""
-  try {
-    html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals })
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  let taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage })
 
+  const html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals })
+  
   useEffect(() => {
     setStatusMessage(<>Preparing {catalogEntry.subject} Preview.<br/>Please wait...</>)
     setWebCss(webCss)
@@ -140,15 +130,15 @@ export default function RcTranslationAcademy({
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
     if (html) {
-      setHtmlSections({...htmlSections, toc: "", body: html})
+      setHtmlSections((prevState) => ({...prevState, toc: "", body: html}))
       setStatusMessage("")
     }
-  }, [html])
+  }, [html, setHtmlSections, setStatusMessage])
 
   return (
     <TaNavigation
-        taManuals={taManuals} 
-        anchor={lastSeenAnchor}
+        taManuals={taManuals}
+        anchor={documentAnchor}
         setDocumentAnchor={setDocumentAnchor}
       />
   )

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { ThemeProvider, createTheme } from '@mui/material'
 import usfm from 'usfm-js'
 import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
@@ -11,6 +11,7 @@ import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
 import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
+import { AppContext } from '@components/App.context'
 
 const theme = createTheme({
   overrides: {
@@ -39,6 +40,11 @@ h1 {
 .new-page {
   break-after: page;
   column-span: all;
+}
+
+.header-link {
+  text-decoration: none;
+  color: inherit;
 }
 `
 
@@ -79,24 +85,28 @@ a.footnote {
 }
 `
 
-export default function Bible({
-  urlInfo,
-  catalogEntry,
-  htmlSections,
-  setStatusMessage,
-  setErrorMessage,
-  setHtmlSections,
-  setWebCss,
-  setPrintCss,
-  setCanChangeColumns,
-  setDocumentAnchor,
-}) {
+export default function Bible() {
+  const {
+    state: {
+      urlInfo,
+      catalogEntry,
+      documentAnchor,
+    },
+    actions: {
+      setWebCss,
+      setPrintCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+      setCanChangeColumns,
+    },
+  } = useContext(AppContext)
+
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
   const [bookTitle, setBookTitle] = useState()
-  const [bookIdToProcess, setBookIdToProcess] = useState()
   const [usfmText, setUsfmText] = useState()
-  const [htmlCache, setHtmlCache] = useState({})
 
   const renderFlags = {
     showWordAtts: false,
@@ -113,8 +123,8 @@ export default function Bible({
 
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
-      setBookId(b)
-      setDocumentAnchor(b)
+      window.location.hash = b;
+      window.location.reload()
     } else if (setDocumentAnchor) {
       setDocumentAnchor(`${b}-${c}-${v}`)
     }
@@ -129,13 +139,22 @@ export default function Bible({
     })
 
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
-    bookId: bookIdToProcess,
+    bookId,
     usfmText,
     renderFlags,
     renderStyles: catalogEntry?.language_direction === "rtl" ? getRtlPreviewStyle() : getLtrPreviewStyle(),
     htmlRender: true,
     setErrorMessage,
   })
+
+  useEffect(() => {
+    if (documentAnchor && documentAnchor.split('-').length == 3) {
+      const parts = documentAnchor.split('-')
+      if(bibleReferenceState.bookId != parts[0] || bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != parts[2]) {
+        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2])
+      }
+    }
+  }, [documentAnchor])
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
@@ -164,7 +183,10 @@ export default function Bible({
         setErrorMessage("Unable to determine a book ID to render.")
         return
       }
+      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == _bookId).map(ingredient=>ingredient.title)[0] || _bookId
       setBookId(_bookId)
+      setBookTitle(title)
+      setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
         sb = [_bookId, ...sb]
@@ -176,46 +198,23 @@ export default function Bible({
     if (!bookId) {
       setInitialBookIdAndSupportedBooks()
     }
-  }, [])
-
-  useEffect(() => {
-    const handleSelectedBook = async () => {
-      // setting a new book, so clear all and get html from cache if exists
-      if (bookId in htmlCache) {
-        setHtmlSections({...htmlSections, toc: "", body: htmlCache[bookId]})
-      } else if (supportedBooks.includes(bookId)) {
-        const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-        setBookTitle(title)
-        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
-        setUsfmText("")
-        setHtmlSections({...htmlSections, toc: "", body: ""})
-        setBookIdToProcess(bookId)
-        bibleReferenceActions.applyBooksFilter(supportedBooks)
-      } else {
-        setErrorMessage(`This resource does not support the rendering of the book \`${bookId}\`. Please choose another book to render.`)
-      }
-    }
-
-    if (bookId) {
-      handleSelectedBook()
-    }
-  }, [bookId])
+  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId])
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
-      if (! (bookIdToProcess in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookIdToProcess}`)
+      if (! (bookId in BibleBookData)) {
+        setErrorMessage(`Invalid book: ${bookId}`)
         return
       }
 
       let filePath = ""
       catalogEntry.ingredients.forEach(ingredient => {
-        if (ingredient.identifier == bookIdToProcess) {
+        if (ingredient.identifier == bookId) {
           filePath = ingredient.path.replace(/^\.\//, "")
         }
       })
       if (! filePath) {
-        setErrorMessage(`Book \`${bookIdToProcess}\` is not in repo's project list.`)
+        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`)
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
@@ -231,37 +230,34 @@ export default function Bible({
       }).
       catch(e => {
         console.log(`Error calling getRepoContents(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-        setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
+        setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`)
       })
     }
 
-    if (catalogEntry && supportedBooks && bookIdToProcess && supportedBooks.includes(bookIdToProcess)) {
+    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
       fetchUsfmFileFromDCS()
     }
-  }, [supportedBooks, catalogEntry, bookIdToProcess])
+  }, [supportedBooks, catalogEntry, bookId, setErrorMessage])
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
-        /id="chapter-(\d+)-verse-(\d+)"/g,
-        `id="${bookIdToProcess}-$1-$2"`
+        /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
+        `<span id="${bookId}-$1-$2"$3><a href="#${bookId}-$1-$2" class="header-link">$4</a></span>`
       )
-      _html = _html.replaceAll(/ id="chapter-(\d+)"/gi, ` id="${bookId}-$1" data-toc-title="${bookTitle} $1"`)
+      _html = _html.replaceAll(/<span id="chapter-(\d+)" ([^>]+)>([\d]+)<\/span>/gi, `<span id="${bookId}-$1" data-toc-title="${bookTitle} $1" $2><a href="#${bookId}-$1-1" class="header-link">$3</a></span>`)
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`)
       _html = `<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">${_html}</section>`
-      setHtmlSections({...htmlSections, cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: "", body: _html})
+      setHtmlSections({cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: "", body: _html})
       setStatusMessage("")
       setWebCss(webCss)
       setPrintCss(printCss)
-      if (!(bookIdToProcess in htmlCache)) {
-        setHtmlCache({ ...htmlCache, [bookIdToProcess]: _html })
-      }
     }
 
-    if (htmlReady && renderedData && !(bookIdToProcess in htmlCache)) {
+    if (htmlReady && renderedData) {
       handleRenderedDataFromUsfmToHtmlHook()
     }
-  }, [htmlReady, renderedData, bookTitle])
+  }, [bookId, htmlReady, renderedData, bookTitle, setWebCss, setPrintCss, setHtmlSections, setStatusMessage, setErrorMessage])
 
   return (
     <ThemeProvider theme={theme}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import { DCS_SERVERS, API_PATH } from '@common/constants'
 import { getCatalogEntry } from '@libs/core/lib/dcsApi'
@@ -10,6 +10,7 @@ import RcTranslationAcademy from '@libs/rcTranslationAcademy/components/RcTransl
 import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslationNotes'
 import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
 import RcTranslationWords from '@libs/rcTranslationWords/components/RcTranslationWords'
+import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcOBSTranslationNotes'
 
 
 export const AppContext = React.createContext()
@@ -31,24 +32,19 @@ export function AppContextProvider({ children }) {
   const [printOptions, setPrintOptions] = useState({})
   const [documentReady, setDocumentReady] = useState(false)
   const [documentAnchor, setDocumentAnchor] = useState('')
-  const [lastSeenAnchor, setLastSeenAnchor] = useState()
-
-  /*** For new resource model ***/
-  const [organizations, setOrganizations] = useState()
-  const [branches,setBranches] = useState()
-  const [tags,setTags] = useState()
-  const [repos,setRepos] = useState()
-  const [languages,setLanguages] = useState()
 
   const onPrintClick = () => {
     setIsOpenPrint(true)
   }
 
-  const setErrorMessage = (message) => {
-    if (! errorMessages.includes(message)) {
-      setErrorMessages([...errorMessages, message])
-    }
-  }
+  const setErrorMessage = useCallback((message) => {
+    setErrorMessages((prevErrorMessages) => {
+      if (!prevErrorMessages.includes(message)) {
+        return [...prevErrorMessages, message];
+      }
+      return prevErrorMessages;
+    })
+  }, [setErrorMessages]);
 
   const clearErrorMessage = idxToRemove => {
     if (errorMessages.length > idxToRemove) {
@@ -83,11 +79,6 @@ export function AppContextProvider({ children }) {
 
     const getUrlInfo = async () => {
       const urlParts = url.pathname.replace(/^\/(u\/){0,1}/, "").replace(/\/+$/, "").replace(/\/preview\//, "/").replace(/\/(branch|tag)\//, "/").split("/")
-      if(urlParts.length < 2) {
-        // setErrorMessage("Home Page (under construction)")
-        setStatusMessage("")
-        return
-      }
       const info = {
         owner: urlParts[0] || "",
         repo: urlParts[1] || "",
@@ -97,11 +88,14 @@ export function AppContextProvider({ children }) {
       }
       setUrlInfo(info)
       setDocumentAnchor(info.hash)
+      if (!info.repo) {
+        setStatusMessage("")
+      }
     }
 
     getServerInfo().catch(e => setErrorMessage(e.message))
     getUrlInfo().catch(e => setErrorMessage(e.message))
-  }, [])
+  }, [setErrorMessage])
 
   useEffect(() => {
     const fetchRepo = async () => {
@@ -116,15 +110,15 @@ export function AppContextProvider({ children }) {
       })
       .then(data => {
         setRepo(data)
-      }).catch(err => {
-        setErrorMessage(<>Failed to connect to DCS. Unable to fetch <a href={repoUrl} target="_blank">{urlInfo.owner}/{urlInfo.repo}</a></>)
+      }).catch(() => {
+        setErrorMessage(<>Failed to get resource. Unable to fetch <a href={repoUrl} target="_blank" rel="noreferrer">{urlInfo.owner}/{urlInfo.repo}</a></>)
       })
     }
 
-    if (serverInfo && urlInfo) {
+    if (serverInfo && urlInfo && urlInfo.owner && urlInfo.repo) {
       fetchRepo().catch(e => setErrorMessage(e.message))
     }
-  }, [serverInfo, urlInfo])
+  }, [serverInfo, urlInfo, setErrorMessage])
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
@@ -136,7 +130,7 @@ export function AppContextProvider({ children }) {
     if (repo) {
       fetchCatalogEntry().catch(e => setErrorMessage(e.message))
     }
-  }, [repo])
+  }, [repo, serverInfo, urlInfo, setErrorMessage])
 
   useEffect(() => {
     if (catalogEntry) {
@@ -178,6 +172,9 @@ export function AppContextProvider({ children }) {
               case "Translation Words":
                 setResourceComponent(() => RcTranslationWords)
                 return
+              case "TSV OBS Translation Notes":
+                setResourceComponent(() => RcObsTranslationNotes)
+                return
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`)
             }
@@ -205,7 +202,13 @@ export function AppContextProvider({ children }) {
             }
             return
           case "ts":
-            setErrorMessage("Conversion of translationStudio repositories is currently not supported.")
+            switch (catalogEntry.subject) {
+              case "Open Bible Stories":
+                setResourceComponent(() => OpenBibleStories)
+                return
+              default:
+               setErrorMessage("Conversion of translationStudio repositories is currently not supported.")
+            }
             return
           case "tc":
             switch (catalogEntry.subject) {
@@ -230,12 +233,7 @@ export function AppContextProvider({ children }) {
       catalogEntry,
       statusMessage,
       errorMessages,
-      organizations,
-      branches,
-      tags,
       repo,
-      repos,
-      languages,
       ResourceComponent,
       htmlSections,
       webCss,
@@ -247,7 +245,6 @@ export function AppContextProvider({ children }) {
       printOptions,
       documentReady,
       documentAnchor,
-      lastSeenAnchor,
     },
     actions: {
       onPrintClick,
@@ -262,7 +259,6 @@ export function AppContextProvider({ children }) {
       setPrintOptions,
       setDocumentReady,
       setDocumentAnchor,
-      setLastSeenAnchor,
     },
   }
 

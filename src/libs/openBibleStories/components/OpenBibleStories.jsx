@@ -1,6 +1,8 @@
-import { useEffect } from 'react'
-import PropTypes from 'prop-types'
+import { useEffect, useState, useContext } from 'react'
+import { AppContext } from '@components/App.context'
 import { useBibleReference } from 'bible-reference-rcl'
+import useGetOBSData from '../hooks/useGetOBSData'
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material'
 import useGenerateOpenBibleStoriesHtml from '../hooks/useGenerateOpenBibleStoriesHtml'
 import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
 import BibleReference from 'bible-reference-rcl'
@@ -49,58 +51,55 @@ const theme = createTheme({
   },
 })
 
-export default function OpenBibleStories({
-  urlInfo,
-  htmlSections,
-  catalogEntry,
-  setStatusMessage,
-  setErrorMessage,
-  setHtmlSections,
-  setWebCss,
-  setPrintCss,
-  setDocumentAnchor,
-}) {
+export default function OpenBibleStories() {
+  const {
+    state: {
+      catalogEntry,
+    },
+    actions: {
+      setWebCss,
+      setPrintCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+    },
+  } = useContext(AppContext)
+
+  const [imageResolution, setImageResolution] = useState('360px');
+
   const onBibleReferenceChange = (b, c, v) => {
     setDocumentAnchor(`${b}-${c}-${v}`)
   }
 
-  const { state: bibleReferenceState, actions: bibleReferenceActions } =
-    useBibleReference({
+  const {state: bibleReferenceState, actions: bibleReferenceActions} = useBibleReference({
       initialBook: "obs",
-      initialChapter: urlInfo.hashParts[1] || "1",
-      initialVerse: urlInfo.hashParts[2] || "1",
+      initialChapter: "1",
+      initialVerse: "1",
       onChange: onBibleReferenceChange,
       addOBS: true,
     })
 
-  let zipFileData = null
-  try {
-    zipFileData = useFetchZipFileData({catalogEntry})
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  const zipFileData = useFetchZipFileData({catalogEntry})
 
-  let obsHtmlSections = ""
-  try {
-    obsHtmlSections = useGenerateOpenBibleStoriesHtml({ catalogEntry, zipFileData, setErrorMessage })
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  const obsData = useGetOBSData({catalogEntry, zipFileData, setErrorMessage})
+
+  const obsHtmlSections = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution })
 
   useEffect(() => {
     setStatusMessage(<>Preparing OBS Preview.<br/>Please wait...</>)
-    bibleReferenceActions.applyBooksFilter("obs")
-  }, [])
+    bibleReferenceActions.applyBooksFilter(["obs"])
+  }, [setStatusMessage])
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
     if (obsHtmlSections) {
-      setHtmlSections({...htmlSections, ...obsHtmlSections})
+      setHtmlSections((prevState) => {return {...prevState, ...obsHtmlSections}})
       setWebCss(webCss)
       setPrintCss(printCss)
       setStatusMessage("")
     }
-  }, [obsHtmlSections])
+  }, [obsHtmlSections, setHtmlSections, setWebCss, setPrintCss, setStatusMessage])
 
   return (
     <ThemeProvider theme={theme}>
@@ -109,6 +108,20 @@ export default function OpenBibleStories({
         actions={bibleReferenceActions}
         style={{minWidth: "auto"}}
       />
+      <FormControl>
+        <InputLabel id="image-resolution-label">
+          Images
+        </InputLabel>
+        <Select
+          labelId="image-resolution-label"
+          label="Images"
+          value={imageResolution}
+          onChange={(event) => setImageResolution(event.target.value)}>
+          <MenuItem value="none">Hide Images</MenuItem>
+          <MenuItem value="360px">640x360px</MenuItem>
+          <MenuItem value="2160px">3840x2160px</MenuItem>
+        </Select>
+      </FormControl>
     </ThemeProvider>
   )
 }
