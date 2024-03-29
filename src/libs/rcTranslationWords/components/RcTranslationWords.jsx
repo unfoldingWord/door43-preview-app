@@ -1,8 +1,9 @@
-import { useEffect } from "react"
+import { useEffect, useContext } from "react"
 import useGenerateTranslationWordsManuals from "../hooks/useGenerateTranslationWordsManuals"
 import useGenerateTranslationWordsHtml from "../hooks/useGenerateTranslationWordsHtml"
 import TwNavigation from "./TwNavigation"
 import useFetchZipFileData from "../../core/hooks/useFetchZipFileData"
+import { AppContext } from "@components/App.context"
 
 
 const webCss = `
@@ -94,57 +95,46 @@ const printCss = `
 }
 `
 
-export default function RcTranslationWords({
-  urlInfo,
-  catalogEntry,
-  htmlSections,
-  lastSeenAnchor,
-  setStatusMessage,
-  setErrorMessage,
-  setHtmlSections,
-  setWebCss,
-  setPrintCss,
-  setDocumentAnchor,
-}) {
-  let zipFileData = null
-  try {
-    zipFileData = useFetchZipFileData({catalogEntry})
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+export default function RcTranslationWords() {
+  const {
+    state: {
+      catalogEntry,
+      documentAnchor,
+    },
+    actions: {
+      setWebCss,
+      setPrintCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+    },
+  } = useContext(AppContext)
 
-  let twManuals = null
-  try {
-    twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData, setErrorMessage })
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  const zipFileData = useFetchZipFileData({catalogEntry})
 
-  let html = ""
-  try {
-    html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals })
-  } catch (e) {
-    setErrorMessage(e.message)
-  }
+  const twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData, setErrorMessage })
+
+  const html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals })
 
   useEffect(() => {
     setStatusMessage(<>Preparing {catalogEntry.subject} Preview.<br/>Please wait...</>)
     setWebCss(webCss)
     setPrintCss(printCss)
-  }, [])
+  }, [catalogEntry, setWebCss, setPrintCss, setStatusMessage])
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
     if (html) {
-      setHtmlSections({...htmlSections, toc: "", body: html})
+      setHtmlSections((prevState) => ({...prevState, toc: "", body: html}))
       setStatusMessage("")
     }
-  }, [html])
+  }, [html, twManuals, setHtmlSections, setStatusMessage])
 
   return (
     <TwNavigation
         twManuals={twManuals} 
-        anchor={lastSeenAnchor}
+        anchor={documentAnchor}
         setDocumentAnchor={setDocumentAnchor}
       />
   )

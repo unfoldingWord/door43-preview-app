@@ -1,28 +1,26 @@
-import React, { useState, useEffect, forwardRef } from "react";
+import { forwardRef } from "react";
 import DOMPurify from 'dompurify'
-
+import PropTypes from 'prop-types';
 
 export const WebPreviewComponent = forwardRef(({
     style,
     webCss,
     html,
 }, ref) => {
-  const [processedHtml, setProcessedHtml] = useState("")
-
-  useEffect(() => {
-    if (html) {
-      const doc = new DOMParser().parseFromString(html, "text/html")
-      doc.querySelectorAll('[id]').forEach(e => e.id = `web-${e.id}`)
-      setProcessedHtml(doc.documentElement.innerHTML)
-    }
-  }, [html])
-
   return (
     <>
       <style type="text/css">{webCss}</style>
       <div id="web-preview" style={style} dangerouslySetInnerHTML={{
-        __html: DOMPurify.sanitize(processedHtml, {ADD_ATTR: ['target']}),
+        __html: DOMPurify.sanitize(html, {ADD_ATTR: ['target']}),
       }} ref={ref} />
     </>
   )
 })
+
+WebPreviewComponent.displayName = 'WebPreviewComponent';
+
+WebPreviewComponent.propTypes = {
+  style: PropTypes.object,
+  webCss: PropTypes.string,
+  html: PropTypes.string,
+};

@@ -22,7 +22,7 @@ export default function useFetchCatalogEntryBySubject({
             }
           })
           if (! _catalogEntry) {
-            setErrorMessage(`No relation found of subject \`${subject}\` for this resource for book \`${bookId}\`.`)
+            setErrorMessage(`No relation found of subject \`${subject}\` for this resource${bookId?` for book \`${bookId}\`` : ""}.`)
             return
           }
           setCatalogEntry(_catalogEntry)
@@ -31,7 +31,7 @@ export default function useFetchCatalogEntryBySubject({
         if (catalogEntries && subject) {
           determineCatalogEntryBySubject()
         }
-      }, [catalogEntries, subject, bookId])
+      }, [catalogEntries, subject, bookId, setErrorMessage])
 
     return catalogEntry
 }

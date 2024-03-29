@@ -16,7 +16,7 @@ export default function useFetchRelationCatalogEntries({
         return
       }
       const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}`
-      fetch(metadataUrl, {cache: "no-cache"}).
+      fetch(metadataUrl, {cache: "default"}).
         then(response => {
           if (!response.ok) {
             console.log(`Bad response from DCS for ${metadataUrl}: `, response)
@@ -51,7 +51,7 @@ export default function useFetchRelationCatalogEntries({
     if (catalogEntry) {
       fetchRelationEntries()
     }
-  }, [catalogEntry])
+  }, [catalogEntry, setErrorMessage])
 
   return relationCatalogEntries
 }

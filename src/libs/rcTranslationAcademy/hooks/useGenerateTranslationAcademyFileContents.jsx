@@ -58,6 +58,7 @@ export default function useGenerateTranslationAcademyFileContents({
               id: articleId,
             }
           }
+          let body = ""
           switch(nameParts[3]) {
             case "title.md":
               articleMap[manualId].articles[articleId].title = new TextDecoder().decode(currentValue).trim()
@@ -67,7 +68,7 @@ export default function useGenerateTranslationAcademyFileContents({
               return
             case "01.md":
             default:
-              let body = md.render(new TextDecoder().decode(currentValue))
+              body = md.render(new TextDecoder().decode(currentValue))
               body = body.replace(/href="\.\.\/([^/".]+)\/*(01.md){0,1}"/g, `href="#${manualId}--$1"`)
               body = body.replace(/href="\.\.\/\.\.\/([^/".]+)\/([^/".]+)\/*(01.md){0,1}"/g, `href="#$1--$2"`)
               body = body.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>')
@@ -82,7 +83,7 @@ export default function useGenerateTranslationAcademyFileContents({
     if(catalogEntry && zipFileData) {
       getFileContents()
     }
-  }, [catalogEntry, zipFileData])
+  }, [catalogEntry, zipFileData, setErrorMessage])
 
   return taFileContents
 }

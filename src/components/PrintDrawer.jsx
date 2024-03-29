@@ -89,12 +89,12 @@ export default function PrintDrawer({
 
   useEffect(() => {
     if(pageOrientation && pageSize && printResources.pageSizes[pageOrientation]?.[pageSize]?.width) {
-        setPrintOptions({...printOptions, 
+        setPrintOptions((prevState) => ({...prevState, 
             pageWidth: printResources.pageSizes[pageOrientation][pageSize].width,
             pageHeight: printResources.pageSizes[pageOrientation][pageSize].height,
-        })
+        }))
     }
-  }, [pageOrientation, pageSize])
+  }, [pageOrientation, pageSize, setPrintOptions])
 
   const columnsList = [1, 2, 3]
 

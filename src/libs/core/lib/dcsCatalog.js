@@ -10,7 +10,7 @@ export const getRelationCatalogEntries = async (catalogApiUrl, relation, owners,
     }
     const repoParams = relation.map(r => `repo=${r.split('?')[0].replace('/', '_')}`).join('&')
     const ownerParams = owners.map(o => `owner=${o}`).join('&')
-    const resp = await fetch(`${catalogApiUrl}/search?${repoParams}&${ownerParams}&stage=${stage}`, {cache: "no-cache"})
+    const resp = await fetch(`${catalogApiUrl}/search?${repoParams}&${ownerParams}&stage=${stage}`, {cache: "default"})
     if (!resp.ok) {
         throw new Error("Unable to search DCS catalog")
     }

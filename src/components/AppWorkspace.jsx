@@ -25,13 +25,15 @@ import PrintDrawer from "./PrintDrawer";
 import { AppContext } from "./App.context";
 import Header from "./Header";
 import SelectResourceToPreviewModal from "./SelectResourceToPreviewModal";
-import { APP_NAME, DCS_SERVERS, API_PATH } from "@common/constants";
+import { APP_NAME, DCS_SERVERS } from "@common/constants";
 import { useReactToPrint } from "react-to-print";
 import { updateUrlHashInAddressBar } from "@utils/url";
 import { ResourcesCardGrid } from "./ResourcesCardGrid"
+import { ResourceLanguagesAccordion } from "./ResourceLanguagesAccordion";
 import { WebPreviewComponent } from "./WebPreviewComponent";
 import { PrintPreviewComponent } from "./PrintPreviewComponent";
 import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
+import { element } from "prop-types";
 
 
 export default function AppWorkspace() {
@@ -53,33 +55,26 @@ export default function AppWorkspace() {
       webCss,
       printCss,
       canChangeColumns,
-      buildInfo,
       serverInfo,
       isOpenPrint,
       printOptions,
-      documentReady,
       documentAnchor,
-      lastSeenAnchor,
     },
     actions: {
-      onPrintClick,
       clearErrorMessage,
-      setWebCss,
-      setPrintCss,
-      setStatusMessage,
-      setErrorMessage,
-      setCanChangeColumns,
       setHtmlSections,
       setIsOpenPrint,
       setPrintOptions,
       setDocumentAnchor,
       setDocumentReady,
-      setLastSeenAnchor,
     },
   } = useContext(AppContext)
 
   const webPreviewRef = useRef()
   const printPreviewRef = useRef()
+
+  const currentViewRef = useRef(webPreviewRef)
+  
   const printReactComponent = useReactToPrint({
     documentTitle: `${catalogEntry?.owner}--${catalogEntry?.repo.name}--${catalogEntry?.branch_or_tag_name}`,
     content: () => printPreviewRef.current,
@@ -118,7 +113,7 @@ export default function AppWorkspace() {
     handlePrint,
   }
 
-  const onUpArrowClick = (e) => {
+  const onUpArrowClick = () => {
     window.scrollTo({top: 0})
   }
   
@@ -153,6 +148,7 @@ export default function AppWorkspace() {
         href={dcsRef}
         target={"_blank"}
         style={{ textDecoration: "none", color: "inherit" }}
+        rel="noreferrer"
       >
         {infoLineText}
       </a>
@@ -177,15 +173,9 @@ export default function AppWorkspace() {
     backdropFilter: "none",
   }
 
-  const scrollToAnchor = async (anchor) => {
-    if (anchor) {
-      let elementToScrollTo = document.querySelector(`[id='web-${anchor}']`)
-      if (!elementToScrollTo) {
-        elementToScrollTo = document.querySelector(`[id='print-${anchor}']`)
-      }
-      if (!elementToScrollTo) {
-        elementToScrollTo = document.querySelector(`[id='${anchor}']`)
-      }
+  const scrollToAnchor = async (anchor, ref) => {
+    if (anchor && ref && ref.current && ref.current.innerHTML) {
+      let elementToScrollTo = ref.current.querySelector(`[id='${anchor}']`)
       if (elementToScrollTo) {
         window.scrollTo({
           top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
@@ -196,9 +186,11 @@ export default function AppWorkspace() {
   }
 
   useEffect(() => {
-    const initalizeApp = async() => {
-    setInitialized(true)
-    document.querySelector('#root').addEventListener('click', e => {
+    currentViewRef.current = view == "web" ? webPreviewRef : printPreviewRef
+  }, [view]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
       const a = e.target.closest("a")
       if (! a) {
         return
@@ -208,54 +200,25 @@ export default function AppWorkspace() {
         href = href.replace(/^#/, '')
         if (! href.startsWith('note-')) {
           console.log("SET DOCUMENT ANCHOR", href)
-          setDocumentAnchor(href.replace(/^print-/, ''))
+          setDocumentAnchor(href)
         } else {
           console.log("Scrolling without setting to: ", href)
-          scrollToAnchor(href)
+          scrollToAnchor(href, currentViewRef.current)
         }
         e.preventDefault()
         e.stopPropagation()
       }
-    })
-
-    document.addEventListener("scroll", {
-      timer: null,
-      handleEvent: function() {
-        if(this.timer !== null) {
-          clearTimeout(this.timer);        
-        }
-        this.timer = setTimeout(function() {
-          if(window.scrollY < 100) {
-            return
-          }
-          let found = false
-          const elements = document.querySelectorAll("section[id], article[id], span[id]")
-          elements.forEach((e) => {
-            if (found || ! e.id) {
-              return
-            }
-            const rect = e.getBoundingClientRect()
-            if (rect.top > document.querySelector("header").offsetHeight && rect.top < 400) {
-              found = true
-              console.log("SETTING ANCHOR TO ", e.id.replace(/^(web|print)-/, ''))
-              setLastSeenAnchor(e.id.replace(/^(web|print)-/, ''))
-            }
-          })
-        }, 1000)
-      },
-    }, false)
-  }
-
-    if (!initialized) {
-      setInitialized(true)
-      initalizeApp()
     }
-  }, [initialized])
+
+    document.querySelector('#root').addEventListener('click', handleClick)
+    return () => {
+      document.querySelector('#root').removeEventListener('click', handleClick);
+    }
+  }, [setDocumentAnchor])
 
   useEffect(() => {
     if (documentAnchor) {
       updateUrlHashInAddressBar(documentAnchor)
-      setLastSeenAnchor(documentAnchor)
     }
   }, [documentAnchor])
 
@@ -292,46 +255,11 @@ export default function AppWorkspace() {
   }, [imagesLoaded, printPreviewState])
 
   useEffect(() => {
-    const scrollToLastPlaceRead = async () => {
-      if (lastSeenAnchor && htmlSections?.body && Object.keys(printOptions).length) {
-        console.log("SCROLLING TO LAST SEEN ANCHOR: ", lastSeenAnchor)
-        let didScroll
-        let tries = 0
-        while (! didScroll && tries < 3) {
-          await new Promise(r => setTimeout(r, 200))
-          ++tries
-          didScroll = await scrollToAnchor(lastSeenAnchor)
-        }
-      }
-    }
-
-    scrollToLastPlaceRead()
-  }, [view, printPreviewState, htmlSections?.body, printOptions])
-
-  useEffect(() => {
-    if (htmlSections?.body && documentAnchor) {
+    if (htmlSections?.body && documentAnchor && ((view == "web" && webPreviewRef.current.innerHTML) || (view == "print" && printPreviewRef.current.innerHTML))) {
       console.log("SCROLLING TO DOCUMENT ANCHOR: ", documentAnchor)
-      scrollToAnchor(documentAnchor)
+      scrollToAnchor(documentAnchor, currentViewRef.current)
     }
-  }, [htmlSections?.body, documentAnchor])
-
-  const resourceComponentProps = {
-    urlInfo,
-    serverInfo,
-    catalogEntry,
-    htmlSections,
-    setHtmlSections,
-    webCss,
-    printCss,
-    lastSeenAnchor,
-    onPrintClick,
-    setWebCss,
-    setPrintCss,
-    setStatusMessage,
-    setErrorMessage,
-    setCanChangeColumns,
-    setDocumentAnchor,
-  }
+  }, [view, htmlSections?.body, documentAnchor, webPreviewRef?.current?.innerHTML, printPreviewRef?.current?.innerHTML])
 
   return (
     <Sheet>
@@ -366,7 +294,7 @@ export default function AppWorkspace() {
             }}
           >
             <div>&nbsp;</div>
-            {ResourceComponent ? <ResourceComponent {...resourceComponentProps} /> : ""}
+            {ResourceComponent ? <ResourceComponent /> : ""}
             <div style={{ whiteSpace: "nowrap" }}>
               <ToggleButtonGroup
                 value={view}
@@ -437,17 +365,21 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
-        {!urlInfo && serverInfo && <ResourcesCardGrid serverInfo={serverInfo} />}
-        {view == "web" ?
+        {urlInfo && urlInfo.owner == "downloadables" && serverInfo && 
+          <ResourceLanguagesAccordion serverInfo={serverInfo} subjects={["Open Bible Stories", "OBS Study Notes", "OBS Study Questions", "OBS Translation Notes", "OBS Translation Questions", "TSV OBS Study Notes", "TSV OBS Study Questions", "TSV OBS Translation Notes", "TSV OBS Translation Questions"]} />}
+        {urlInfo && !urlInfo.owner && serverInfo && 
+          <ResourcesCardGrid serverInfo={serverInfo} />}
+        {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && view == "web" &&
         <WebPreviewComponent
           html={htmlSections.body}
           webCss={webCss + printCss}
+          ref={webPreviewRef}
           style={{
             display: view == "web" ? "block" : "none",
             direction: catalogEntry ? catalogEntry.language_direction : "ltr",
           }}
-          ref={webPreviewRef}
-        />: ""}
+        />}
+        {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo &&
         <PrintPreviewComponent
           catalogEntry={catalogEntry}
           htmlSections={htmlSections}
@@ -457,40 +389,33 @@ export default function AppWorkspace() {
           printPreviewState={printPreviewState}
           setPrintPreviewState={setPrintPreviewState}
           setHtmlSections={setHtmlSections}
-          style={{
-            display: view == "print" || printPreviewState == "not started" || printPreviewState == "started" ? "block" : "none",
-          }}
-          webPreviewRef={webPreviewRef}
+          view={view}
           ref={printPreviewRef}
-        />
+        />}
         {statusMessage && !imagesLoaded && !errorMessages.length && (
-          <Modal
-            open={true}
-            aria-labelledby="modal-modal-title"
-            aria-describedby="modal-modal-description"
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
+              height: '300px', // Adjust as needed
+            }}
           >
-            <Box sx={processModalStyle}>
-              <Typography
-                id="modal-modal-title"
-                variant="h6"
-                component="h2"
-                sx={{ textAlign: "center" }}
-              >
-                <CircularProgress />
-              </Typography>
-              <Typography
-                id="modal-modal-description"
-                sx={{ mt: 2, textAlign: "center" }}
-              >
-                {statusMessage}
-              </Typography>
-            </Box>
-          </Modal>
+            <CircularProgress />
+            <Typography
+              id="modal-modal-description"
+              sx={{ mt: 2, textAlign: "center" }}
+            >
+              {statusMessage}
+            </Typography>
+          </Box>
         )}
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != "" || errorMessages.length > 0 || !urlInfo}
+          canLoad={htmlSections?.body != "" || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
           serverInfo={serverInfo}

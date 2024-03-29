@@ -1,4 +1,5 @@
-import { useEffect, forwardRef } from "react";
+import { useState, useEffect, forwardRef } from "react";
+import PropTypes from 'prop-types'
 import { Previewer } from "pagedjs";
 
 
@@ -19,7 +20,7 @@ function generateCover(catalogEntry, extra) {
     "obs-tq": 'obs',
   }
   let logo = `uW-app-256.png`
-  if (abbreviationToLogoMap.hasOwnProperty(catalogEntry.abbreviation)) {
+  if (catalogEntry.abbreviation in abbreviationToLogoMap) {
     logo = `logo-${abbreviationToLogoMap[catalogEntry.abbreviation]}-256.png`
   }
   const cover = `
@@ -69,22 +70,22 @@ function generateToc(content) {
 
 export const PrintPreviewComponent = forwardRef(({
   catalogEntry,
-  style,
   printOptions,
   htmlSections,
   webCss,
   printCss,
   setPrintPreviewState,
+  view,
 }, ref) => {
+  const [htmlToRender, setHtmlToRender] = useState("")
+  const [cssToRender, setCssToRender] = useState("")
+  const [isRendering, setIsRendering] = useState(false)
+
   useEffect(() => {
-    const generatePrintPreview = async () => {
-      console.log("STARTING PRINT RENDERING")
-      setPrintPreviewState("started")
-      ref.current.innerHTML = ""
+    const preparingForPrintPreview = async () => {
       let copyright = htmlSections.copyright || ""
       const body = htmlSections.body
       const doc = new DOMParser().parseFromString(body, "text/html")
-      doc.querySelectorAll("[id]").forEach(e => e.id = `print-${e.id}`)
       let toc = htmlSections.toc || ""
       if (!toc) {
         toc = `
@@ -282,7 +283,23 @@ ${printCss}
   ${doc.documentElement.innerHTML}
 </div>
 `
-      // console.log(`<html><head><style>${cssStr}</style></head><body class="pagedjs_pages">${htmlStr}</body></html>`)
+      setHtmlToRender(htmlStr)
+      setCssToRender(cssStr)
+    }
+
+    if (htmlSections?.body && Object.keys(printOptions).length) {
+      preparingForPrintPreview()
+    }
+  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewState])
+
+  useEffect(() => {
+    const generatePrintPreview = async (htmlStr, cssStr) => {
+      console.log("STARTING PRINT RENDERING")
+      setPrintPreviewState("started")
+      ref.current.innerHTML = ""
+      const innerDiv = document.createElement('div');
+      innerDiv.id = 'print-preview-inner';
+      ref.current.appendChild(innerDiv);
 
       const previewer = new Previewer()
       previewer.preview(
@@ -292,30 +309,39 @@ ${printCss}
             _: cssStr,
           },
         ],
-        ref.current,
+        innerDiv,
       ).then((flow) => {
         setPrintPreviewState("rendered")
         console.log(`PRINT PREVIEW IS READY. Rendered ${flow.total} pages.`)
+        setIsRendering(false)
       }).catch(e => {
         setPrintPreviewState("error")
         console.log("ERROR RENDERING PRINT PREVIEW: ", e)
       })
-
     }
 
-    if (htmlSections?.body && Object.keys(printOptions).length) {
-      generatePrintPreview()
-      return () => {
-        // Clean style elements created by PagedJS
-        const pagedStyleElements = document.querySelectorAll(
-          "style[data-pagedjs-inserted-styles]"
-        )
-        pagedStyleElements.forEach((element) => element.remove())
-      }
+    if (htmlToRender && cssToRender) {
+      generatePrintPreview(htmlToRender, cssToRender)
+      console.log("SETTING IS RENDERING TO TRUE")
+      setIsRendering(true)
+      setHtmlToRender("")
+      setCssToRender("")
     }
-  }, [htmlSections?.body, printOptions])
+  }, [htmlToRender, cssToRender, isRendering, setPrintPreviewState])
 
   return (
-    <div id="print-preview" style={style} ref={ref} />
+    <div id="print-preview" style={{display: (isRendering || view == "print" ? "block" : "none")}} ref={ref} />
   )
 })
+
+PrintPreviewComponent.displayName = "PrintPreviewComponent";
+
+PrintPreviewComponent.propTypes = {
+  catalogEntry: PropTypes.object,
+  style: PropTypes.object,
+  printOptions: PropTypes.object,
+  htmlSections: PropTypes.object,
+  webCss: PropTypes.string,
+  printCss: PropTypes.string,
+  setPrintPreviewState: PropTypes.func,
+};

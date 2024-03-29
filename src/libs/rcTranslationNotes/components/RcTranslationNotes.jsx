@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { getSupportedBooks } from '@libs/core/lib/books'
@@ -14,6 +14,7 @@ import usfm from 'usfm-js'
 import MarkdownIt from 'markdown-it'
 import { verseObjectsToString } from 'uw-quote-helpers'
 import { encodeHTML } from '@utils/html'
+import { AppContext } from '@components/App.context'
 
 
 const webCss = `
@@ -27,8 +28,13 @@ const webCss = `
   margin: 10px 0;
 }
 
-.tn-entry h3, .tn-entry h4 {
+.tn-entry h3 {
   font-size: 1.1em;
+  margin: 10px 0;
+}
+
+.tn-entry h4 {
+  font-size: 1.0em;
   margin: 10px 0;
 }
 
@@ -72,27 +78,28 @@ a.header-link:hover::after {
 .title-page {
   text-align: center;
 }
-
-
 `
 
-export default function RcTranslationNotes({
-  urlInfo,
-  catalogEntry,
-  htmlSections,
-  setStatusMessage,
-  setErrorMessage,
-  setDocumentAnchor,
-  setHtmlSections,
-  setWebCss,
-  setCanChangeColumns,
-}) {
+export default function RcTranslationNotes() {
+  const {
+    state: {
+      urlInfo,
+      catalogEntry,
+    },
+    actions: {
+      setWebCss,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setDocumentAnchor,
+      setCanChangeColumns,
+    },
+  } = useContext(AppContext)
+
   const [supportedBooks, setSupportedBooks] = useState([])
   const [bookId, setBookId] = useState()
   const [bookTitle, setBookTitle] = useState()
-  const [bookIdToProcess, setBookIdToProcess] = useState()
   const [tsvText, setTsvText] = useState()
-  const [htmlCache, setHtmlCache] = useState({})
 
   const renderFlags = {
     showWordAtts: false,
@@ -109,8 +116,8 @@ export default function RcTranslationNotes({
 
   const onBibleReferenceChange = (b, c, v) => {
     if (b != bookId) {
-      setBookId(b)
-      setDocumentAnchor(b)
+      window.location.hash = b;
+      window.location.reload()
     } else {
       c = parseInt(c)
       v = parseInt(v)
@@ -135,28 +142,27 @@ export default function RcTranslationNotes({
 
   const sourceBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
-    subject: BibleBookData[bookIdToProcess]?.testament == "old" ? "Hebrew Old Testament" : "Greek New Testament",
-    bookId: bookIdToProcess,
+    subject: BibleBookData[bookId]?.testament == "old" ? "Hebrew Old Testament" : "Greek New Testament",
+    bookId,
     setErrorMessage,
   })
-
   
   const sourceUsfm = useFetchBookFile({
     catalogEntry: sourceBibleCatalogEntry,
-    bookId: bookIdToProcess,
+    bookId,
     setErrorMessage,
   })
 
   const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
     catalogEntries: relationCatalogEntries,
     subject: "Aligned Bible",
-    bookId: bookIdToProcess,
+    bookId,
     setErrorMessage,
   })
 
   const targetUsfm = useFetchBookFile({
     catalogEntry: targetBibleCatalogEntry,
-    bookId: bookIdToProcess,
+    bookId,
     setErrorMessage,
   })
 
@@ -209,7 +215,10 @@ export default function RcTranslationNotes({
         setErrorMessage("Unable to determine a book ID to render.")
         return
       }
+      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == _bookId).map(ingredient=>ingredient.title)[0] || _bookId
       setBookId(_bookId)
+      setBookTitle(title)
+      setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
         sb = [_bookId, ...sb]
@@ -221,60 +230,37 @@ export default function RcTranslationNotes({
       setCanChangeColumns(false)
       setInitialBookIdAndSupportedBooks()
     }
-  }, [])
-
-  useEffect(() => {
-    const handleSelectedBook = async () => {
-      // setting a new book, so clear all and get html from cache if exists
-      const title = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId).map(ingredient=>ingredient.title)[0] || bookId
-      setBookTitle(title)
-      if (bookId in htmlCache) {
-        setHtmlSections({...setHtmlSections, cover: `<h3>${title}</h3>`, body: htmlCache[bookId]})
-      } else if (supportedBooks.includes(bookId)) {
-        setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
-        setTsvText("")
-        setHtmlSections({...htmlSections, body: ""})
-        setBookIdToProcess(bookId)
-        bibleReferenceActions.applyBooksFilter(supportedBooks)
-      } else {
-        setErrorMessage(`This resource does not support the rendering of the book \`${bookId}\`. Please choose another book to render.`)
-      }
-    }
-
-    if (bookId) {
-      handleSelectedBook()
-    }
-  }, [bookId])
+  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setWebCss])
 
   useEffect(() => {
     const fetchTsvFileFromDCS = async () => {
-      if (! (bookIdToProcess in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookIdToProcess}`)
+      if (! (bookId in BibleBookData)) {
+        setErrorMessage(`Invalid book: ${bookId}`)
         return
       }
 
       let filePath = ""
       catalogEntry.ingredients.forEach(ingredient => {
-        if (ingredient.identifier == bookIdToProcess) {
+        if (ingredient.identifier == bookId) {
           filePath = ingredient.path.replace(/^\.\//, "")
         }
       })
       if (! filePath) {
-        setErrorMessage(`Book \`${bookIdToProcess}\` is not in repo's project list.`)
+        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`)
       }
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
       then(tsv => setTsvText(tsv)).
       catch(e => {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-        setErrorMessage(`Unable to get content for book \`${bookIdToProcess}\` from DCS`)
+        setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`)
       })
     }
 
-    if (catalogEntry && supportedBooks && bookIdToProcess && supportedBooks.includes(bookIdToProcess)) {
+    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
       fetchTsvFileFromDCS()
     }
-  }, [supportedBooks, catalogEntry, bookIdToProcess])
+  }, [supportedBooks, catalogEntry, bookId, setErrorMessage, setTsvText])
 
   useEffect(() => {
     const generateHtml = async () => {
@@ -288,10 +274,12 @@ export default function RcTranslationNotes({
       const md = new MarkdownIt()
       const supportReferences = {}
 
+      let noteCount = 0
       renderedTsvData.forEach(row => {
         if (!row || !row.ID || !row.Note) {
           return
         }
+        noteCount++
         const chapterStr = row.Reference.split(":")[0]
         const verseStr = row.Reference.split(":")[1]
         const firstVerse = verseStr.split(",")[0].split("-")[0].split("–")[0]
@@ -338,17 +326,20 @@ export default function RcTranslationNotes({
         const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}`
         html += `
       <article class="tn-entry" id="${link}">
+        <h3 class="tn-entry-header">
+          <a class="header-link" href="#${link}">
+            Note #${noteCount}:
+          </a>
+        </h3>
+
 `
         if ((chapterStr != "front" || verseStr != "intro") && (row.GLQuote || row.Quote)) {
           html += `
-        <h3 class="tn-entry-header">
-          <a class="header-link" href="#${link}">
-            ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'}
-          </a>
-        </h3>
+        <h4>Quote: ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ""}${row.GLQuote || '<span style="color: red"> ORIG QUOTE: '+row.Quote+'</span>'}</h4>
 `
-          if (row.SupportReference) {
-            if (! (row.SupportReference in supportReferences)) {
+        }
+        if (row.SupportReference) {
+          if (! (row.SupportReference in supportReferences)) {
               const srParts = row.SupportReference.split('/')
               const manualId = srParts[srParts.length - 2]
               const articleId = srParts[srParts.length - 1]
@@ -361,21 +352,20 @@ export default function RcTranslationNotes({
               if (manualId in taFileContents && articleId in taFileContents[manualId].articles) {
                 supportReferences[row.SupportReference] = {...supportReferences[row.SupportReference], ...taFileContents[manualId].articles[articleId]}
               }
-            }
-            supportReferences[row.SupportReference].backRefs.push(`<a href="#${link}">${row.Reference}</a>`)
-            html += `
-        <div class="tn-entry-support-reference">
-          <span style="font-weight: bold">Support Reference:</span>&nbsp; <a href="#${supportReferences[row.SupportReference].link}">${supportReferences[row.SupportReference].title}</a>
-        </div>
-  `
           }
+          supportReferences[row.SupportReference].backRefs.push(`<a href="#${link}">${row.Reference}</a>`)
+          html += `
+        <div class="tn-entry-support-reference">
+          <span style="font-weight: bold">Topic:</span>&nbsp; <a href="#${supportReferences[row.SupportReference].link}">${supportReferences[row.SupportReference].title}</a>
+        </div>
+`
         }
         let note = md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))
         note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#${bookId}-${chapterStr}-$1"`)
         note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#${bookId}-$1-$2"`)
         note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#${bookId}-${chapterStr}-$1"`)
         note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#${bookId}-$1-$2"`)
-        note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>')
+        note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/g, '<a href="$1">$1</a>')
         note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"')
 
         note = note.replace()
@@ -423,14 +413,13 @@ export default function RcTranslationNotes({
       html += `
 </section>
 `
-      setHtmlSections({...htmlSections, cover: `<h3>${bookTitle}</h3>`, body: html})
-      setHtmlCache({...htmlCache, [bookIdToProcess]: html})
+      setHtmlSections((prevState) => ({...prevState, cover: `<h3>${bookTitle}</h3>`, body: html}))
     }
 
     if (targetBibleCatalogEntry && renderedTsvData && targetUsfm && taFileContents) {
       generateHtml()
     }
-  }, [targetBibleCatalogEntry, targetUsfm, renderedTsvData, taFileContents])
+  }, [catalogEntry, taCatalogEntry, bookId, bookId, bookTitle, targetBibleCatalogEntry, renderedTsvData, targetUsfm, taFileContents, setHtmlSections, setErrorMessage, setDocumentAnchor])
 
   return (
     <BibleReference

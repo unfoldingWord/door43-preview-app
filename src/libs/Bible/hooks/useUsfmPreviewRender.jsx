@@ -37,7 +37,7 @@ export default function useUsfmPreviewRenderer(props) {
           usfmText
         )
         if (res.id !== undefined) {
-          setImportedBookDocIds({...importedBookDocIds, [bookId]: res.id})
+          setImportedBookDocIds((prevState) => ({...prevState, [bookId]: res.id}))
           setDocId(res.id)
         } else {
           setErrorMessage("Failed to import book for rendering.")
@@ -55,7 +55,7 @@ export default function useUsfmPreviewRenderer(props) {
         setDocId(importedBookDocIds[bookId])
       }
     }
-  }, [pk, usfmText, bookId])
+  }, [pk, usfmText, bookId, importedBookDocIds, setErrorMessage])
 
   useEffect(() => {
     if (pk && ready) {

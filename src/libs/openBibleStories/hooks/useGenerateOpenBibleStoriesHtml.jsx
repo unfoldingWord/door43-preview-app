@@ -1,20 +1,27 @@
-import { useState, useEffect } from 'react'
-import convertOpenBibleStories from '../lib/openBibleStories'
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { convertOBSDataToHTML } from '../lib/openBibleStories';
 
 export default function useGenerateOpenBibleStoriesHtml({
-  catalogEntry,
-  zipFileData,
+  obsData,
   setErrorMessage,
+  resolution="360px-compressed",
 }) {
   const [html, setHtml] = useState()
 
-  useEffect(() => {
-    if(catalogEntry && zipFileData) {
-      convertOpenBibleStories(catalogEntry, zipFileData).
-        then(html => setHtml(html)).
-        catch(e => setErrorMessage(e.message))
+  useEffect(() => { 
+    if(obsData) {
+      convertOBSDataToHTML(obsData, null, resolution).
+        then(html => setHtml(html))
     }
-  }, [catalogEntry, zipFileData])
+  }, [obsData, resolution, setErrorMessage])
   
   return html
 }
+
+useGenerateOpenBibleStoriesHtml.propTypes = {
+  catalogEntry: PropTypes.object.isRequired,
+  zipFileData: PropTypes.object.isRequired,
+  resolution: PropTypes.string,
+  setErrorMessage: PropTypes.func.isRequired,
+};
