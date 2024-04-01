@@ -101,13 +101,9 @@ header {
   z-index: 1;
 }
 
-#print-preview {
+#print-preview, #print-preview-inner {
   background-color: grey;
   width: 100%;
-}
-
-#print-preview > * {
-  background-color: white;
 }
 
 .pagedjs_pages {
