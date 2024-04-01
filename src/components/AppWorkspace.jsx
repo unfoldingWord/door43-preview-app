@@ -32,15 +32,16 @@ import { ResourceLanguagesAccordion } from "./ResourceLanguagesAccordion";
 import { WebPreviewComponent } from "./WebPreviewComponent";
 import { PrintPreviewComponent } from "./PrintPreviewComponent";
 import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
-import { element } from "prop-types";
+import FitScreenIcon from '@mui/icons-material/FitScreen';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 export default function AppWorkspace() {
-  const [initialized, setInitialized] = useState(false)
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
   const [view, setView] = useState("web")
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const [printPreviewState, setPrintPreviewState] = useState("not started")
+  const [fullScreen, setFullScreen] = useState(false)
 
   const {
     state: {
@@ -112,10 +113,6 @@ export default function AppWorkspace() {
     handlePrint,
   }
 
-  const onUpArrowClick = () => {
-    window.scrollTo({top: 0})
-  }
-  
   let dcsRef = ""
   let infoLine = null
   if (urlInfo && serverInfo?.baseUrl) {
@@ -262,7 +259,7 @@ export default function AppWorkspace() {
 
   return (
     <Sheet>
-      {(window.location.hostname == "preview.door43.org" ||
+      {!fullScreen && (window.location.hostname == "preview.door43.org" ||
         window.location.hostname.includes("netlify") ||
         window.location.host == "localhost:5173" ||
         window.location.host == "localhost:4173") && (
@@ -277,13 +274,28 @@ export default function AppWorkspace() {
       )}
       <Card>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
+{fullScreen && (
+  <Tooltip title="Close full screen" arrow>
+    <IconButton
+      onClick={() => setFullScreen(false)}
+      sx={{
+        position: 'fixed',
+        top: 0,
+        right: "10px",
+        zIndex: 9999,
+      }}
+    >
+      <CloseIcon />
+    </IconButton>
+  </Tooltip>
+)}        
         {urlInfo && <AppBar
           position="relative"
           sx={{ backgroundColor: "white", position: "sticky", top: "0", color: "black" }}
         >
           <Toolbar
             sx={{
-              display: "flex",
+              display: (!fullScreen ? "flex" : "none"),
               justifyContent: "space-between",
               width: "100%",
               height: "10px",
@@ -331,8 +343,13 @@ export default function AppWorkspace() {
                   />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="Full screen" arrow>
+                <IconButton onClick={() => setFullScreen(true)}>
+                  <FitScreenIcon />
+                </IconButton>     
+              </Tooltip>       
               <Tooltip title="Back to top" arrow>
-                <IconButton onClick={onUpArrowClick} disabled={window.scrollY==0}>
+                <IconButton onClick={() => window.scrollTo({top: 0})} disabled={window.scrollY==0}>
                   <KeyboardDoubleArrowUpIcon />
                 </IconButton>     
               </Tooltip>       
