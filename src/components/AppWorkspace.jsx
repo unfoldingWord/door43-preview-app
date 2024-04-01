@@ -42,6 +42,7 @@ export default function AppWorkspace() {
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const [printPreviewState, setPrintPreviewState] = useState("not started")
   const [fullScreen, setFullScreen] = useState(false)
+  const [isAtTop, setIsAtTop] = useState(window.scrollY === 0);
 
   const {
     state: {
@@ -182,6 +183,18 @@ export default function AppWorkspace() {
   }
 
   useEffect(() => {
+    const handleScroll = () => {
+      setIsAtTop(window.scrollY <= 20);
+    };
+  
+    window.addEventListener('scroll', handleScroll);
+  
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
     currentViewRef.current = view == "web" ? webPreviewRef : printPreviewRef
   }, [view]);
 
@@ -273,22 +286,23 @@ export default function AppWorkspace() {
         />
       )}
       <Card>
-        {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
-{fullScreen && (
-  <Tooltip title="Close full screen" arrow>
-    <IconButton
-      onClick={() => setFullScreen(false)}
-      sx={{
-        position: 'fixed',
-        top: 0,
-        right: "10px",
-        zIndex: 9999,
-      }}
-    >
-      <CloseIcon />
-    </IconButton>
-  </Tooltip>
-)}        
+        {htmlSections?.body && 
+        <PrintDrawer {...printDrawerProps} />}
+        {fullScreen && (
+        <Tooltip title="Close full screen" arrow>
+          <IconButton
+            onClick={() => setFullScreen(false)}
+            sx={{
+              position: 'sticky',
+              top: 0,
+              marginLeft: 'auto',
+              backgroundColor: 'white',
+              zIndex: 9999,
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>)}        
         {urlInfo && <AppBar
           position="relative"
           sx={{ backgroundColor: "white", position: "sticky", top: "0", color: "black" }}
@@ -349,7 +363,7 @@ export default function AppWorkspace() {
                 </IconButton>     
               </Tooltip>       
               <Tooltip title="Back to top" arrow>
-                <IconButton onClick={() => window.scrollTo({top: 0})} disabled={window.scrollY==0}>
+                <IconButton onClick={() => window.scrollTo({top: 0})} disabled={isAtTop}>
                   <KeyboardDoubleArrowUpIcon />
                 </IconButton>     
               </Tooltip>       
