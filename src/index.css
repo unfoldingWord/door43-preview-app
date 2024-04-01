@@ -106,6 +106,10 @@ header {
   width: 100%;
 }
 
+#print-preview-inner > * {
+  background-color: white;
+}
+
 .pagedjs_pages {
   background-color: transparent !important;
 }
