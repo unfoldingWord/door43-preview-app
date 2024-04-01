@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext, useRef } from "react";
 import {
   Typography,
-  Modal,
   AppBar,
   Toolbar,
   ToggleButtonGroup,
