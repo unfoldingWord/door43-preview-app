@@ -293,9 +293,10 @@ export default function AppWorkspace() {
           <IconButton
             onClick={() => setFullScreen(false)}
             sx={{
-              position: 'fixed',
+              position: 'sticky',
               top: 0,
-              right: "10px",
+              marginLeft: 'auto',
+              backgroundColor: 'white',
               zIndex: 9999,
             }}
           >
