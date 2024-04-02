@@ -74,7 +74,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc`, {cache: "default"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other`, {cache: "default"})
       .then(response => {
         return response.json()
       })
@@ -98,7 +98,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "default"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&lang=${encodeURIComponent(selectedLanguage.lc)}`, {cache: "default"})
       .then(response => {
         return response.json()
       })
@@ -122,7 +122,7 @@ export default function SelectResourceToPreviewModal(
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true)
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?metadataType=rc&metadataType=sb&metadataType=tc&lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "default"})
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {cache: "default"})
       .then(response => response.json())
       .then(({data}) => {
         setRepos(prevState => ({...prevState, [selectedOwner.username]: data}))
