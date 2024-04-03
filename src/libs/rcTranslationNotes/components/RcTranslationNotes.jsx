@@ -115,7 +115,7 @@ export default function RcTranslationNotes() {
   }
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != bookId) {
+    if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload()
     } else {
