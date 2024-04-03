@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
 import { ThemeProvider, createTheme } from '@mui/material'
-import usfm from 'usfm-js'
 import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender'
 import BibleReference from 'bible-reference-rcl'
 import {
@@ -9,9 +8,10 @@ import {
 } from "@libs/core/lib/previewStyling.js"
 import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
-import { getSupportedBooks } from '@libs/core/lib/books'
-import { getRepoContentsContent, getRepoGitTrees } from '@libs/core/lib/dcsApi'
 import { AppContext } from '@components/App.context'
+import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
+import { textToUsfm } from '@libs/core/lib/txtToUsfm'
+
 
 const theme = createTheme({
   overrides: {
@@ -85,7 +85,7 @@ a.footnote {
 }
 `
 
-export default function Bible() {
+export default function TsBible() {
   const {
     state: {
       urlInfo,
@@ -138,6 +138,11 @@ export default function Bible() {
       onChange: onBibleReferenceChange,
     })
 
+  const zipFileData = useFetchZipFileData({
+    catalogEntry,
+    setErrorMessage,
+  })
+
   const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
     bookId,
     usfmText,
@@ -163,20 +168,15 @@ export default function Bible() {
         return
       }
 
-      let repoFileList = null
-      try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, true)).tree.map(tree => tree.path)
-      } catch(e) {
-        console.log(`Error calling etRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e)
+      let sb = catalogEntry.ingredients?.map(ingredient => ingredient.identifier) || []
+
+      if (!sb.length) {
+        setErrorMessage("No books found for this tS project")
       }
 
-      let sb = getSupportedBooks(catalogEntry, repoFileList)
-      if (!sb.length) {
-        setErrorMessage("There are no books in this resource to render.")
-        return
-      }
       setSupportedBooks(sb)
       bibleReferenceActions.applyBooksFilter(sb)
+
 
       let _bookId = urlInfo.hashParts[0] || sb[0]
       if (! _bookId) {
@@ -189,7 +189,6 @@ export default function Bible() {
       setStatusMessage(<>Preparing preview for {title}.<br/>Please wait...</>)
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`)
-        sb = [_bookId, ...sb]
         return
       }
       setCanChangeColumns(true)
@@ -198,46 +197,25 @@ export default function Bible() {
     if (!bookId) {
       setInitialBookIdAndSupportedBooks()
     }
-  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId])
+  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setStatusMessage, setBookTitle])
 
   useEffect(() => {
-    const fetchUsfmFileFromDCS = async () => {
+    const getUsfmFromZipFileData = async () => {
       if (! (bookId in BibleBookData)) {
         setErrorMessage(`Invalid book: ${bookId}`)
         return
       }
 
-      let filePath = ""
-      catalogEntry.ingredients.forEach(ingredient => {
-        if (ingredient.identifier == bookId) {
-          filePath = ingredient.path.replace(/^\.\//, "")
-        }
-      })
-      if (! filePath) {
-        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`)
-      }
-
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
-      then(_usfmText => {
-        const usfmJSON = usfm.toJSON(_usfmText)
-        for(let i = 0; i < usfmJSON?.headers?.length; ++i) {
-          if (usfmJSON.headers[i].tag == "h" || usfmJSON.headers[i].tag.startsWith("toc")) {
-            setBookTitle(usfmJSON.headers[i].content)
-            break
-          }
-        }
-        setUsfmText(_usfmText)
-      }).
-      catch(e => {
-        console.log(`Error calling getRepoContents(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-        setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`)
-      })
+      const ingredient = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId)?.[0]
+      console.log(ingredient)
+      const _usfmText = await textToUsfm(catalogEntry, ingredient, zipFileData)
+      setUsfmText(_usfmText)
     }
 
-    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
-      fetchUsfmFileFromDCS()
+    if (catalogEntry && zipFileData && bookId && supportedBooks.includes(bookId)) {
+      getUsfmFromZipFileData()
     }
-  }, [supportedBooks, catalogEntry, bookId, setErrorMessage])
+  }, [catalogEntry, bookId, supportedBooks, zipFileData, setErrorMessage])
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {

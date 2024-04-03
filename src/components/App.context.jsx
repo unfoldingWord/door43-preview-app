@@ -11,6 +11,7 @@ import RcTranslationNotes from '@libs/rcTranslationNotes/components/RcTranslatio
 import RcTranslationQuestions from '@libs/rcTranslationQuestions/components/RcTranslationQuestions'
 import RcTranslationWords from '@libs/rcTranslationWords/components/RcTranslationWords'
 import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcObsTranslationNotes'
+import TsBible from '@libs/Bible/components/TsBible'
 
 
 export const AppContext = React.createContext()
@@ -205,6 +206,9 @@ export function AppContextProvider({ children }) {
             switch (catalogEntry.subject) {
               case "Open Bible Stories":
                 setResourceComponent(() => OpenBibleStories)
+                return
+              case "Bible":
+                setResourceComponent(() => TsBible)
                 return
               default:
                setErrorMessage("Conversion of translationStudio repositories is currently not supported.")
