@@ -8,14 +8,15 @@ export async function ts2usfm(catalogEntry, ingredient, zipFileData) {
   const chapters = BibleBookData[bookId].chapters;
   let usfm = ""
   if (chapters) {
-    const frontTitlePath = `${catalogEntry.name}/front/title.txt`;
     let bookTitle;
+    const frontTitlePath = `${catalogEntry.name}/front/title.txt`;
+    const zeroTitlePath = `${catalogEntry.name}/00/title.txt`;
     if (frontTitlePath in zipFileData.files) {
       bookTitle = await zipFileData.file(frontTitlePath).async("text");
-      console.log(`book_title1a = '${bookTitle}'`);
+    } else if (zeroTitlePath in zipFileData.files) {
+      bookTitle = await zipFileData.file(zeroTitlePath).async("text");
     } else {
       bookTitle = ingredient.title;
-      console.log(`bookTitle1b = '${bookTitle}'`);
     }
 
     usfm = `

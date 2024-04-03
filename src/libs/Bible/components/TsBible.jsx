@@ -10,7 +10,7 @@ import { useBibleReference } from 'bible-reference-rcl'
 import { BibleBookData } from '@common/books'
 import { AppContext } from '@components/App.context'
 import useFetchZipFileData from '@libs/core/hooks/useFetchZipFileData'
-import { textToUsfm } from '@libs/core/lib/txtToUsfm'
+import { ts2usfm } from '@libs/core/lib/ts2usfm'
 
 
 const theme = createTheme({
@@ -208,7 +208,7 @@ export default function TsBible() {
 
       const ingredient = catalogEntry.ingredients.filter(ingredient => ingredient.identifier == bookId)?.[0]
       console.log(ingredient)
-      const _usfmText = await textToUsfm(catalogEntry, ingredient, zipFileData)
+      const _usfmText = await ts2usfm(catalogEntry, ingredient, zipFileData)
       setUsfmText(_usfmText)
     }
 
