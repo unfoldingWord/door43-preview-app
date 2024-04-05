@@ -31,7 +31,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 export default function AppWorkspace() {
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false);
-  const [view, setView] = useState("print");
+  const [view, setView] = useState("web");
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
   const [isAtTop, setIsAtTop] = useState(window.scrollY === 0);
