@@ -55,6 +55,8 @@ export default function OpenBibleStories() {
   const {
     state: {
       catalogEntry,
+      urlInfo,
+      documentAnchor,
     },
     actions: {
       setWebCss,
@@ -74,8 +76,8 @@ export default function OpenBibleStories() {
 
   const {state: bibleReferenceState, actions: bibleReferenceActions} = useBibleReference({
       initialBook: "obs",
-      initialChapter: "1",
-      initialVerse: "1",
+      initialChapter: urlInfo.hashParts[1] || "1",
+      initialVerse: urlInfo.hashParts[2] || "1",
       onChange: onBibleReferenceChange,
       addOBS: true,
     })
@@ -90,6 +92,15 @@ export default function OpenBibleStories() {
     setStatusMessage(<>Preparing OBS Preview.<br/>Please wait...</>)
     bibleReferenceActions.applyBooksFilter(["obs"])
   }, [setStatusMessage])
+
+  useEffect(() => {
+    if (documentAnchor && documentAnchor.split('-').length >= 2) {
+      const parts = documentAnchor.split('-')
+      if(parts[0] == "obs" && (bibleReferenceState.chapter != parts[1] || (bibleReferenceState.verse != (parts[2] || "1")))) {
+        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2] || "1")
+      }
+    }
+  }, [documentAnchor])
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation
