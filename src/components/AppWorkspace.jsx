@@ -5,15 +5,9 @@ import {
   Toolbar,
   ToggleButtonGroup,
   ToggleButton,
-} from "@mui/material";
-import {
-  Sheet,
-  Card,
-  Box,
-  Alert,
   CircularProgress,
-  IconButton,
-} from "@mui/joy";
+} from "@mui/material";
+import { Sheet, Card, Box, Alert, IconButton } from "@mui/joy";
 import { Tooltip } from "@mui/joy";
 import PrintIcon from "@mui/icons-material/Print";
 import WebIcon from "@mui/icons-material/Web";
@@ -27,22 +21,24 @@ import SelectResourceToPreviewModal from "./SelectResourceToPreviewModal";
 import { APP_NAME, DCS_SERVERS } from "@common/constants";
 import { useReactToPrint } from "react-to-print";
 import { updateUrlHashInAddressBar } from "@utils/url";
-import { ResourcesCardGrid } from "./ResourcesCardGrid"
+import { ResourcesCardGrid } from "./ResourcesCardGrid";
 import { ResourceLanguagesAccordion } from "./ResourceLanguagesAccordion";
 import { WebPreviewComponent } from "./WebPreviewComponent";
 import { PrintPreviewComponent } from "./PrintPreviewComponent";
-import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp';
-import FitScreenIcon from '@mui/icons-material/FitScreen';
-import CloseIcon from '@mui/icons-material/Close';
-
+import KeyboardDoubleArrowUpIcon from "@mui/icons-material/KeyboardDoubleArrowUp";
+import FitScreenIcon from "@mui/icons-material/FitScreen";
+import CloseIcon from "@mui/icons-material/Close";
 
 export default function AppWorkspace() {
-  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false)
-  const [view, setView] = useState("web")
-  const [imagesLoaded, setImagesLoaded] = useState(false)
-  const [printPreviewState, setPrintPreviewState] = useState("not started")
-  const [fullScreen, setFullScreen] = useState(false)
+  const [showSelectResourceModal, setShowSelectResourceModal] = useState(false);
+  const [view, setView] = useState("print");
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [fullScreen, setFullScreen] = useState(false);
   const [isAtTop, setIsAtTop] = useState(window.scrollY === 0);
+  const [scrolledToAnchorInView, setScrolledToAnchorInView] = useState({
+    view: "",
+    documentAnchor: "",
+  });
 
   const {
     state: {
@@ -53,40 +49,38 @@ export default function AppWorkspace() {
       statusMessage,
       errorMessages,
       htmlSections,
-      webCss,
-      printCss,
-      canChangeColumns,
       serverInfo,
       isOpenPrint,
-      printOptions,
       documentAnchor,
+      printPreviewStatus,
+      printPreviewPercentDone,
     },
     actions: {
       clearErrorMessage,
-      setHtmlSections,
       setIsOpenPrint,
-      setPrintOptions,
       setDocumentAnchor,
       setDocumentReady,
     },
-  } = useContext(AppContext)
+  } = useContext(AppContext);
 
-  const webPreviewRef = useRef()
-  const printPreviewRef = useRef()
+  const webPreviewRef = useRef();
+  const printPreviewRef = useRef();
 
-  const currentViewRef = useRef(webPreviewRef)
-  
+  const currentViewRef = useRef(
+    view == "web" ? webPreviewRef : printPreviewRef
+  );
+
   const printReactComponent = useReactToPrint({
     documentTitle: `${catalogEntry?.owner}--${catalogEntry?.repo.name}--${catalogEntry?.branch_or_tag_name}`,
     content: () => printPreviewRef.current,
-  })
+  });
   const handlePrint = () => {
-    if(printPreviewState != "rendered") {
-      alert("The document is not yet ready to print. Please wait...")
-      return false
+    if (printPreviewStatus != "ready") {
+      alert("The print preview is not done yet. Please wait...");
+      return false;
     }
-    printReactComponent()
-  }
+    printReactComponent();
+  };
 
   // const handlePrint = () => {
   //   if (! html) {
@@ -104,39 +98,35 @@ export default function AppWorkspace() {
   const printDrawerProps = {
     openPrintDrawer: isOpenPrint && htmlSections?.body != "",
     onClosePrintDrawer: () => {
-      setIsOpenPrint(false)
+      setIsOpenPrint(false);
     },
-    canPrint: printPreviewState == "rendered",
     canChangeAtts: false,
-    canChangeColumns,
-    printOptions,
-    setPrintOptions,
     handlePrint,
-  }
+  };
 
-  let dcsRef = ""
-  let infoLine = null
+  let dcsRef = "";
+  let infoLine = null;
   if (urlInfo && serverInfo?.baseUrl) {
-    let repoFullName = `${urlInfo.owner}/${urlInfo.repo}`
+    let repoFullName = `${urlInfo.owner}/${urlInfo.repo}`;
     if (repo) {
-      repoFullName = repo.full_name
+      repoFullName = repo.full_name;
     }
-    dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`
+    dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`;
     if (catalogEntry) {
-      dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`
+      dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`;
     } else {
       dcsRef += `/src/branch/${
         urlInfo.ref || repo?.default_branch || "master"
-      }`
+      }`;
     }
-    let infoLineText = repoFullName
+    let infoLineText = repoFullName;
     if (catalogEntry?.branch_or_tag_name) {
       if (catalogEntry.ref_type == "branch") {
         infoLineText += `, ${
           catalogEntry.branch_or_tag_name
-        } (${catalogEntry.commit_sha?.substring(0, 8)})`
+        } (${catalogEntry.commit_sha?.substring(0, 8)})`;
       } else {
-        infoLineText += `, ${catalogEntry.branch_or_tag_name}`
+        infoLineText += `, ${catalogEntry.branch_or_tag_name}`;
       }
     }
 
@@ -149,12 +139,12 @@ export default function AppWorkspace() {
       >
         {infoLineText}
       </a>
-    )
+    );
   }
 
-  let title = APP_NAME
+  let title = APP_NAME;
   if (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS["prod"].ID) {
-    title += ` (${serverInfo.ID})`
+    title += ` (${serverInfo.ID})`;
   }
 
   const processModalStyle = {
@@ -168,68 +158,83 @@ export default function AppWorkspace() {
     boxShadow: 24,
     p: 4,
     backdropFilter: "none",
-  }
+  };
 
-  const scrollToAnchor = async (anchor, ref) => {
-    if (anchor && ref && ref.current && ref.current.innerHTML) {
-      let elementToScrollTo = ref.current.querySelector(`[id='${anchor}']`)
+  const scrollToAnchor = (myAnchor, myRef, myView) => {
+    if (myAnchor && myRef?.current?.innerHTML) {
+      let elementToScrollTo = myRef.current.querySelector(`[id='${myAnchor}']`);
+      if (!elementToScrollTo) {
+        elementToScrollTo = myRef.current.querySelector(
+          `[id='ref-${myAnchor}']`
+        );
+      }
       if (elementToScrollTo) {
         window.scrollTo({
-          top: elementToScrollTo.getBoundingClientRect().top + window.scrollY - document.querySelector("header").offsetHeight - 5,
-        })
-        return true
+          top:
+            elementToScrollTo.getBoundingClientRect().top +
+            window.scrollY -
+            document.querySelector("header").offsetHeight -
+            5,
+        });
+        return true;
+      } else {
+        console.log(
+          `ERROR: Unable to find anchor ${myAnchor} in ${myView} view`
+        );
       }
     }
-  }
+    return false;
+  };
 
   useEffect(() => {
     const handleScroll = () => {
       setIsAtTop(window.scrollY <= 20);
     };
-  
-    window.addEventListener('scroll', handleScroll);
-  
+
+    window.addEventListener("scroll", handleScroll);
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
   useEffect(() => {
-    currentViewRef.current = view == "web" ? webPreviewRef : printPreviewRef
+    currentViewRef.current = view == "web" ? webPreviewRef : printPreviewRef;
   }, [view]);
 
   useEffect(() => {
     const handleClick = (e) => {
-      const a = e.target.closest("a")
-      if (! a) {
-        return
+      const a = e.target.closest("a");
+      if (!a) {
+        return;
       }
-      let href = a.getAttribute('href')
-      if (href && href.startsWith('#')) {
-        href = href.replace(/^#/, '')
-        if (! href.startsWith('note-')) {
-          console.log("SET DOCUMENT ANCHOR", href)
-          setDocumentAnchor(href)
+      let href = a.getAttribute("href");
+      if (href && href.startsWith("#")) {
+        href = href.replace(/^#/, "");
+        if (!href.startsWith("note-")) {
+          console.log("SET DOCUMENT ANCHOR", href);
+          href = href.replace(/^ref-/, "");
+          setDocumentAnchor(href);
         } else {
-          console.log("Scrolling without setting to: ", href)
-          scrollToAnchor(href, currentViewRef.current)
+          console.log("Scrolling without setting to: ", href);
+          scrollToAnchor(href, currentViewRef.current, view);
         }
-        e.preventDefault()
-        e.stopPropagation()
+        e.preventDefault();
+        e.stopPropagation();
       }
-    }
+    };
 
-    document.querySelector('#root').addEventListener('click', handleClick)
+    document.querySelector("#root").addEventListener("click", handleClick);
     return () => {
-      document.querySelector('#root').removeEventListener('click', handleClick);
-    }
-  }, [setDocumentAnchor])
+      document.querySelector("#root").removeEventListener("click", handleClick);
+    };
+  }, [setDocumentAnchor]);
 
   useEffect(() => {
     if (documentAnchor) {
-      updateUrlHashInAddressBar(documentAnchor)
+      updateUrlHashInAddressBar(documentAnchor);
     }
-  }, [documentAnchor])
+  }, [documentAnchor]);
 
   useEffect(() => {
     const determineIfImagesLoaded = async () => {
@@ -239,137 +244,194 @@ export default function AppWorkspace() {
           .map(
             (img) =>
               new Promise((resolve) => {
-                img.onload = img.onerror = resolve
+                img.onload = img.onerror = resolve;
               })
           )
       ).then(() => {
-        console.log("IMAGES DONE. DOC READY.")
-        setImagesLoaded(true)
-      })
-    }
+        console.log("IMAGES DONE. DOC READY.");
+        setImagesLoaded(true);
+      });
+    };
 
-    setImagesLoaded(false)
+    setImagesLoaded(false);
     if (htmlSections?.body) {
-      determineIfImagesLoaded()
+      determineIfImagesLoaded();
     } else {
-      console.log("HTML IS EMPTY. DOC NOT READY.")
+      console.log("HTML IS EMPTY. DOC NOT READY.");
     }
-  }, [htmlSections?.body, view])
+  }, [htmlSections?.body, view]);
 
   useEffect(() => {
     setDocumentReady(
       (view == "web" && imagesLoaded) ||
-        (view == "print" && printPreviewState == "rendered")
-    )
-  }, [imagesLoaded, printPreviewState])
+        (view == "print" && printPreviewStatus == "ready")
+    );
+  }, [imagesLoaded, printPreviewStatus]);
 
   useEffect(() => {
-    if (htmlSections?.body && documentAnchor && ((view == "web" && webPreviewRef.current.innerHTML) || (view == "print" && printPreviewRef.current.innerHTML))) {
-      console.log("SCROLLING TO DOCUMENT ANCHOR: ", documentAnchor)
-      scrollToAnchor(documentAnchor, currentViewRef.current)
+    if (
+      currentViewRef.current?.current?.innerHTML &&
+      documentAnchor &&
+      (scrolledToAnchorInView.view != view ||
+        scrolledToAnchorInView.documentAnchor != documentAnchor)
+    ) {
+      console.log("SCROLLING TO DOCUMENT ANCHOR: ", documentAnchor);
+      const didScroll = scrollToAnchor(
+        documentAnchor,
+        currentViewRef.current,
+        view
+      );
+      if (didScroll) {
+        setScrolledToAnchorInView({ view, documentAnchor });
+      }
     }
-  }, [view, htmlSections?.body, documentAnchor, webPreviewRef?.current?.innerHTML, printPreviewRef?.current?.innerHTML])
+  }, [view, documentAnchor, currentViewRef?.current?.current?.innerHTML]);
 
   return (
     <Sheet>
-      {!fullScreen && (window.location.hostname == "preview.door43.org" ||
-        window.location.hostname.includes("netlify") ||
-        window.location.host == "localhost:5173" ||
-        window.location.host == "localhost:4173") && (
-        <Header
-          title={title}
-          dcsRef={dcsRef}
-          infoLine={infoLine}
-          onOpenClick={() =>
-            setShowSelectResourceModal(!showSelectResourceModal)
-          }
-        />
-      )}
+      {!fullScreen &&
+        (window.location.hostname == "preview.door43.org" ||
+          window.location.hostname.includes("netlify") ||
+          window.location.host == "localhost:5173" ||
+          window.location.host == "localhost:4173") && (
+          <Header
+            title={title}
+            dcsRef={dcsRef}
+            infoLine={infoLine}
+            onOpenClick={() =>
+              setShowSelectResourceModal(!showSelectResourceModal)
+            }
+          />
+        )}
       <Card>
-        {htmlSections?.body && 
-        <PrintDrawer {...printDrawerProps} />}
+        {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
         {fullScreen && (
-        <Tooltip title="Close full screen" arrow>
-          <IconButton
-            onClick={() => setFullScreen(false)}
+          <Tooltip title="Close full screen" arrow>
+            <IconButton
+              onClick={() => setFullScreen(false)}
+              sx={{
+                position: "sticky",
+                top: 0,
+                marginLeft: "auto",
+                backgroundColor: "white",
+                zIndex: 999,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        {urlInfo && (
+          <AppBar
+            position="relative"
             sx={{
-              position: 'sticky',
-              top: 0,
-              marginLeft: 'auto',
-              backgroundColor: 'white',
-              zIndex: 9999,
+              backgroundColor: "white",
+              position: "sticky",
+              top: "0",
+              color: "black",
+              zIndex: 999,
             }}
           >
-            <CloseIcon />
-          </IconButton>
-        </Tooltip>)}        
-        {urlInfo && <AppBar
-          position="relative"
-          sx={{ backgroundColor: "white", position: "sticky", top: "0", color: "black" }}
-        >
-          <Toolbar
-            sx={{
-              display: (!fullScreen ? "flex" : "none"),
-              justifyContent: "space-between",
-              width: "100%",
-              height: "10px",
-              overflowX: "scroll",
-              paddingTop: "10px",
-              paddingBottom: "10px",
-            }}
-          >
-            <div>&nbsp;</div>
-            {ResourceComponent ? <ResourceComponent /> : ""}
-            <div style={{ whiteSpace: "nowrap" }}>
-              <ToggleButtonGroup
-                value={view}
-                exclusive
-                onChange={(e, value) => {
-                  if (value !== null) {
-                    setView(value)
-                  }
-                }}
-                aria-label="View"
-                disabled={!htmlSections?.body}
-              >
-                <ToggleButton value="web" aria-label="Web view">
-                  <Tooltip title="Web view" arrow>
-                    <WebIcon />
-                  </Tooltip>
-                </ToggleButton>
-                <ToggleButton
-                  value="print"
-                  aria-label="Print view"
+            <Toolbar
+              sx={{
+                display: !fullScreen ? "flex" : "none",
+                justifyContent: "space-between",
+                width: "100%",
+                height: "10px",
+                overflowX: "scroll",
+                paddingTop: "10px",
+                paddingBottom: "10px",
+              }}
+            >
+              <div>&nbsp;</div>
+              {ResourceComponent ? <ResourceComponent /> : ""}
+              <div style={{ whiteSpace: "nowrap" }}>
+                <ToggleButtonGroup
+                  value={view}
+                  exclusive
+                  onChange={(e, value) => {
+                    if (value !== null) {
+                      setView(value);
+                    }
+                  }}
+                  aria-label="View"
                   disabled={!htmlSections?.body}
                 >
-                  <Tooltip title="Print view" arrow>
-                    <MenuBookIcon />
-                  </Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
-              <Tooltip title="Print" arrow>
-                <IconButton disabled={!htmlSections.body}>
-                  <PrintIcon
-                    onClick={() => {
-                      setView("print")
-                      setIsOpenPrint(true)
-                    }}
-                  />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Full screen" arrow>
-                <IconButton onClick={() => setFullScreen(true)}>
-                  <FitScreenIcon />
-                </IconButton>     
-              </Tooltip>       
-              <Tooltip title="Back to top" arrow>
-                <IconButton onClick={() => window.scrollTo({top: 0})} disabled={isAtTop}>
-                  <KeyboardDoubleArrowUpIcon />
-                </IconButton>     
-              </Tooltip>       
-            </div>
-          </Toolbar>
-        </AppBar>}
+                  <ToggleButton value="web" aria-label="Web view">
+                    <Tooltip title="Web view" arrow>
+                      <WebIcon />
+                    </Tooltip>
+                  </ToggleButton>
+                  <ToggleButton
+                    value="print"
+                    aria-label="Print view"
+                    disabled={!htmlSections?.body}
+                  >
+                    <Tooltip title="Print view" arrow>
+                      <MenuBookIcon />
+                    </Tooltip>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+                <Tooltip
+                  title={`Print Preview Status: ${printPreviewStatus}${
+                    printPreviewPercentDone < 100 && printPreviewPercentDone > 0
+                      ? `, ${printPreviewPercentDone}%`
+                      : ""
+                  }`}
+                  arrow
+                >
+                  <IconButton disabled={!htmlSections.body}>
+                    <PrintIcon
+                      sx={{ zIndex: 2 }}
+                      onClick={() => {
+                        setView("print");
+                        setIsOpenPrint(true);
+                      }}
+                    />
+                    <CircularProgress
+                      variant="determinate"
+                      value={100}
+                      size={32} // adjust to match the size of the icon
+                      sx={{
+                        position: "absolute",
+                        zIndex: 1,
+                        color: "grey",
+                      }}
+                    />
+                    <CircularProgress
+                      variant="determinate"
+                      value={printPreviewPercentDone}
+                      size={32} // adjust to match the size of the icon
+                      sx={{
+                        position: "absolute",
+                        zIndex: 1,
+                        color:
+                          printPreviewPercentDone < 50
+                            ? "red"
+                            : printPreviewPercentDone < 100
+                            ? "orange"
+                            : "green",
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Full screen" arrow>
+                  <IconButton onClick={() => setFullScreen(true)}>
+                    <FitScreenIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Back to top" arrow>
+                  <IconButton
+                    onClick={() => window.scrollTo({ top: 0 })}
+                    disabled={isAtTop}
+                  >
+                    <KeyboardDoubleArrowUpIcon />
+                  </IconButton>
+                </Tooltip>
+              </div>
+            </Toolbar>
+          </AppBar>
+        )}
         {errorMessages.map((message, i) => (
           <Alert
             key={`errorMessage${i}`}
@@ -395,57 +457,85 @@ export default function AppWorkspace() {
             </div>
           </Alert>
         ))}
-        {urlInfo && urlInfo.owner == "downloadables" && serverInfo && 
-          <ResourceLanguagesAccordion serverInfo={serverInfo} subjects={["Open Bible Stories", "OBS Study Notes", "OBS Study Questions", "OBS Translation Notes", "OBS Translation Questions", "TSV OBS Study Notes", "TSV OBS Study Questions", "TSV OBS Translation Notes", "TSV OBS Translation Questions"]} />}
-        {urlInfo && !urlInfo.owner && serverInfo && 
-          <ResourcesCardGrid serverInfo={serverInfo} />}
-        {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && view == "web" &&
-        <WebPreviewComponent
-          html={htmlSections.body}
-          webCss={webCss + printCss}
-          ref={webPreviewRef}
+        <div
+          id="main-content"
           style={{
-            display: view == "web" ? "block" : "none",
-            direction: catalogEntry ? catalogEntry.language_direction : "ltr",
+            position: "relative",
+            minHeight: printPreviewRef?.current
+              ? printPreviewRef.current.clientHeight + "px"
+              : "auto",
           }}
-        />}
-        {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo &&
-        <PrintPreviewComponent
-          catalogEntry={catalogEntry}
-          htmlSections={htmlSections}
-          webCss={webCss}
-          printCss={printCss}
-          printOptions={printOptions}
-          printPreviewState={printPreviewState}
-          setPrintPreviewState={setPrintPreviewState}
-          setHtmlSections={setHtmlSections}
-          view={view}
-          ref={printPreviewRef}
-        />}
-        {statusMessage && !imagesLoaded && !errorMessages.length && (
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-              height: '300px', // Adjust as needed
-            }}
-          >
-            <CircularProgress />
-            <Typography
-              id="modal-modal-description"
-              sx={{ mt: 2, textAlign: "center" }}
+        >
+          {urlInfo && urlInfo.owner == "downloadables" && serverInfo && (
+            <ResourceLanguagesAccordion
+              serverInfo={serverInfo}
+              subjects={[
+                "Open Bible Stories",
+                "OBS Study Notes",
+                "OBS Study Questions",
+                "OBS Translation Notes",
+                "OBS Translation Questions",
+                "TSV OBS Study Notes",
+                "TSV OBS Study Questions",
+                "TSV OBS Translation Notes",
+                "TSV OBS Translation Questions",
+              ]}
+            />
+          )}
+          {urlInfo && !urlInfo.owner && serverInfo && (
+            <ResourcesCardGrid serverInfo={serverInfo} />
+          )}
+          {urlInfo &&
+            urlInfo.owner &&
+            urlInfo.repo &&
+            serverInfo &&
+            view == "web" && (
+              <WebPreviewComponent
+                ref={webPreviewRef}
+                style={{
+                  backgroundColor: "white",
+                  direction: catalogEntry
+                    ? catalogEntry.language_direction
+                    : "ltr",
+                }}
+              />
+            )}
+          {urlInfo &&
+            urlInfo.owner &&
+            urlInfo.repo &&
+            serverInfo &&
+            (view == "print" || printPreviewStatus == "ready") && (
+              <PrintPreviewComponent ref={printPreviewRef} view={view} />
+            )}
+          {statusMessage && !imagesLoaded && !errorMessages.length && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+                height: "300px", // Adjust as needed
+              }}
             >
-              {statusMessage}
-            </Typography>
-          </Box>
-        )}
+              <CircularProgress />
+              <Typography
+                id="modal-modal-description"
+                sx={{ mt: 2, textAlign: "center" }}
+              >
+                {statusMessage}
+              </Typography>
+            </Box>
+          )}
+        </div>
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != "" || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
+          canLoad={
+            htmlSections?.body != "" ||
+            errorMessages.length > 0 ||
+            (urlInfo && !urlInfo.repo)
+          }
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
           serverInfo={serverInfo}
@@ -454,5 +544,5 @@ export default function AppWorkspace() {
         />
       )}
     </Sheet>
-  )
+  );
 }

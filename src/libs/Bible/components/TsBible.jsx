@@ -221,11 +221,11 @@ export default function TsBible() {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-        `<span id="${bookId}-$1-$2"$3><a href="#${bookId}-$1-$2" class="header-link">$4</a></span>`
+        `<span id="ref-${bookId}-$1-$2"$3><a href="#ref-${bookId}-$1-$2" class="header-link">$4</a></span>`
       )
-      _html = _html.replaceAll(/<span id="chapter-(\d+)" ([^>]+)>([\d]+)<\/span>/gi, `<span id="${bookId}-$1" data-toc-title="${bookTitle} $1" $2><a href="#${bookId}-$1-1" class="header-link">$3</a></span>`)
+      _html = _html.replaceAll(/<span id="chapter-(\d+)" ([^>]+)>([\d]+)<\/span>/gi, `<span id="ref-${bookId}-$1" data-toc-title="${bookTitle} $1" $2><a href="#ref-${bookId}-$1-1" class="header-link">$3</a></span>`)
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`)
-      _html = `<section class="bible-book" id="${bookId}" data-toc-title="${bookTitle}">${_html}</section>`
+      _html = `<section class="bible-book" id="ref-${bookId}" data-toc-title="${bookTitle}">${_html}</section>`
       setHtmlSections({cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: "", body: _html})
       setStatusMessage("")
       setWebCss(webCss)

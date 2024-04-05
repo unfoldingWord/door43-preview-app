@@ -1,6 +1,7 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect, useContext, forwardRef } from "react";
 import PropTypes from 'prop-types'
-import { Previewer } from "pagedjs";
+import * as Paged from "pagedjs";
+import { AppContext } from "./App.context";
 
 
 function generateCover(catalogEntry, extra) {
@@ -68,18 +69,43 @@ function generateToc(content) {
   return html
 }
 
+const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) => {
+  const pageHeightInMM = parseFloat(pageHeighInMMStr || "297mm");
+  const pageHeight = pageHeightInMM * 2.83465;
+  const pageWidthInMM = parseFloat(pageWidthInMMStr || "210mm");
+  const pageWidth = pageWidthInMM * 2.83465;
+  const iframe = document.createElement('iframe');
+  iframe.style.width = pageWidth + "px";
+  iframe.style.height = '100%';
+  iframe.style.visibility = 'hidden';
+  ref.current.appendChild(iframe);
+  iframe.contentDocument.body.innerHTML = `<style>${css}</style>${html}`;
+  const scrollHeight = iframe.contentDocument.body.scrollHeight;
+  ref.current.removeChild(iframe);
+  return Math.ceil((scrollHeight / pageHeight) * 1.13);
+};
+
 export const PrintPreviewComponent = forwardRef(({
-  catalogEntry,
-  printOptions,
-  htmlSections,
-  webCss,
-  printCss,
-  setPrintPreviewState,
+  style,
   view,
 }, ref) => {
+  const {
+    state: {
+      catalogEntry,
+      htmlSections,
+      webCss,
+      printCss,
+      printOptions,
+      printPreviewStatus,
+    },
+    actions: {
+      setPrintPreviewStatus,
+      setPrintPreviewPercentDone,
+    }
+  } = useContext(AppContext)
+
   const [htmlToRender, setHtmlToRender] = useState("")
   const [cssToRender, setCssToRender] = useState("")
-  const [isRendering, setIsRendering] = useState(false)
 
   useEffect(() => {
     const preparingForPrintPreview = async () => {
@@ -290,58 +316,75 @@ ${printCss}
     if (htmlSections?.body && Object.keys(printOptions).length) {
       preparingForPrintPreview()
     }
-  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewState])
+  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewStatus])
 
   useEffect(() => {
-    const generatePrintPreview = async (htmlStr, cssStr) => {
-      console.log("STARTING PRINT RENDERING")
-      setPrintPreviewState("started")
+    if (htmlToRender && cssToRender && ref.current) {      
+      const estimatedPageCount = estimatePageCount(ref, htmlToRender, cssToRender, printOptions.pageHeight, printOptions.pageWidth);
+      console.log(`Estimated page count: ${estimatedPageCount}`);
+
       ref.current.innerHTML = ""
       const innerDiv = document.createElement('div');
       innerDiv.id = 'print-preview-inner';
       ref.current.appendChild(innerDiv);
 
-      const previewer = new Previewer()
+      class PrintPreviewHandler extends Paged.Handler {
+        constructor(chunker, polisher, caller) {
+          super(chunker, polisher, caller);
+        }
+      
+        afterPageLayout(page) {
+          const pageNum = parseInt(page.getAttribute("data-page-number"))
+          let percentDone = Math.round((pageNum / (estimatedPageCount > pageNum ? estimatedPageCount : pageNum)) * 100)
+          if (percentDone >= 100) {
+            percentDone = 99
+          }
+          setPrintPreviewPercentDone(percentDone)
+        }
+
+        afterRendered() {
+          setPrintPreviewPercentDone(100)
+        }
+      }
+
+      const previewer = new Paged.Previewer();
+      previewer.registerHandlers(PrintPreviewHandler);
+      setPrintPreviewStatus("rendering")
       previewer.preview(
-        htmlStr,
+        htmlToRender,
         [
           {
-            _: cssStr,
+            _: cssToRender,
           },
         ],
         innerDiv,
       ).then((flow) => {
-        setPrintPreviewState("rendered")
+        setPrintPreviewStatus("ready")
         console.log(`PRINT PREVIEW IS READY. Rendered ${flow.total} pages.`)
-        setIsRendering(false)
       }).catch(e => {
-        setPrintPreviewState("error")
+        setPrintPreviewStatus("aborted")
         console.log("ERROR RENDERING PRINT PREVIEW: ", e)
       })
-    }
 
-    if (htmlToRender && cssToRender) {
-      generatePrintPreview(htmlToRender, cssToRender)
-      console.log("SETTING IS RENDERING TO TRUE")
-      setIsRendering(true)
-      setHtmlToRender("")
-      setCssToRender("")
+      return () => {
+        if (printPreviewStatus != "ready") {
+          setPrintPreviewStatus("aborted")
+        }
+
+        const styleTags = document.querySelectorAll('style[data-pagedjs-inserted]');
+        styleTags.forEach(tag => tag.remove());
+      }
     }
-  }, [htmlToRender, cssToRender, isRendering, setPrintPreviewState])
+  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewPercentDone, setPrintPreviewStatus])
 
   return (
-    <div id="print-preview" style={{display: (isRendering || view == "print" ? "block" : "none")}} ref={ref} />
+    <div id="print-preview" style={{...style, display: (view != "print" ? "none" : "block") }} ref={ref} />
   )
 })
 
 PrintPreviewComponent.displayName = "PrintPreviewComponent";
 
 PrintPreviewComponent.propTypes = {
-  catalogEntry: PropTypes.object,
   style: PropTypes.object,
-  printOptions: PropTypes.object,
-  htmlSections: PropTypes.object,
-  webCss: PropTypes.string,
-  printCss: PropTypes.string,
-  setPrintPreviewState: PropTypes.func,
+  view: PropTypes.string,
 };

@@ -151,7 +151,7 @@ export default function RcTranslationQuestions() {
   }
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != bookId) {
+    if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload()
     } else {
@@ -257,7 +257,7 @@ export default function RcTranslationQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<section class="tq-book" id="${bookId}" data-toc-title="${bookTitle}">
+<section class="tq-book" id="ref-${bookId}" data-toc-title="${bookTitle}">
   <h1 style="text-align: center">${catalogEntry.title}</h1>
 `
       let prevChapter = ""
@@ -280,9 +280,9 @@ export default function RcTranslationQuestions() {
 `
           }
           html += `
-  <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+  <section class="book-chapter" id="ref-${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
     <h2>
-      <a class="header-link" href="#${bookId}-${chapterStr}">
+      <a class="header-link" href="#ref-${bookId}-${chapterStr}">
         ${bookTitle} ${chapterStr}
       </a>
     </h2>
@@ -295,11 +295,11 @@ export default function RcTranslationQuestions() {
 `
           }
           html += `
-    <section class="tq-verse" id="${bookId}-${chapterStr}-${firstVerse}">
+    <section class="tq-verse" id="ref-${bookId}-${chapterStr}-${firstVerse}">
 `
           if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
-            const link = `${bookId}-${chapterStr}-${firstVerse}`
+            const link = `ref-${bookId}-${chapterStr}-${firstVerse}`
             html += `
       <article class="tq-scripture" id="${link}-scripture">
         <h3 class="tq-scripture-header">
@@ -320,7 +320,7 @@ export default function RcTranslationQuestions() {
           }
         }
         if (row.Question && row.Response) {
-          const link = `${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}-${row.ID}`
+          const link = `ref-${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}-${row.ID}`
           html += `
       <article class="tq-entry" id="${link}">
         <h4 class="tq-entry-question">
