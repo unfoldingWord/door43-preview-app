@@ -33,6 +33,8 @@ export function AppContextProvider({ children }) {
   const [printOptions, setPrintOptions] = useState({})
   const [documentReady, setDocumentReady] = useState(false)
   const [documentAnchor, setDocumentAnchor] = useState('')
+  const [printPreviewStatus, setPrintPreviewStatus] = useState("not started")
+  const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0)
 
   const onPrintClick = () => {
     setIsOpenPrint(true)
@@ -249,6 +251,8 @@ export function AppContextProvider({ children }) {
       printOptions,
       documentReady,
       documentAnchor,
+      printPreviewStatus,
+      printPreviewPercentDone,
     },
     actions: {
       onPrintClick,
@@ -263,6 +267,8 @@ export function AppContextProvider({ children }) {
       setPrintOptions,
       setDocumentReady,
       setDocumentAnchor,
+      setPrintPreviewStatus,
+      setPrintPreviewPercentDone,
     },
   }
 

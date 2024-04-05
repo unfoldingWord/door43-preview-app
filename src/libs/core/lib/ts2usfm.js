@@ -36,7 +36,10 @@ export async function ts2usfm(catalogEntry, ingredient, zipFileData) {
       for(let verse = 1; verse <= numVerses; verse++) {
         const verseFilePath = `${catalogEntry.name}/${String(chapter).padStart(2, '0')}/${String(verse).padStart(2, '0')}.txt`;
         if (verseFilePath in zipFileData.files) {
-          const text = await zipFileData.file(verseFilePath).async("text")
+          let text = await zipFileData.file(verseFilePath).async("text")
+          if (verse == 1 && ! new RegExp(`\\c ${chapter}`).test(text)) {
+            text = `\\c ${chapter}\n${text}`
+          }
           usfm += `\\p\n${text}\n`;
         }
       }

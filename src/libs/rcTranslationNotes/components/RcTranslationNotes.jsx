@@ -265,7 +265,7 @@ export default function RcTranslationNotes() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<section class="tn-book" id="${bookId}" data-toc-title="${bookTitle}">
+<section class="tn-book" id="ref-${bookId}" data-toc-title="${bookTitle}">
   <h1 style="text-align: center">${catalogEntry.title}</h1>
 `
       let prevChapter = ""
@@ -291,7 +291,7 @@ export default function RcTranslationNotes() {
 `
           }
           html += `
-  <section class="book-chapter" id="${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+  <section class="book-chapter" id="ref-${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
 `
         }
         if (chapterStr != prevChapter || firstVerse != prevVerse) {
@@ -301,14 +301,14 @@ export default function RcTranslationNotes() {
 `
           }
           html += `
-    <section class="tn-verse" id="${bookId}-${chapterStr}-${firstVerse}">
+    <section class="tn-verse" id="ref-${bookId}-${chapterStr}-${firstVerse}">
 `
           if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
             const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects)
             html += `
-      <article class="tn-scripture" id="${bookId}-${chapterStr}-${verseStr}-scripture">
+      <article class="tn-scripture" id="ref-${bookId}-${chapterStr}-${verseStr}-scripture">
         <h2 class="tn-scripture-header">
-          <a href="#${bookId}-${chapterStr}-${verseStr}" class="header-link">${bookTitle} ${chapterStr}:${firstVerse}</a>  
+          <a href="#ref-${bookId}-${chapterStr}-${verseStr}" class="header-link">${bookTitle} ${chapterStr}:${firstVerse}</a>  
         </h2>
         <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
         <div class="tn-scripture-verse">
@@ -323,7 +323,7 @@ export default function RcTranslationNotes() {
           }
         }
 
-        const link = `${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}`
+        const link = `ref-${bibleReferenceState.bookId}-${chapterStr}-${verseStr}-${row.ID}`
         html += `
       <article class="tn-entry" id="${link}">
         <h3 class="tn-entry-header">
@@ -361,10 +361,10 @@ export default function RcTranslationNotes() {
 `
         }
         let note = md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))
-        note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#${bookId}-${chapterStr}-$1"`)
-        note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#${bookId}-$1-$2"`)
-        note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#${bookId}-${chapterStr}-$1"`)
-        note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#${bookId}-$1-$2"`)
+        note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="ref-#${bookId}-${chapterStr}-$1"`)
+        note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#ref-${bookId}-$1-$2"`)
+        note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#$ref-{bookId}-${chapterStr}-$1"`)
+        note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#ref-${bookId}-$1-$2"`)
         note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/g, '<a href="$1">$1</a>')
         note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"')
 
