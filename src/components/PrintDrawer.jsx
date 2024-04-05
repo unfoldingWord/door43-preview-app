@@ -194,18 +194,16 @@ export default function PrintDrawer({
             title={
               printPreviewStatus == "ready"
                 ? "Save as PDF"
-                : "Print Preview Still Rendering"
+                : `Preparing Print Preview: ${printPreviewPercentDone}%`
             }
             arrow
           >
             <Button
               sx={{
-                margin: "4%",
-                backgroundColor:
-                  printPreviewStatus == "ready" ? "auto" : "#808080",
+                margin: "5px",
+                backgroundColor: "#808080",
                 "&:hover": {
-                  backgroundColor:
-                    printPreviewStatus == "ready" ? "green" : "#404040",
+                  backgroundColor: "#404040",
                 },
               }}
               onClick={() => {
@@ -223,8 +221,7 @@ export default function PrintDrawer({
                   top: 0,
                   width: "100%",
                   height: "100%",
-                  opacity: 0.4,
-                  borderRadius: 4,
+                  opacity: 0.5,
                   "& .MuiLinearProgress-bar": {
                     backgroundColor: "green",
                   },
@@ -236,18 +233,16 @@ export default function PrintDrawer({
             title={
               printPreviewStatus == "ready"
                 ? "Print"
-                : "Print Preview Still Rendering"
+                : `Preparing Print Preview: ${printPreviewPercentDone}%`
             }
             arrow
           >
             <Button
               sx={{
-                margin: "4%",
-                backgroundColor:
-                  printPreviewStatus == "ready" ? "auto" : "#808080",
+                margin: "5px",
+                backgroundColor: "#808080",
                 "&:hover": {
-                  backgroundColor:
-                    printPreviewStatus == "ready" ? "green" : "#404040",
+                  backgroundColor: "#404040",
                 },
               }}
               onClick={handlePrint}
@@ -262,8 +257,7 @@ export default function PrintDrawer({
                   top: 0,
                   width: "100%",
                   height: "100%",
-                  opacity: 0.4,
-                  borderRadius: 4,
+                  opacity: 0.5,
                   "& .MuiLinearProgress-bar": {
                     backgroundColor: "green",
                   },
@@ -271,11 +265,6 @@ export default function PrintDrawer({
               />
             </Button>
           </Tooltip>
-          <div style={{ padding: "10px" }}>
-            {printPreviewPercentDone < 100
-              ? `Preparing Print Preview: ${printPreviewPercentDone}%`
-              : "Ready to Print or Save as PDF"}
-          </div>
         </Box>
       </Drawer>
     </>

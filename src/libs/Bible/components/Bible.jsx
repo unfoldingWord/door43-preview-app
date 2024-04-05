@@ -100,6 +100,7 @@ export default function Bible() {
       setHtmlSections,
       setDocumentAnchor,
       setCanChangeColumns,
+      setPrintOptions,
     },
   } = useContext(AppContext)
 
@@ -193,12 +194,13 @@ export default function Bible() {
         return
       }
       setCanChangeColumns(true)
+      setPrintOptions(prevState => ({...prevState, columns: 2}))
     }
 
     if (!bookId) {
       setInitialBookIdAndSupportedBooks()
     }
-  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId])
+  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setPrintOptions])
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {

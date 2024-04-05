@@ -351,13 +351,24 @@ export default function AppWorkspace() {
                   exclusive
                   onChange={(e, value) => {
                     if (value !== null) {
-                      setView(value);
+                      let ok = true;
+                      if (view == "print" && value == "web" && printPreviewPercentDone < 100) {
+                        ok = window.confirm(
+                          "Switching to web view will cancel the print preview rendering. Are you sure?"
+                        )
+                      }
+                      if (ok) {
+                        setView(value);
+                      }
                     }
                   }}
                   aria-label="View"
                   disabled={!htmlSections?.body}
                 >
-                  <ToggleButton value="web" aria-label="Web view">
+                  <ToggleButton
+                    value="web"
+                    aria-label="Web view"
+                  >
                     <Tooltip title="Web view" arrow>
                       <WebIcon />
                     </Tooltip>

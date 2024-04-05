@@ -6,6 +6,7 @@ export default function ColumnsSelector({
   formLabelTitle,
   listItems,
   setPrintOptions,
+  columns,
 }) {
   return (
     <>
@@ -21,7 +22,7 @@ export default function ColumnsSelector({
         <Select
           aria-labelledby="page-size-group-label"
           name="page-size-buttons-group"
-          defaultValue={listItems ? listItems[0] : "1"}
+          value={columns || listItems?.[0] || 1}
           size="small"
           sx={{ width: '70px' }}
           color="primary"
@@ -45,5 +46,7 @@ ColumnsSelector.propTypes = {
   formLabelTitle: PropTypes.string,
   listItems: PropTypes.any,
   setFormatData: PropTypes.func,
+  setPrintOptions: PropTypes.func,
+  columns: PropTypes.number,
 };
 

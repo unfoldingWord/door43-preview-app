@@ -184,12 +184,12 @@ export const PrintPreviewComponent = forwardRef(({
   }
 }
 
-section.bible-book {
-  columns: ${printOptions?.columns || "1"};
-}
-
 .header-title {
   position: running(titleRunning);
+}
+
+.pagedjs_pages section.bible-book {
+  columns: ${printOptions?.columns || 1};
 }
 
 @media print {
