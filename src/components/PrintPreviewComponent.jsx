@@ -1,8 +1,7 @@
-import { useState, useEffect, useContext, forwardRef } from "react";
-import PropTypes from 'prop-types'
-import * as Paged from "pagedjs";
-import { AppContext } from "./App.context";
-
+import { useState, useEffect, useContext, forwardRef } from 'react';
+import PropTypes from 'prop-types';
+import * as Paged from 'pagedjs';
+import { AppContext } from '@components/App.context';
 
 function generateCover(catalogEntry, extra) {
   const abbreviationToLogoMap = {
@@ -15,14 +14,14 @@ function generateCover(catalogEntry, extra) {
     glt: 'ult',
     gst: 'ust',
     obs: 'obs',
-    "obs-sn": 'obs',
-    "obs-sq": 'obs',
-    "obs-tn": 'obs',
-    "obs-tq": 'obs',
-  }
-  let logo = `uW-app-256.png`
+    'obs-sn': 'obs',
+    'obs-sq': 'obs',
+    'obs-tn': 'obs',
+    'obs-tq': 'obs',
+  };
+  let logo = `uW-app-256.png`;
   if (catalogEntry.abbreviation in abbreviationToLogoMap) {
-    logo = `logo-${abbreviationToLogoMap[catalogEntry.abbreviation]}-256.png`
+    logo = `logo-${abbreviationToLogoMap[catalogEntry.abbreviation]}-256.png`;
   }
   const cover = `
   <span class="header-title"></span>
@@ -30,52 +29,50 @@ function generateCover(catalogEntry, extra) {
   <h1 class="cover-header section-header">${catalogEntry.title}</h1>
   <h3 class="cover-version">${catalogEntry.branch_or_tag_name}</h3>
   ${extra}
-`
-  return cover
+`;
+  return cover;
 }
 
-
 function generateToc(content) {
-  const elements = content.querySelectorAll(":scope > *")
-  let html = ""
-  elements.forEach(element => {
-    const title = element.getAttribute('data-toc-title')
+  const elements = content.querySelectorAll(':scope > *');
+  let html = '';
+  elements.forEach((element) => {
+    const title = element.getAttribute('data-toc-title');
     if (title && element.id) {
-//       html += `
-// <li class="toc-entry">
-//   <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
-// </li>
-// `
+      //       html += `
+      // <li class="toc-entry">
+      //   <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
+      // </li>
+      // `
       html += `
 <li class="toc-entry">
   <a class="toc-element" href="#${element.id}"><span class="toc-element-title">${title}</span></a>
 </li>
-`
-
+`;
     }
-    const subHtml = generateToc(element)
+    const subHtml = generateToc(element);
     if (subHtml) {
       if (title) {
         html += `
 <ul class="toc-section">
   ${subHtml}
 </ul>
-`
+`;
       } else {
-        html += subHtml
+        html += subHtml;
       }
     }
-  })
-  return html
+  });
+  return html;
 }
 
 const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) => {
-  const pageHeightInMM = parseFloat(pageHeighInMMStr || "297mm");
+  const pageHeightInMM = parseFloat(pageHeighInMMStr || '297mm');
   const pageHeight = pageHeightInMM * 2.83465;
-  const pageWidthInMM = parseFloat(pageWidthInMMStr || "210mm");
+  const pageWidthInMM = parseFloat(pageWidthInMMStr || '210mm');
   const pageWidth = pageWidthInMM * 2.83465;
   const iframe = document.createElement('iframe');
-  iframe.style.width = pageWidth + "px";
+  iframe.style.width = pageWidth + 'px';
   iframe.style.height = '100%';
   iframe.style.visibility = 'hidden';
   ref.current.appendChild(iframe);
@@ -85,34 +82,21 @@ const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) =
   return Math.ceil((scrollHeight / pageHeight) * 1.13);
 };
 
-export const PrintPreviewComponent = forwardRef(({
-  style,
-  view,
-}, ref) => {
+export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   const {
-    state: {
-      catalogEntry,
-      htmlSections,
-      webCss,
-      printCss,
-      printOptions,
-      printPreviewStatus,
-    },
-    actions: {
-      setPrintPreviewStatus,
-      setPrintPreviewPercentDone,
-    }
-  } = useContext(AppContext)
+    state: { catalogEntry, htmlSections, webCss, printCss, printOptions, printPreviewStatus },
+    actions: { setPrintPreviewStatus, setPrintPreviewPercentDone },
+  } = useContext(AppContext);
 
-  const [htmlToRender, setHtmlToRender] = useState("")
-  const [cssToRender, setCssToRender] = useState("")
+  const [htmlToRender, setHtmlToRender] = useState('');
+  const [cssToRender, setCssToRender] = useState('');
 
   useEffect(() => {
     const preparingForPrintPreview = async () => {
-      let copyright = htmlSections.copyright || ""
-      const body = htmlSections.body
-      const doc = new DOMParser().parseFromString(body, "text/html")
-      let toc = htmlSections.toc || ""
+      let copyright = htmlSections.copyright || '';
+      const body = htmlSections.body;
+      const doc = new DOMParser().parseFromString(body, 'text/html');
+      let toc = htmlSections.toc || '';
       if (!toc) {
         toc = `
   <h1 class="toc-header">Table of Contents</h1>
@@ -121,9 +105,9 @@ export const PrintPreviewComponent = forwardRef(({
       ${generateToc(doc.firstChild)}
     </ul>
   </div>
-`
+`;
       }
-      const cover = generateCover(catalogEntry, htmlSections.cover)
+      const cover = generateCover(catalogEntry, htmlSections.cover);
 
       const cssStr = `
 @page {
@@ -149,17 +133,39 @@ export const PrintPreviewComponent = forwardRef(({
 }
 
 @page :blank {
-  @bottom-center {content: none}
-  @top-center {content: none}
-  @top-left { content: none}
-  @top-right {content: none}
+  @bottom-center {
+    content: none
+  }
+
+  @top-center {
+    content: none
+  }
+
+  @top-left {
+    content: none
+  }
+
+  @top-right {
+    content: none
+  }
 }
 
 @page :cover-page {
-  @bottom-center {content: none}
-  @top-center {content: none}
-  @top-left { content: none}
-  @top-right {content: none}
+  @bottom-center {
+    content: none
+  }
+
+  @top-center {
+    content: none
+  }
+
+  @top-left {
+    content: none
+  }
+
+  @top-right {
+    content: none
+  }
 }
 
 @page :left {
@@ -189,23 +195,25 @@ export const PrintPreviewComponent = forwardRef(({
 }
 
 .pagedjs_pages section.bible-book {
-  columns: ${printOptions?.columns || 1};
+  columns: $ {
+    printOptions?.columns || 1
+  }
+
+  ;
 }
 
-@media print {
-  h1 {
-    break-before: avoid-page;
-  }
+h1 {
+  break-before: avoid-page;
+}
 
-  section, 
-  article {
-    break-after: page;
-  }
+section,
+article {
+  break-after: page !important;
+}
 
-  section.toc-page,
-  section.copyright-page {
-    break-before: page;
-  }
+section.toc-page,
+section.copyright-page {
+  break-before: page;
 }
 
 .cover-page,
@@ -215,76 +223,76 @@ export const PrintPreviewComponent = forwardRef(({
 }
 
 #toc {
-    font-size: 12px;
+  font-size: 12px;
 }
 
 #toc h1 {
-    text-align: center;
-    font-size: 1.6em;
+  text-align: center;
+  font-size: 1.6em;
 }
 
 #toc-contents ul {
-    list-style: none;
-    padding: 0;
-    padding-inline-start: 0;
+  list-style: none;
+  padding: 0;
+  padding-inline-start: 0;
 }
 
 #toc-contents ul ul {
-    padding-left: 10px;
+  padding-left: 10px;
 }
 
 [data-direction="rtl"] #toc-contents ul ul {
-    padding-left: 0;
-    padding-right: 10px;
+  padding-left: 0;
+  padding-right: 10px;
 }
 
 #toc-contents ul li {
-    width: 100%;
-    list-style-type: none;
-    padding-bottom: 2px;
-    line-height: 1.1em;
+  width: 100%;
+  list-style-type: none;
+  padding-bottom: 2px;
+  line-height: 1.1em;
 }
 
 #toc-contents ul a {
-    display: inline-block;
-    width: 100%;
-    border-bottom: 2px dotted #555555;
-    text-decoration: none;
-    color: #000 !important;
-    /* margin-left: 20px;
+  display: inline-block;
+  width: 100%;
+  border-bottom: 2px dotted #555555;
+  text-decoration: none;
+  color: #000 !important;
+  /* margin-left: 20px;
     text-indent: -20px; */
 }
 
-#toc-contents > ul > li > a {
-    font-weight: bold;
+#toc-contents>ul>li>a {
+  font-weight: bold;
 }
 
 #toc-contents ul a span {
-    background-color: white;
-    margin: 0 25px 0 0;
-    padding: 0 2px 3px 0;
+  background-color: white;
+  margin: 0 25px 0 0;
+  padding: 0 2px 3px 0;
 }
 
 [data-direction="rtl"] #toc-contents ul a span {
-    margin: 0 0 0 25px;
-    padding: 0 0 3px 2px;
+  margin: 0 0 0 25px;
+  padding: 0 0 3px 2px;
 }
 
 #toc-contents ul a::after {
-    position: absolute;
-    right: 0;
-    content: target-counter(attr(href), page);
-    background-color: white;
-    padding-bottom: 4px;
-    padding-left: 2px;
-    padding-right: 10px;
+  position: absolute;
+  right: 0;
+  content: target-counter(attr(href), page);
+  background-color: white;
+  padding-bottom: 4px;
+  padding-left: 2px;
+  padding-right: 10px;
 }
 
 [data-direction="rtl"] #toc-contents ul a::after {
-    left: 0 !important;
-    right: auto !important;
-    padding-right: 2px;
-    padding-left: 30px;
+  left: 0 !important;
+  right: auto !important;
+  padding-right: 2px;
+  padding-left: 30px;
 }
 
 h1 {
@@ -294,7 +302,7 @@ h1 {
 ${webCss}
 
 ${printCss}
-`
+`;
       const htmlStr = `
 <div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
   <section class="cover-page">
@@ -308,22 +316,22 @@ ${printCss}
   </section>
   ${doc.documentElement.innerHTML}
 </div>
-`
-      setHtmlToRender(htmlStr)
-      setCssToRender(cssStr)
-    }
+`;
+      setHtmlToRender(htmlStr);
+      setCssToRender(cssStr);
+    };
 
     if (htmlSections?.body && Object.keys(printOptions).length) {
-      preparingForPrintPreview()
+      preparingForPrintPreview();
     }
-  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewStatus])
+  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewStatus]);
 
   useEffect(() => {
-    if (htmlToRender && cssToRender && ref.current) {      
+    if (htmlToRender && cssToRender && ref.current) {
       const estimatedPageCount = estimatePageCount(ref, htmlToRender, cssToRender, printOptions.pageHeight, printOptions.pageWidth);
       console.log(`Estimated page count: ${estimatedPageCount}`);
 
-      ref.current.innerHTML = ""
+      ref.current.innerHTML = '';
       const innerDiv = document.createElement('div');
       innerDiv.id = 'print-preview-inner';
       ref.current.appendChild(innerDiv);
@@ -332,57 +340,58 @@ ${printCss}
         constructor(chunker, polisher, caller) {
           super(chunker, polisher, caller);
         }
-      
+
         afterPageLayout(page) {
-          const pageNum = parseInt(page.getAttribute("data-page-number"))
-          let percentDone = Math.round((pageNum / (estimatedPageCount > pageNum ? estimatedPageCount : pageNum)) * 100)
+          const pageNum = parseInt(page.getAttribute('data-page-number'));
+          let percentDone = Math.round((pageNum / (estimatedPageCount > pageNum ? estimatedPageCount : pageNum)) * 100);
           if (percentDone >= 100) {
-            percentDone = 99
+            percentDone = 99;
           }
-          setPrintPreviewPercentDone(percentDone)
+          setPrintPreviewPercentDone(percentDone);
         }
 
         afterRendered() {
-          setPrintPreviewPercentDone(100)
+          setPrintPreviewPercentDone(100);
         }
       }
 
       const previewer = new Paged.Previewer();
       previewer.registerHandlers(PrintPreviewHandler);
-      setPrintPreviewStatus("rendering")
-      previewer.preview(
-        htmlToRender,
-        [
-          {
-            _: cssToRender,
-          },
-        ],
-        innerDiv,
-      ).then((flow) => {
-        setPrintPreviewStatus("ready")
-        console.log(`PRINT PREVIEW IS READY. Rendered ${flow.total} pages.`)
-      }).catch(e => {
-        setPrintPreviewStatus("aborted")
-        console.log("ERROR RENDERING PRINT PREVIEW: ", e)
-      })
+      setPrintPreviewStatus('rendering');
+      previewer
+        .preview(
+          htmlToRender,
+          [
+            {
+              _: cssToRender,
+            },
+          ],
+          innerDiv
+        )
+        .then((flow) => {
+          setPrintPreviewStatus('ready');
+          console.log(`PRINT PREVIEW IS READY. Rendered ${flow.total} pages.`);
+        })
+        .catch((e) => {
+          setPrintPreviewStatus('aborted');
+          console.log('ERROR RENDERING PRINT PREVIEW: ', e);
+        });
 
       return () => {
-        if (printPreviewStatus != "ready") {
-          setPrintPreviewStatus("aborted")
+        if (printPreviewStatus != 'ready') {
+          setPrintPreviewStatus('aborted');
         }
 
         const styleTags = document.querySelectorAll('style[data-pagedjs-inserted]');
-        styleTags.forEach(tag => tag.remove());
-      }
+        styleTags.forEach((tag) => tag.remove());
+      };
     }
-  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewPercentDone, setPrintPreviewStatus])
+  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewPercentDone, setPrintPreviewStatus]);
 
-  return (
-    <div id="print-preview" style={{...style, display: (view != "print" ? "none" : "block") }} ref={ref} />
-  )
-})
+  return <div id="print-preview" style={{ ...style, display: view != 'print' ? 'none' : 'block' }} ref={ref} />;
+});
 
-PrintPreviewComponent.displayName = "PrintPreviewComponent";
+PrintPreviewComponent.displayName = 'PrintPreviewComponent';
 
 PrintPreviewComponent.propTypes = {
   style: PropTypes.object,

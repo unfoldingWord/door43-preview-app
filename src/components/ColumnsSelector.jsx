@@ -1,22 +1,11 @@
-import React from 'react';
-import PropTypes from 'prop-types'
-import { Typography, Select, Option } from '@mui/joy'
+import PropTypes from 'prop-types';
+import { Typography, Select, Option } from '@mui/joy';
 
-export default function ColumnsSelector({
-  formLabelTitle,
-  listItems,
-  setPrintOptions,
-  columns,
-}) {
+export default function ColumnsSelector({ formLabelTitle, listItems, setPrintOptions, columns }) {
   return (
     <>
-      <form
-        style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}
-      >
-        <Typography
-          id="page-size-group-label"
-          sx={{ marginRight: '5%', marginTop: '1%' }}
-        >
+      <form style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
+        <Typography id="page-size-group-label" sx={{ marginRight: '5%', marginTop: '1%' }}>
           {formLabelTitle}
         </Typography>
         <Select
@@ -26,13 +15,10 @@ export default function ColumnsSelector({
           size="small"
           sx={{ width: '70px' }}
           color="primary"
-          onChange={(e, value) => setPrintOptions(prev => ({...prev, columns: value}))}
+          onChange={(e, value) => setPrintOptions((prev) => ({ ...prev, columns: value }))}
         >
           {listItems.map((nc, n) => (
-            <Option
-              key={n}
-              value={nc}
-            >
+            <Option key={n} value={nc}>
               {nc}
             </Option>
           ))}
@@ -49,4 +35,3 @@ ColumnsSelector.propTypes = {
   setPrintOptions: PropTypes.func,
   columns: PropTypes.number,
 };
-

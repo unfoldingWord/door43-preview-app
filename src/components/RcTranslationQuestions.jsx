@@ -1,0 +1,349 @@
+// React imports
+import { useState, useEffect, useContext } from 'react';
+
+// Component imports
+import BibleReference from 'bible-reference-rcl';
+
+// Context imports
+import { AppContext } from '@components/App.context';
+
+// Hook imports
+import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
+import useFetchCatalogEntryBySubject from '@hooks/useFetchCatalogEntryBySubject';
+import useFetchBookFile from '@hooks/useFetchBookFile';
+import { useBibleReference } from 'bible-reference-rcl';
+
+// Helper imports
+import { getSupportedBooks } from '@helpers/books';
+import { getRepoGitTrees } from '@helpers/dcsApi';
+import { verseObjectsToString } from 'uw-quote-helpers';
+
+// Library imports
+import usfm from 'usfm-js';
+import Papa from 'papaparse';
+
+const webCss = `
+.tq-question {
+  font-weight: bold;
+}
+
+.tq-entry h1 {
+  font-size: 1.4em;
+  margin: 10px 0;
+}
+
+.tq-entry h2 {
+  font-size: 1.2em;
+  margin: 10px 0;
+}
+
+.tq-entry h3, .tq-entry h4 {
+  font-size: 1.1em;
+  margin: 10px 0;
+}
+
+hr {
+  break-before: avoid !important;
+}
+
+article.tq-scripture,
+article.tq-entry,
+section.tq-verse {
+  break-before: auto !important;
+  break-inside: avoid !important;
+  break-after: auto !important
+}
+
+section.book-chapter {
+  break-after: page !important;
+}
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: "#";
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
+}
+
+.tq-entry {
+  margin-left: 30px;
+}
+
+#web-preview h4.tq-entry-question {
+  display:inline-block;
+}
+
+#web-preview label.response-show-label {
+  margin-left: 20px;
+  display: inline-box;
+}
+
+.response-show-checkbox {
+  display: none;
+}
+
+#web-preview .response-show-checkbox ~ div.tq-entry-response {
+  display: none;
+  clear: both;
+  margin-bottom: 20px;
+}
+
+#web-preview .response-show-checkbox:checked ~ div.tq-entry-response {
+  display: block;
+}
+
+#web-preview label.response-show-label::after {
+  background-color: white;
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 10px;
+  display: inline-block;
+  height: 10px;
+  transform: rotate(45deg);
+  -webkit-transform: scale(1) rotate(45deg) translate(0px, 0px);
+  -moz-transform: rotate(45deg) scale(1.0);
+  -o-transform: rotate(45deg) scale(1.0);
+  margin-top: 10px;
+  content: "";
+  margin-left: 5px;
+}
+
+#web-preview .response-show-checkbox:checked ~ label.response-show-label::after {
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  transform: rotate(-135deg);
+  -webkit-transform: scale(1) rotate(-135deg) translate(0px, 0px);
+  -moz-transform: rotate(-135deg) scale(1.0);
+  -o-transform: rotate(-135deg) scale(1.0);
+}
+`;
+
+export default function RcTranslationQuestions() {
+  const {
+    state: { urlInfo, catalogEntry },
+    actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+  } = useContext(AppContext);
+
+  const [supportedBooks, setSupportedBooks] = useState([]);
+  const [bookId, setBookId] = useState();
+  const [bookTitle, setBookTitle] = useState();
+
+  const renderFlags = {
+    showWordAtts: false,
+    showTitles: true,
+    showHeadings: true,
+    showIntroductions: true,
+    showFootnotes: false,
+    showXrefs: false,
+    showParaStyles: true,
+    showCharacterMarkup: false,
+    showChapterLabels: true,
+    showVersesLabels: true,
+  };
+
+  const onBibleReferenceChange = (b, c, v) => {
+    if (bookId && b != bookId) {
+      window.location.hash = b;
+      window.location.reload();
+    } else {
+      setDocumentAnchor(`${b}-${c}-${v}`);
+    }
+  };
+
+  const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
+    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialChapter: urlInfo.hashParts[1] || '1',
+    initialVerse: urlInfo.hashParts[2] || '1',
+    onChange: onBibleReferenceChange,
+  });
+
+  const relationCatalogEntries = useFetchRelationCatalogEntries({
+    catalogEntry,
+  });
+
+  const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
+    catalogEntries: relationCatalogEntries,
+    subject: 'Aligned Bible',
+    bookId,
+  });
+
+  const targetUsfm = useFetchBookFile({
+    catalogEntry: targetBibleCatalogEntry,
+    bookId,
+  });
+
+  const tsvText = useFetchBookFile({
+    catalogEntry,
+    bookId,
+  });
+
+  useEffect(() => {
+    const setInitialBookIdAndSupportedBooks = async () => {
+      if (!catalogEntry) {
+        setErrorMessage('No catalog entry for this resource found.');
+        return;
+      }
+
+      let repoFileList = null;
+      try {
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, false)).tree.map((tree) => tree.path);
+      } catch (e) {
+        console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
+      }
+
+      let sb = getSupportedBooks(catalogEntry, repoFileList);
+      if (!sb.length) {
+        setErrorMessage('There are no books in this resource to render.');
+        return;
+      }
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
+
+      let _bookId = urlInfo.hashParts[0] || sb[0];
+      if (!_bookId) {
+        setErrorMessage('Unable to determine a book ID to render.');
+        return;
+      }
+      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
+      setBookId(_bookId);
+      setBookTitle(title);
+      setWebCss(webCss);
+      setCanChangeColumns(false);
+      setStatusMessage(
+        <>
+          Preparing preview for {title}.<br />
+          Please wait...
+        </>
+      );
+      if (!sb.includes(_bookId)) {
+        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
+        sb = [_bookId, ...sb];
+      }
+    };
+
+    setInitialBookIdAndSupportedBooks();
+  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setWebCss, setStatusMessage, setBookTitle]);
+
+  useEffect(() => {
+    const generateHtml = async () => {
+      let html = `
+<section class="tq-book" id="hashh-${bookId}" data-toc-title="${bookTitle}">
+  <h1 style="text-align: center">${catalogEntry.title}</h1>
+`;
+      let prevChapter = '';
+      let prevVerse = '';
+      const usfmJSON = usfm.toJSON(targetUsfm);
+      const rows = Papa.parse(tsvText, { delimiter: '\t', header: true }).data;
+
+      rows.forEach((row) => {
+        if (!row || !row.ID || !row.Question || !row.Response) {
+          return;
+        }
+        const chapterStr = row.Reference.split(':')[0];
+        const verseStr = row.Reference.split(':')[1];
+        const firstVerse = verseStr.split(',')[0].split('-')[0].split('–')[0];
+        if (chapterStr != prevChapter) {
+          if (prevChapter) {
+            html += `
+    </section>
+  </section>
+`;
+          }
+          html += `
+  <section class="book-chapter" id="hashh-${bookId}-${chapterStr}" data-toc-title="${bookTitle} ${chapterStr}">
+    <h2>
+      <a class="header-link" href="#hashh-${bookId}-${chapterStr}">
+        ${bookTitle} ${chapterStr}
+      </a>
+    </h2>
+`;
+        }
+        if (chapterStr != prevChapter || firstVerse != prevVerse) {
+          if (chapterStr == prevChapter) {
+            html += `
+    </section>
+`;
+          }
+          html += `
+    <section class="tq-verse" id="hashh-${bookId}-${chapterStr}-${firstVerse}">
+`;
+          if (chapterStr in usfmJSON.chapters && firstVerse in usfmJSON.chapters[chapterStr]) {
+            const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][firstVerse].verseObjects);
+            const link = `hashh-${bookId}-${chapterStr}-${firstVerse}`;
+            html += `
+      <article class="tq-scripture" id="${link}-scripture">
+        <h3 class="tq-scripture-header">
+          <a class="header-link" href="#${link}">
+            ${bookTitle} ${chapterStr}:${firstVerse}
+          </a>
+        </h3>
+        <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
+        <div class="tq-scripture-verse">
+          <p>
+            <span style="font-weight: bold">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</span>: 
+            <em>${scripture}</em>
+          </p>
+        </div>
+        <hr style="width: 75%"/>
+      </article>
+`;
+          }
+        }
+        if (row.Question && row.Response) {
+          const link = `hashh-${bibleReferenceState.bookId}-${chapterStr}-${firstVerse}-${row.ID}`;
+          html += `
+      <article class="tq-entry" id="${link}">
+        <h4 class="tq-entry-question">
+          <a class="header-link" href="#${link}">
+            ${verseStr != firstVerse ? `(${chapterStr}:${verseStr}) ` : ''}${row.Question}
+          </a>
+        </h4>
+        <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
+        <label class="response-show-label" for="checkbox-${row.ID}"></label>
+        <div class="tq-entry-response">
+          ${row.Response}
+        </div>
+        <hr style="width: 75%"/>
+      </article>
+`;
+        }
+        prevChapter = chapterStr;
+        prevVerse = firstVerse;
+      });
+
+      html += `
+    </section>
+  </section>
+</section>
+`;
+      setHtmlSections((prevState) => ({ ...prevState, body: html }));
+    };
+
+    if (targetBibleCatalogEntry && tsvText && targetUsfm) {
+      generateHtml();
+    }
+  }, [
+    catalogEntry,
+    targetBibleCatalogEntry,
+    tsvText,
+    targetUsfm,
+    bookId,
+    bookTitle,
+    bookId,
+    supportedBooks,
+    setHtmlSections,
+    setStatusMessage,
+    setErrorMessage,
+    setBookTitle,
+    setDocumentAnchor,
+  ]);
+
+  return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
+}
