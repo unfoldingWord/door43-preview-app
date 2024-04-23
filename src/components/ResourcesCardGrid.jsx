@@ -290,7 +290,7 @@ export const ResourcesCardGrid = () => {
                 <Grid xs={6} lg={3} key={entry.id}>
                   <Item sx={styles[entry.language_direction]}>
                     <Box id="category-a" sx={{ fontSize: '12px', textAlign: 'center' }}>
-                      <a key="title" style={{ textDecoration: 'none' }} href={`/u/${entry.full_name}`} target="_blank" rel="noopener noreferrer">
+                      <a key="title" style={{ textDecoration: 'none', fontSize: "1.3em" }} href={`/u/${entry.full_name}`} target="_blank" rel="noopener noreferrer">
                         {entry.title}
                       </a>{' '}
                       ({entry.abbreviation})
@@ -314,7 +314,6 @@ export const ResourcesCardGrid = () => {
                       </div>
                     </Box>
                     <Box component="div" aria-labelledby="category-a" sx={{ pl: 2 }}>
-                      <div key="space">&nbsp;</div>
                       <div key="lang">
                         <a style={styles.filterLink} href={`?lang=${entry.language}`}>
                           {entry.language_title} ({entry.language})
