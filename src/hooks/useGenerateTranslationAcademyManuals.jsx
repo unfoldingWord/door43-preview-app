@@ -27,7 +27,7 @@ export default function useGenerateTranslationAcademyManuals({ catalogEntry, zip
           sections[i].body = taFileContents[manual.id].articles[sections[i].link].body;
         }
       }
-      sections[i].link = `${manual.id}--${sections[i].link}`;
+      sections[i].link = `hash-${manual.id}--${sections[i].link}`;
       sections[i].sections = addPropertiesToTocSections(manual, sections[i].sections);
     }
     return sections;

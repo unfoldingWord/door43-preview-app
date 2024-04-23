@@ -27,7 +27,7 @@ export const getRepoGitTrees = async (repoApiUrl, ref, recursive = true) => {
   const repoGitTreesUrl = `${repoApiUrl}/git/trees/${ref}?recursive=${recursive}`;
   return fetch(repoGitTreesUrl, { cache: 'default' }).then((response) => {
     if (!response || !response.ok) {
-      throw new Error(`Unable to get director listting of repo on DCS.`);
+      throw new Error(`Unable to get directory listting of repo on DCS.`);
     } else {
       return response.json();
     }

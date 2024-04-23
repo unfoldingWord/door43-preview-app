@@ -131,3 +131,8 @@ section,
 article {
   break-after: page !important;
 }
+
+#web-preview {
+  max-width: 80%;
+  margin: 0 auto;
+}

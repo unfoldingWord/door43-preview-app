@@ -165,7 +165,7 @@ export default function Bible() {
       try {
         repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, true)).tree.map((tree) => tree.path);
       } catch (e) {
-        console.log(`Error calling etRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
+        console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
       }
 
       let sb = getSupportedBooks(catalogEntry, repoFileList);
@@ -224,7 +224,6 @@ export default function Bible() {
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha)
         .then((_usfmText) => {
           const usfmJSON = usfm.toJSON(_usfmText);
-          console.log(usfmJSON.headers);
           for (let i = 0; i < usfmJSON?.headers?.length; ++i) {
             if (usfmJSON.headers[i].tag && (usfmJSON.headers[i].tag == 'h' || usfmJSON.headers[i].tag.startsWith('toc'))) {
               setBookTitle(usfmJSON.headers[i].content);

@@ -21,12 +21,12 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
         }
         if (body) {
           html += `
-<article id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
+<article id="hash-${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
   <h${depth} class="header article-header">
-    <a href="#${link}" class="header-link">${title}</a>
+    <a href="#hash-${link}" class="header-link">${title}</a>
   </h${depth}>
 `
       : ``
@@ -50,7 +50,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
             toctitle
           )}">
   <h${depth} class="header section-header">
-    <a href="#${link}" class="header-link">${title}</a>
+    <a href="#hash-${link}" class="header-link">${title}</a>
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}

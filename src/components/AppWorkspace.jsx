@@ -115,18 +115,26 @@ export default function AppWorkspace() {
     } else {
       dcsRef += `/src/branch/${urlInfo.ref || repo?.default_branch || 'master'}`;
     }
-    let infoLineText = repoFullName;
+    let infoLineInner = <>{repoFullName}</>;
     if (catalogEntry?.branch_or_tag_name) {
       if (catalogEntry.ref_type == 'branch') {
-        infoLineText += `, ${catalogEntry.branch_or_tag_name} (${catalogEntry.commit_sha?.substring(0, 8)})`;
+        infoLineInner = (
+          <>
+            {repoFullName}, {catalogEntry.branch_or_tag_name} <span style={{ fontStyle: 'italic' }}>({catalogEntry.commit_sha?.substring(0, 8)})</span>
+          </>
+        );
       } else {
-        infoLineText += `, ${catalogEntry.branch_or_tag_name}`;
+        infoLineInner = (
+          <>
+            {repoFullName}, ${catalogEntry.branch_or_tag_name}
+          </>
+        );
       }
     }
 
     infoLine = (
       <a href={dcsRef} target={'_blank'} style={{ textDecoration: 'none', color: 'inherit' }} rel="noreferrer">
-        {infoLineText}
+        {infoLineInner}
       </a>
     );
   }

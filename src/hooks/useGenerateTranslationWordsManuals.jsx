@@ -26,7 +26,7 @@ const addPropertiesToTocSections = (twFileContents, manual, sections) => {
         sections[i].body = twFileContents[manual.id].articles[sections[i].link].body;
       }
     }
-    sections[i].link = `${manual.id}--${sections[i].link}`;
+    sections[i].link = `hash-${manual.id}--${sections[i].link}`;
     sections[i].sections = addPropertiesToTocSections(twFileContents, manual, sections[i].sections);
   }
   return sections;
@@ -74,11 +74,11 @@ export default function useGenerateTranslationWordsManuals({ catalogEntry, zipFi
             };
           }
           let text = new TextDecoder().decode(currentValue).trim();
-          text = text.replace(/\(+rc:\/\/([^/]+)\/([^/]+)\/([^/]+)\/([A-Za-z0-9_\/-]+)\)+/g, function (match, lang, id, type, rest) {
+          text = text.replace(/\(+rc:\/\/([^/]+)\/([^/]+)\/([^/]+)\/([A-Za-z0-9_/-]+)\)+/g, function (match, lang, id, type, rest) {
             if (rest.startsWith('obs/')) {
               id = 'obs';
             }
-            return `https://preview.door43.org/u/${catalogEntry.owner}/${catalogEntry.language}_${id}/#${rest.replace(/\/0/g, '/').replace(/\//g, '-')})`;
+            return `(https://preview.door43.org/u/${catalogEntry.owner}/${catalogEntry.language}_${id}/#${rest.replace(/\/0/g, '/').replace(/\//g, '-')})`;
           });
           let body = md.render(text);
           body = body.replace(/href="\.\/([^/".]+)(\.md){0,1}"/g, `href="#${manualId}--$1"`);
@@ -87,7 +87,13 @@ export default function useGenerateTranslationWordsManuals({ catalogEntry, zipFi
           body = body.replace(/href="\/*([^#/".]+)\/([^/".]+)\.md"/g, `href="#$1--$2"`);
           body = body.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>');
           body = body.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
-          articleMap[manualId].articles[articleId].title = text.split('\n')[0].replace(/^#+ *(.*?) *#*/, '$1');
+          let title = '';
+          const headerMatch = body.match(/^\s*<(h\d)>(.*?)<\/\1>\s*\n(.*)/ms);
+          if (headerMatch) {
+            title = headerMatch[2];
+            body = headerMatch[3];
+          }
+          articleMap[manualId].articles[articleId].title = title;
           articleMap[manualId].articles[articleId].body = body;
         }, {});
         setTwFileContents(articleMap);
@@ -114,6 +120,7 @@ export default function useGenerateTranslationWordsManuals({ catalogEntry, zipFi
           };
           if (manual.toc && Object.keys(manual.toc).length) {
             manualTopSection.sections = addPropertiesToTocSections(twFileContents, manualTopSection, manual.toc.sections);
+            manualTopSection.sections = manualTopSection.sections.sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : -1))
           } else {
             Object.values(manual.articles)
               .sort((a, b) => (a.title > b.title ? 1 : b.title > a.title ? -1 : 0))

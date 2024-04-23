@@ -13,7 +13,7 @@ import { getRepoContentsContent } from '@helpers/dcsApi'
 
 // Custom hooks
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries'
-import useFetchCatalogEntryBySubject from '@hooks/useFetchCatalogEntryBySubject'
+import useFetchCatalogEntryBySubject from '@hooks/useFetchCatalogEntriesBySubject'
 import useGetOBSData from '../hooks/useGetOBSData'
 import useFetchZipFileData from '@hooks/useFetchZipFileData'
 import useGenerateTranslationAcademyFileContents from '@hooks/useGenerateTranslationAcademyFileContents'

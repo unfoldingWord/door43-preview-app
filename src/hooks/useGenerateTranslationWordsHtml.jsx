@@ -21,12 +21,12 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
         }
         if (body) {
           html += `
-<article id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
+<article id="hash-${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
   <h${depth} class="header article-header">
-    <a href="#${link}" class="header-link">${title}</a>
+    <a href="#hash-${link}" class="header-link">${title}</a>
   </h${depth}>
 `
       : ``
@@ -45,17 +45,16 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
         }
         if (sections && sections.length) {
           const sectionsHtml = sections
-            .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : -1))
             .flatMap((child, index) => {
               return toHtml(manual, child, index, sections.length, depth + 1, mySubtitles);
             })
             .join('');
           html += `
-<section id="${link}" class="${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" data-toc-title="${encodeHTML(
+<section id="hash-${link}" class="${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" data-toc-title="${encodeHTML(
             toctitle
           )}">
   <h${depth} class="header section-header">
-    <a href="#${link}" class="header-link">${title}</a>
+    <a href="#hash-${link}" class="header-link">${title}</a>
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}

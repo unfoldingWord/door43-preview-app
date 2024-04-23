@@ -206,7 +206,6 @@ export default function TsBible() {
       }
 
       const ingredient = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == bookId)?.[0];
-      console.log(ingredient);
       const _usfmText = await ts2usfm(catalogEntry, ingredient, zipFileData);
       setUsfmText(_usfmText);
     };

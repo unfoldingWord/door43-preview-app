@@ -123,7 +123,6 @@ export function AppContextProvider({ children }) {
       if (match) {
         info.ref = match[1];
         info.hash = match[3].toLowerCase() + (info.hash ? `--${info.hash}` : '');
-        console.log(match, info);
         if (/^\d+$/.test(info.hash)) {
           info.hash = 'obs-' + parseInt(info.hash, 10);
         }

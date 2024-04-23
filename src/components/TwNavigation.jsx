@@ -10,6 +10,21 @@ import { Autocomplete, TextField } from '@mui/material';
 // Local component imports
 import AutocompleteTocNavigation from './AutocompleteTocNavigation';
 
+const findTocSection = (link, sections) => {
+  if (!sections || !sections.length) {
+    return null;
+  }
+  for (let i = 0; i < sections.length; i++) {
+    if (sections[i].link == link) {
+      return sections[i];
+    }
+    const section = findTocSection(link, sections[i].sections);
+    if (section) {
+      return section;
+    }
+  }
+};
+
 export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
@@ -38,26 +53,15 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
     }
   };
 
-  const findTocSection = (link, sections) => {
-    if (!sections || !sections.length) {
-      return null;
-    }
-    for (let i = 0; i < sections.length; i++) {
-      if (sections[i].link == link) {
-        return sections[i];
-      }
-      const section = findTocSection(link, sections[i].sections);
-      if (section) {
-        return section;
-      }
-    }
-  };
-
   useEffect(() => {
     if (twManuals && twManuals.length) {
       let manual = twManuals[0];
       let section = twManuals[0].sections[0];
       if (anchor) {
+        if (!anchor.includes('--')) {
+          setDocumentAnchor(`${anchor}--${anchor}`);
+          return
+        }
         section = findTocSection(anchor, twManuals);
       }
       if (section) {
@@ -72,7 +76,7 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
       setSelectedManual(manual);
       setSelectedTocSection(twManuals[0].sections[0]);
     }
-  }, [anchor, twManuals]);
+  }, [anchor, twManuals, setSelectedManual, setSelectedTocSection]);
 
   return selectedManual && selectedTocSection ? (
     <div style={{ maxWwidth: '700px', width: '80%' }}>
@@ -113,7 +117,7 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
 }
 
 TwNavigation.propTypes = {
-  twManuals: PropTypes.array.isRequired,
+  twManuals: PropTypes.array,
   anchor: PropTypes.string,
   setDocumentAnchor: PropTypes.func.isRequired,
 };

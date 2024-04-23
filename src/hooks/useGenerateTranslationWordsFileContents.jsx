@@ -74,10 +74,10 @@ export default function useGenerateTranslationWordsFileContents({ catalogEntry, 
           body = body.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
 
           let title = '';
-          const headerMatch = body.match(/<(h\d)>(.*?)<\/\1>/);
+          const headerMatch = body.match(/^\s*<(h\d)>(.*?)<\/\1>\s*\n(.*)/ms);
           if (headerMatch) {
             title = headerMatch[2];
-            body = body.replace(headerMatch[0], '');
+            body = headerMatch[3];
           }
 
           articleMap[categoryId].articles[articleId].title = title;

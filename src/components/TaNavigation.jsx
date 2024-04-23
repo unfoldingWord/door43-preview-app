@@ -10,6 +10,21 @@ import { Autocomplete, TextField } from '@mui/material';
 // Local component imports
 import AutocompleteTocNavigation from './AutocompleteTocNavigation';
 
+const findTocSection = (link, sections) => {
+  if (!sections || !sections.length) {
+    return null;
+  }
+  for (let i = 0; i < sections.length; i++) {
+    if (sections[i].link == link) {
+      return sections[i];
+    }
+    const section = findTocSection(link, sections[i].sections);
+    if (section) {
+      return section;
+    }
+  }
+};
+
 export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
@@ -35,21 +50,6 @@ export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
       setSelectedManual(option);
       setSelectedTocSection(option);
       setDocumentAnchor(option.link);
-    }
-  };
-
-  const findTocSection = (link, sections) => {
-    if (!sections || !sections.length) {
-      return null;
-    }
-    for (let i = 0; i < sections.length; i++) {
-      if (sections[i].link == link) {
-        return sections[i];
-      }
-      const section = findTocSection(link, sections[i].sections);
-      if (section) {
-        return section;
-      }
     }
   };
 
@@ -113,7 +113,7 @@ export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
 }
 
 TaNavigation.propTypes = {
-  taManuals: PropTypes.array.isRequired,
+  taManuals: PropTypes.array,
   anchor: PropTypes.string,
   setDocumentAnchor: PropTypes.func.isRequired,
 };

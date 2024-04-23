@@ -1,5 +1,5 @@
 // React imports
-import { useEffect, useContext } from 'react';
+import { useEffect, useContext, useState } from 'react';
 
 // Context imports
 import { AppContext } from '@components/App.context';
@@ -11,6 +11,12 @@ import TaNavigation from './TaNavigation';
 import useGenerateTranslationAcademyManuals from '../hooks/useGenerateTranslationAcademyManuals';
 import useGenerateTranslationAcademyHtml from '../hooks/useGenerateTranslationAcademyHtml';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
+
+// Helper imports
+import { getRepoContentsContent } from '@helpers/dcsApi';
+
+// Library imports
+import MarkdownIt from 'markdown-it';
 
 const webCss = `
 section > section:nth-child(1),
@@ -110,6 +116,7 @@ export default function RcTranslationAcademy() {
     state: { catalogEntry, documentAnchor },
     actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
   } = useContext(AppContext);
+  const [copyright, setCopyright] = useState('');
 
   const zipFileData = useFetchZipFileData({ catalogEntry });
 
@@ -130,12 +137,48 @@ export default function RcTranslationAcademy() {
   }, [catalogEntry?.subject, setWebCss, setPrintCss, setStatusMessage]);
 
   useEffect(() => {
-    // Handle Print Preview & Status & Navigation
-    if (html) {
-      setHtmlSections((prevState) => ({ ...prevState, toc: '', body: html }));
+    const generateCopyrightPage = async () => {
+      const entries = [catalogEntry];
+
+      let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
+      for (let entry of entries) {
+        const date = new Date(entry.released);
+        const formattedDate = date.toISOString().split('T')[0];
+        copyrightAndLicense += `
+    <div style="padding-bottom: 10px">
+      <div style="font-weight: bold">${entry.title}</div>
+      <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
+      <div><span style="font-weight: bold">Version:</span> ${entry.branch_or_tag_name}</div>
+      <div><span style="font-weight: bold">Published by:</span> ${entry.repo.owner.full_name || entry.repo.owner}</div>
+    </div>
+`;
+      }
+
+      const md = new MarkdownIt();
+      try {
+        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha)) + `</div>`;
+      } catch (e) {
+        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
+      }
+
+      setCopyright(copyrightAndLicense);
+    };
+
+    if (catalogEntry) {
+      generateCopyrightPage();
+    }
+  }, [catalogEntry, setCopyright]);
+
+  useEffect(() => {
+    if (html && copyright) {
+      setHtmlSections((prevState) => ({
+        ...prevState,
+        copyright,
+        body: html,
+      }));
       setStatusMessage('');
     }
-  }, [html, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, setHtmlSections, setStatusMessage]);
 
   return <TaNavigation taManuals={taManuals} anchor={documentAnchor} setDocumentAnchor={setDocumentAnchor} />;
 }

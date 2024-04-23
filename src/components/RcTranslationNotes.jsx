@@ -1,22 +1,22 @@
 // React imports
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo } from 'react';
 
 // Bible reference imports
-import { useBibleReference } from 'bible-reference-rcl';
+import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 import { BibleBookData } from '@common/books';
-import BibleReference from 'bible-reference-rcl';
 
 // Helper imports
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoContentsContent, getRepoGitTrees } from '@helpers/dcsApi';
-import { encodeHTML } from '@helpers/html';
+import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
-import useFetchCatalogEntryBySubject from '@hooks/useFetchCatalogEntryBySubject';
-import useFetchBookFile from '@hooks/useFetchBookFile';
+import useFetchCatalogEntriesBySubject from '@hooks/useFetchCatalogEntriesBySubject';
+import useFetchBookFiles from '@hooks/useFetchBookFiles';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
-import useTsvGLQuoteAdder from '@hooks/useTsvDataStandardizer';
+import usePivotTsvFileOnReference from '@hooks/usePivotTsvFileOnReference';
+import useFetchGLQuotesForTsvData from '@hooks/useFetchGLQuotesForTsvData';
 import useGenerateTranslationAcademyFileContents from '@hooks/useGenerateTranslationAcademyFileContents';
 import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslationWordsFileContents';
 
@@ -24,18 +24,20 @@ import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslati
 import usfm from 'usfm-js';
 import MarkdownIt from 'markdown-it';
 import { verseObjectsToString } from 'uw-quote-helpers';
+import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes'
 
 // Context imports
 import { AppContext } from '@components/App.context';
 
 const webCss = `
-.tn-scripture-header {
-  margin: 0;
-}
-
 .tn-scripture-block {
   border: 1px solid black;
   padding: 10px;
+  margin-bottom: 10px;
+}
+
+.tn-scripture-header {
+  margin: 0;
 }
 
 .tn-scripture-text {
@@ -115,25 +117,22 @@ a.header-link:hover::after {
 .title-page {
   text-align: center;
 }
+
+.tn-verse-twl-bible {
+  margin-bottom: 0;
+}
+
+.tn-verse-twl-list {
+  margin: 0;
+}
+
+.tn-verse-twl-list-item a {
+  text-decoration: none;
+}
 `;
 
-function convertNoteFromMD2HTML(note, bookId, chapterStr) {
-  const md = new MarkdownIt();
-  note = md.render(note.replaceAll('\\n', '\n').replaceAll('<br>', '\n'));
-  note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#hash-${bookId}-${chapterStr}-$1"`);
-  note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#hash-${bookId}-$1-$2"`);
-  note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#hash-${bookId}-${chapterStr}-$1"`);
-  note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#hash-${bookId}-$1-$2"`);
-  note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/g, '<a href="$1">$1</a>');
-  note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
-  note = note.replace(/<h4>/g, '<h6>').replace(/<\/h4>/g, '</h6>');
-  note = note.replace(/<h3>/g, '<h5>').replace(/<\/h3>/g, '</h5>');
-  note = note.replace(/<h2>/g, '<h4>').replace(/<\/h2>/g, '</h4>');
-  note = note.replace(/<h1>/g, '<h3>').replace(/<\/h1>/g, '</h3>');
-  note = note.replace(/\s*\(See: \[\[[^\]]+\]\]\)/, '');
-
-  return note;
-}
+const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
+const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
@@ -141,10 +140,8 @@ export default function RcTranslationNotes() {
     actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
-  const [supportedBooks, setSupportedBooks] = useState([]);
   const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
-  const [tsvText, setTsvText] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
 
@@ -173,8 +170,6 @@ export default function RcTranslationNotes() {
     }
   };
 
-  const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
-
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: bookId || urlInfo.hashParts[0] || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
@@ -188,95 +183,109 @@ export default function RcTranslationNotes() {
     setErrorMessage,
   });
 
-  const sourceBibleCatalogEntry = useFetchCatalogEntryBySubject({
+  const sourceBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: BibleBookData[bookId]?.testament == 'old' ? 'Hebrew Old Testament' : 'Greek New Testament',
     bookId,
+    firstOnly: true,
     setErrorMessage,
   });
 
-  const sourceUsfm = useFetchBookFile({
-    catalogEntry: sourceBibleCatalogEntry,
+  const sourceUsfms = useFetchBookFiles({
+    catalogEntries: sourceBibleCatalogEntries,
     bookId,
     setErrorMessage,
   });
 
-  const targetBibleCatalogEntry = useFetchCatalogEntryBySubject({
+  const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Aligned Bible',
     bookId,
     setErrorMessage,
   });
 
-  const targetUsfm = useFetchBookFile({
-    catalogEntry: targetBibleCatalogEntry,
+  const targetUsfms = useFetchBookFiles({
+    catalogEntries: targetBibleCatalogEntries,
     bookId,
     setErrorMessage,
   });
 
-  const renderedTsvData = useTsvGLQuoteAdder({
-    tsvText,
-    sourceUsfm,
-    targetUsfm,
+  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+
+  const tnTsvBookFiles = useFetchBookFiles({
+    catalogEntries,
+    bookId,
+    setErrorMessage,
   });
 
-  const taCatalogEntry = useFetchCatalogEntryBySubject({
+  const tnTsvData = usePivotTsvFileOnReference({
+    tsvBookFile: tnTsvBookFiles?.[0]
+  })
+
+  const tnTsvDataWithGLQuotes = useFetchGLQuotesForTsvData({
+    tsvData: tnTsvData,
+    sourceUsfm: sourceUsfms?.[0],
+    targetUsfms,
+    quoteTokenDelimiter,
+  });
+
+  const taCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Academy',
+    firstOnly: true,
     setErrorMessage,
   });
 
   const taZipFileData = useFetchZipFileData({
-    catalogEntry: taCatalogEntry,
+    catalogEntry: taCatalogEntries?.[0],
   });
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
-    catalogEntry: taCatalogEntry,
+    catalogEntry: taCatalogEntries[0],
     zipFileData: taZipFileData,
     setErrorMessage,
   });
 
-  const twCatalogEntry = useFetchCatalogEntryBySubject({
+  const twCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Words',
+    firstOnly: true,
     setErrorMessage,
   });
 
   const twZipFileData = useFetchZipFileData({
-    catalogEntry: twCatalogEntry,
+    catalogEntry: twCatalogEntries?.[0],
   });
 
   const twFileContents = useGenerateTranslationWordsFileContents({
-    catalogEntry: twCatalogEntry,
+    catalogEntry: twCatalogEntries?.[0],
     zipFileData: twZipFileData,
     setErrorMessage,
   });
 
-  const twlCatalogEntry = useFetchCatalogEntryBySubject({
+  const twlCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'TSV Translation Words Links',
+    firstOnly: true,
     setErrorMessage,
   });
 
-  const twlTSVText = useFetchBookFile({
-    catalogEntry: twlCatalogEntry,
+  const twlTSVBookFiles = useFetchBookFiles({
+    catalogEntries: twlCatalogEntries,
     bookId,
     setErrorMessage,
   });
 
-  const twlData = useTsvDataStandardizer({
-    tsvText: twlTSVText,
-    sourceUsfm,
-    targetUsfm,
+  const twlTsvData = usePivotTsvFileOnReference({
+    tsvBookFile: twlTSVBookFiles?.[0],
   });
 
-  console.log(twlData);
-
-  // const twlFileContents = useGenerateTranslationWordsLinksFileContents({
-  //   catalogEntry: twCatalogEntry,
-  //   twlTSVFile,
-  //   setErrorMessage,
-  // });
+  const twlTsvDataWithGLQuotes = useFetchGLQuotesForTsvData({
+    tsvData: twlTsvData,
+    sourceUsfm: sourceUsfms?.[0],
+    targetUsfms,
+    quoteTokenDelimiter,
+  });
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {
@@ -301,15 +310,14 @@ export default function RcTranslationNotes() {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
 
-      let sb = getSupportedBooks(catalogEntry, repoFileList);
-      if (!sb.length) {
+      let supportedBooks = getSupportedBooks(catalogEntry, repoFileList);
+      if (!supportedBooks.length) {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      setSupportedBooks(sb);
-      bibleReferenceActions.applyBooksFilter(sb);
+      bibleReferenceActions.applyBooksFilter(supportedBooks);
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
+      let _bookId = urlInfo.hashParts[0] || supportedBooks[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -323,48 +331,16 @@ export default function RcTranslationNotes() {
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
+      if (!supportedBooks.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
+        supportedBooks = [_bookId, ...supportedBooks];
       }
     };
 
-    if (!bookId) {
-      setWebCss(webCss);
-      setCanChangeColumns(false);
-      setInitialBookIdAndSupportedBooks();
-    }
-  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setWebCss]);
-
-  useEffect(() => {
-    const fetchTsvFileFromDCS = async () => {
-      if (!(bookId in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookId}`);
-        return;
-      }
-
-      let filePath = '';
-      catalogEntry.ingredients.forEach((ingredient) => {
-        if (ingredient.identifier == bookId) {
-          filePath = ingredient.path.replace(/^\.\//, '');
-        }
-      });
-      if (!filePath) {
-        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`);
-      }
-
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha)
-        .then((tsv) => setTsvText(tsv))
-        .catch((e) => {
-          console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e);
-          setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`);
-        });
-    };
-
-    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
-      fetchTsvFileFromDCS();
-    }
-  }, [supportedBooks, catalogEntry, bookId, setErrorMessage, setTsvText]);
+    setWebCss(webCss);
+    setCanChangeColumns(false);
+    setInitialBookIdAndSupportedBooks();
+  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setWebCss]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -392,18 +368,16 @@ export default function RcTranslationNotes() {
               {
                 const manualId = fileParts[0];
                 const articleId = fileParts.slice(1).join('/');
-                if (taFileContents[manualId]?.articles?.[articleId]) {
-                  data[resource][rcLink].title = taFileContents[manualId].articles[articleId].title;
-                  data[resource][rcLink].body = taFileContents[manualId].articles[articleId].body;
-                }
+                data[resource][rcLink].title = taFileContents?.[manualId]?.articles?.[articleId]?.title || `TA ARTICLE FOR ${manualId} :: ${articleId} NOT FOUND!`;
+                data[resource][rcLink].body = taFileContents?.[manualId]?.articles?.[articleId]?.body || '';
               }
               break;
             case 'tw':
               {
                 const category = fileParts[1];
                 const articleId = fileParts.slice(2).join('/');
-                data[resource][rcLink].title = twFileContents[category].articles[articleId].title;
-                data[resource][rcLink].body = twFileContents[category].articles[articleId].body;
+                data[resource][rcLink].title = twFileContents?.[category]?.articles?.[articleId]?.title || `TW ARTICLE FOR ${category} :: ${articleId} NOT FOUND!`;
+                data[resource][rcLink].body = twFileContents?.[category]?.articles[articleId]?.body || '';
               }
               break;
           }
@@ -417,14 +391,17 @@ export default function RcTranslationNotes() {
 <div class="section tn-book-section" id="hash-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
   <h1 class="header tn-book-section-header"><a href="#hash-${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
 `;
-      const usfmJSON = usfm.toJSON(targetUsfm);
+      let usfmJSONs = []
+      for (let targetUsfm of targetUsfms) {
+        usfmJSONs.push(usfm.toJSON(targetUsfm));
+      }
       const rcLinksData = {};
 
-      if (renderedTsvData?.['front']?.['intro']) {
+      if (tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
       <div class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
-        for (let row of renderedTsvData['front']['intro'])
+        for (let row of tnTsvDataWithGLQuotes['front']['intro'])
           html += `
         <article class="tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
@@ -438,17 +415,18 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       </div>
 `;
 
-      BibleBookData[bookId].chapters.forEach((numVerses, chapterIdx) => {
+  for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
+        const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
         html += `
       <div id="hash-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
         <h2 class="tn-chapter-header"><a href="#hash-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
-        if (renderedTsvData?.[chapterStr]?.['intro']) {
+        if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
           html += `
         <div class="section tn-chapter-intro-section">
 `;
-          for (let row of renderedTsvData[chapterStr]['intro']) {
+          for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
             const link = `hash-${bookId}-${chapterStr}-intro-${row.ID}`;
             const article = `
           <article id="${link}">
@@ -467,38 +445,91 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
           const verseStr = String(verseIdx + 1);
           const refStr = `${chapterStr}:${verseStr}`;
-          const scripture = verseObjectsToString(usfmJSON.chapters[chapterStr][verseStr].verseObjects);
+          const verseLink = `hash-${bookId}-${chapterStr}-${verseStr}`;
+          let usfmJSONVerseStr = verseStr;
           html += `
-        <div id="hash-${bookId}-${chapterStr}-${verseStr}" class="section tn-chapter-verse-section">
+        <div id="${verseLink}" class="section tn-chapter-verse-section">
           <h3 class="tn-verse-header"><a href="#hash-${bookId}-${chapterStr}-${verseStr}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
-          <article class="tn-scripture-block" id="hash-${bookId}-${chapterStr}-${verseStr}-scripture">
+`;
+          let scripture = {};
+          for (let targetIdx in targetBibleCatalogEntries) {
+            const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+            if (! (verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
+              for(let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
+                if (v.includes('-') || v.includes(',')) {
+                  let verses = []
+                  const seperateVerseSpans = v.split(',');
+                  for(let span of seperateVerseSpans) {
+                    span = span.trim();
+                    if (span.includes('-')) {
+                      const [start, end] = span.split('-').map(Number);
+                      for (let i = start; i <= end; i++) {
+                        verses.push(String(i));
+                      }
+                    } else {
+                      verses.push(span);
+                    }
+                  }
+                  if (verses.includes(verseStr)) {
+                    usfmJSONVerseStr = v;
+                  }
+                }
+              }
+            }
+            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
+            const scriptureLink = `hash-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            html += `
+          <article class="tn-scripture-block" id="${scriptureLink}">
             <h4 class="tn-scripture-header">
-              <a href="#hash-${bookId}-${chapterStr}-${verseStr}-scripture" class="header-link">
+              <a href="#hash-${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
             </h4>
             <div class="tn-scripture-text">
-              ${scripture}
+              ${scripture[targetIdx]}${usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : ''}
             </div>
           </article>
 `;
-          if (renderedTsvData?.[chapterStr]?.[verseStr]) {
-            for (let rowIdx in renderedTsvData[chapterStr][verseStr]) {
-              const row = renderedTsvData[chapterStr][verseStr][rowIdx];
-              const link = `hash-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
-              let quote = row.GLQuote ? `“${row.GLQuote}”` : row.Quote ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>` : '';
+          }
+          if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
+            for (let rowIdx in tnTsvDataWithGLQuotes[chapterStr][verseStr]) {
+              const row = tnTsvDataWithGLQuotes[chapterStr][verseStr][rowIdx];
+              const noteLink = `hash-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
               let verseBridge = '';
               if (refStr != row.Reference) {
                 verseBridge += `(${row.Reference})`;
               }
               let article = `
-              <article id="${link}" class="tn-note-article">
-              <h4 class="tn-note-header">
-                <a href="#${link}" class="header-link">
-                ${quote || 'Note:'} ${verseBridge}
-                </a>
-              </h4>
+              <article id="${noteLink}" class="tn-note-article">
+`;
+              if (!row.Quote) {
+                article += `
+                <h4 class="tn-note-header">
+                  <a href="#${noteLink}" class="header-link">
+                  Note: ${verseBridge}
+                  </a>
+                </h4>
+`;
+              } else {
+                for (let targetIdx in targetBibleCatalogEntries) {
+                  const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+                  const glQuoteCol = `GLQuote${targetIdx}`;
+                  let quote = row[glQuoteCol] ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter) : (row.Quote ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>` : '');
+                  let verseBridge = '';
+                  if (refStr != row.Reference) {
+                    verseBridge += `(${row.Reference})`;
+                  }
+                  article += `
+                <h4 class="tn-note-header">
+                  <a href="#${noteLink}" class="header-link">
+                  ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
+                  </a>
+                </h4>
+`;
+                }
+              }
+              article += `
               <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${row.Reference}</span>
               <div class="tn-note-body">
                 ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
@@ -507,44 +538,72 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               if (row.SupportReference) {
                 article += `
           <div class="tn-note-support-reference">
-            <span class="tn-note-label">Support Reference:</span>
+            <span class="tn-note-label">Support Reference:&nbsp;</span>
               [[${row.SupportReference}]]
           </div>
 `;
               }
               article += `
         <hr style="width: 75%"/>
-`;
-              if (rowIdx == renderedTsvData[chapterStr][verseStr].length - 1) {
-                article += `
-        <hr style="width: 100%"/>
-`;
-              }
-              article += `
       </article>
 `;
               html += article;
-              searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
+              searchForRcLinks(rcLinksData, article, `<a href="#${noteLink}">${row.Reference}</a>`);
             }
           } else {
             html += `
-          <article class="tn-verse-no-notes">
+          <article class="tn-verse-no-content">
             (There are no notes for this verse)
           </article>
 `;
           }
+
+          // TW LINKS
+          if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
+            const twlLink = `twl-${chapterStr}-${verseStr}`;
+            let article = `
+          <article id="${twlLink}" class="tn-verse-twls">
+            <h4 class="tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
+`;
+            for (let targetidx in targetBibleCatalogEntries) {
+              const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
+              const glQuoteCol = `GLQuote${targetidx}`;
+              article += `
+            <h5 class="tn-verse-twl-bible">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</h4>
+            <ul class="tn-verse-twl-list">
+`;
+              for (let row of twlTsvDataWithGLQuotes[chapterStr][verseStr]) {
+                let glQuote = row[glQuoteCol];
+                glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + " (ORIG QUOTE)";
+                article += `
+                <li class="tn-verse-twl-list-item"><a href="${row.TWLink}">${glQuote}</a></li>
+`;
+              }
+              article += `
+            </ul>
+`;
+            }
+            article += `
+          </article>
+`;
+            html += article;
+            searchForRcLinks(rcLinksData, article, `<a href="#${verseLink}">${chapterStr}:${verseStr}</a>`);
+          }
           html += `
+      <hr style="width: 100%"/>
     </div>
 `;
         }
         html += `
   </div>
 `;
-      });
+      }
 
       html += `
 </div>
 `;
+      if (rcLinksData.ta && taCatalogEntries.length) {
+        const taCatalogEntry = taCatalogEntries[0]
       // TA ARTICLES
       html += `
 <div class="appendex ta section" id="appendex-ta" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
@@ -579,10 +638,12 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       html += `
 </div>
 `;
-
-      // TW ARTICLES
-      html += `
-<div class="appendex tw section" id="appendex-tw" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
+      }
+      if (rcLinksData.tw && twCatalogEntries.length) {
+        const twCatalogEntry = twCatalogEntries[0];
+        // TW ARTICLES
+        html += `
+<div class="appendex tw section" id="appendex-tw" data-toc-title="Appendex: ${encodeHTML(twCatalogEntry.title)}">
   <article class="title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
@@ -591,15 +652,15 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     <h3 class="cover-version">${bookTitle}</h3>
   </article>
 `;
-      Object.values(rcLinksData.tw)
-        .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
-        .forEach((twArticle) => {
-          const article = `
+        Object.values(rcLinksData.tw)
+          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+          .forEach((twArticle) => {
+            const article = `
   <article id="${twArticle.anchor}" data-toc-title="${encodeHTML(twArticle.title)}">
     <h2 class="header article-header">
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
     </h2>
-    <span class="header-title">${taCatalogEntry.title} :: ${twArticle.title}</span>
+    <span class="header-title">${twCatalogEntry.title} :: ${twArticle.title}</span>
     <div class="article-body">
       ${twArticle.body}
     </div>
@@ -608,37 +669,44 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     ${twArticle.backRefs.join('; ')}
   </article>
 `;
-          html += article;
-          searchForRcLinks(rcLinksData, article);
-        });
-      html += `
+            html += article;
+            searchForRcLinks(rcLinksData, article);
+          });
+        html += `
 </div>
 `;
+      }
 
-      for (let data of Object.values(rcLinksData.ta)) {
-        let regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+      for (let data of Object.values(rcLinksData.ta || {})) {
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        html = html.replace(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
-      for (let data of Object.values(rcLinksData.tw)) {
-        let regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+      for (let data of Object.values(rcLinksData.tw || {})) {
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        html = html.replace(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);
     };
 
-    if (targetBibleCatalogEntry && renderedTsvData && targetUsfm && taFileContents) {
+    if (targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes) {
       generateHtml();
     }
   }, [
     catalogEntry,
-    taCatalogEntry,
+    taCatalogEntries,
     bookId,
     bookTitle,
-    targetBibleCatalogEntry,
-    renderedTsvData,
-    targetUsfm,
+    targetBibleCatalogEntries,
+    tnTsvDataWithGLQuotes,
+    targetUsfms,
     taFileContents,
+    twCatalogEntries,
     twFileContents,
+    twlTsvDataWithGLQuotes,
     setHtmlSections,
     setErrorMessage,
     setDocumentAnchor,
@@ -646,7 +714,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const entries = [catalogEntry, sourceBibleCatalogEntry, targetBibleCatalogEntry, taCatalogEntry, twCatalogEntry];
+      const entries = [catalogEntry, ...sourceBibleCatalogEntries, ...targetBibleCatalogEntries, ...taCatalogEntries, ...twCatalogEntries];
 
       let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
       for (let entry of entries) {
@@ -672,10 +740,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && sourceBibleCatalogEntry && targetBibleCatalogEntry && taCatalogEntry && twCatalogEntry) {
+    if (catalogEntry && sourceBibleCatalogEntries && targetBibleCatalogEntries.length) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, sourceBibleCatalogEntry, targetBibleCatalogEntry, taCatalogEntry, twCatalogEntry, setCopyright]);
+  }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {
@@ -685,8 +753,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         copyright,
         body: html,
       }));
+      setStatusMessage('');
     }
-  }, [html, copyright, bookTitle, setHtmlSections]);
+  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

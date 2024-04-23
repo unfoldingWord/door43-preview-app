@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { getRelationCatalogEntries } from '../helpers/dcsCatalog';
 
 export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects, setErrorMessage }) {
-  console.log('RQ', requiredSubjects);
   const [relationCatalogEntries, setRelationCatalogEntries] = useState();
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
     if (catalogEntry) {
       fetchRelationEntries();
     }
-  }, [catalogEntry, setErrorMessage]);
+  }, [catalogEntry, requiredSubjects, setErrorMessage]);
 
   return relationCatalogEntries;
 }
