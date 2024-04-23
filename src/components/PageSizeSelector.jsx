@@ -1,20 +1,11 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import { Typography, Option, Select } from '@mui/joy'
+import PropTypes from 'prop-types';
+import { Typography, Option, Select } from '@mui/joy';
 
-export default function PageSizeSelector({
-  formLabelTitle,
-  pageSizes,
-  pageSize,
-  setPageSize,
-}) {
+export default function PageSizeSelector({ formLabelTitle, pageSizes, pageSize, setPageSize }) {
   return (
     <>
       <form>
-        <Typography
-          id="page-size-group-label"
-          sx={{ marginRight: '5%', marginTop: '1%' }}
-        >
+        <Typography id="page-size-group-label" sx={{ marginRight: '5%', marginTop: '1%' }}>
           {formLabelTitle}
         </Typography>
         <Select
@@ -26,13 +17,12 @@ export default function PageSizeSelector({
           onChange={(e, value) => setPageSize(value)}
         >
           {Object.entries(pageSizes).map((pf, n) => {
-            return (<Option
-              key={n}
-              value={pf[0]}
-            >
-              {pf[1].label}
-            </Option>
-          )})}
+            return (
+              <Option key={n} value={pf[0]}>
+                {pf[1].label}
+              </Option>
+            );
+          })}
         </Select>
       </form>
     </>

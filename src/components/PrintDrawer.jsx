@@ -1,85 +1,50 @@
-import { useState, useEffect, useContext } from "react";
-import { styled } from "@mui/material/styles";
-import { LinearProgress } from "@mui/material";
-import {
-  Box,
-  IconButton,
-  Button,
-  Grid,
-  Option,
-  Input,
-  Select,
-  Drawer,
-  Typography,
-  Tooltip,
-} from "@mui/joy";
-import Divider from "@mui/material/Divider";
-import PrintIcon from "@mui/icons-material/Print";
-import PdfIcon from "@mui/icons-material/PictureAsPdf";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import PropTypes from "prop-types";
-import printResources from "../lib/printResources";
-import ColumnsSelector from "./ColumnsSelector";
-import PageSizeSelector from "./PageSizeSelector";
-import PageOrientationSelector from "./PageOrientationSelector";
-import { AppContext } from "./App.context";
+// React imports
+import { useState, useEffect, useContext } from 'react';
+import PropTypes from 'prop-types';
 
-const defaultIncludeNames = [
-  "titles",
-  "headings",
-  "introductions",
-  "footnotes",
-  "xrefs",
-  "paraStyles",
-  "characterMarkup",
-  "chapterLabels",
-  "versesLabels",
-];
+// Material UI imports
+import { styled } from '@mui/material/styles';
+import { LinearProgress, Box, IconButton, Button, Grid, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
+import PrintIcon from '@mui/icons-material/Print';
+import PdfIcon from '@mui/icons-material/PictureAsPdf';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
+// Local component imports
+import ColumnsSelector from '@components/ColumnsSelector';
+import PageSizeSelector from '@components/PageSizeSelector';
+import PageOrientationSelector from '@components/PageOrientationSelector';
+
+// Context imports
+import { AppContext } from '@components/App.context';
+
+// Helper imports
+import printResources from '../helpers/printResources';
+
+const defaultIncludeNames = ['titles', 'headings', 'introductions', 'footnotes', 'xrefs', 'paraStyles', 'characterMarkup', 'chapterLabels', 'versesLabels'];
+
+const DrawerHeader = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
   padding: theme.spacing(0, 1),
   // necessary for content to be below app bar
   ...theme.mixins.toolbar,
-  justifyContent: "flex-start",
+  justifyContent: 'flex-start',
 }));
 
-export default function PrintDrawer({
-  openPrintDrawer,
-  onClosePrintDrawer,
-  handlePrint,
-}) {
+export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint }) {
   const {
-    state: {
-      printOptions,
-      canChangeColumns,
-      printPreviewStatus,
-      printPreviewPercentDone,
-    },
+    state: { printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone },
     actions: { setPrintOptions },
   } = useContext(AppContext);
 
-  const [pageOrientation, setPageOrientation] = useState("P");
-  const [pageSize, setPageSize] = useState("A4");
+  const [pageOrientation, setPageOrientation] = useState('P');
+  const [pageSize, setPageSize] = useState('A4');
 
-  const allNames = [
-    "wordAtts",
-    "titles",
-    "headings",
-    "introductions",
-    "footnotes",
-    "xrefs",
-    "paraStyles",
-    "characterMarkup",
-    "chapterLabels",
-    "versesLabels",
-  ];
+  const allNames = ['wordAtts', 'titles', 'headings', 'introductions', 'footnotes', 'xrefs', 'paraStyles', 'characterMarkup', 'chapterLabels', 'versesLabels'];
 
   const getStyles = (name) => {
     return {
-      fontWeight:
-        printOptions.includedNames?.indexOf(name) === -1 ? "normal" : "bold",
+      fontWeight: printOptions.includedNames?.indexOf(name) === -1 ? 'normal' : 'bold',
     };
   };
 
@@ -87,22 +52,18 @@ export default function PrintDrawer({
     if (event) {
       setPrintOptions((prev) => ({
         ...prev,
-        includedNames: typeof value === "string" ? value.split(",") : value,
+        includedNames: typeof value === 'string' ? value.split(',') : value,
       }));
     }
   };
 
   useEffect(() => {
     // Reset to A4 whenever orientation changes
-    setPageSize("A4");
+    setPageSize('A4');
   }, [pageOrientation]);
 
   useEffect(() => {
-    if (
-      pageOrientation &&
-      pageSize &&
-      printResources.pageSizes[pageOrientation]?.[pageSize]?.width
-    ) {
+    if (pageOrientation && pageSize && printResources.pageSizes[pageOrientation]?.[pageSize]?.width) {
       setPrintOptions((prevState) => ({
         ...prevState,
         pageWidth: printResources.pageSizes[pageOrientation][pageSize].width,
@@ -115,45 +76,31 @@ export default function PrintDrawer({
 
   return (
     <>
-      <Drawer
-        anchor="right"
-        open={openPrintDrawer}
-        onClose={onClosePrintDrawer}
-      >
+      <Drawer anchor="right" open={openPrintDrawer} onClose={onClosePrintDrawer}>
         <DrawerHeader>
           <IconButton onClick={onClosePrintDrawer}>
             <ChevronRightIcon />
           </IconButton>
-          <Typography variant="h4" sx={{ textAlign: "center" }}>
+          <Typography variant="h4" sx={{ textAlign: 'center' }}>
             Page Format
           </Typography>
         </DrawerHeader>
         <Divider />
         <Box>
-          <Grid container sx={{ display: "flex", flexDirection: "column" }}>
+          <Grid container sx={{ display: 'flex', flexDirection: 'column' }}>
             {true && (
-              <Grid sx={{ margin: "4%" }}>
+              <Grid sx={{ margin: '4%' }}>
                 <form
                   style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "flex-start",
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
                   }}
                 >
-                  <Typography
-                    id="included-content-group-label"
-                    sx={{ marginRight: "5%", marginTop: "2%" }}
-                  >
+                  <Typography id="included-content-group-label" sx={{ marginRight: '5%', marginTop: '2%' }}>
                     Included Content
                   </Typography>
-                  <Select
-                    id="included-content"
-                    multiple
-                    value={allNames}
-                    onChange={handleIncludedChange}
-                    input={<Input label="Name" variant="outlined" />}
-                    sx={{ width: 450 }}
-                  >
+                  <Select id="included-content" multiple value={allNames} onChange={handleIncludedChange} input={<Input label="Name" variant="outlined" />} sx={{ width: 450 }}>
                     {allNames.map((name) => (
                       <Option key={name} value={name} style={getStyles(name)}>
                         {name}
@@ -163,16 +110,12 @@ export default function PrintDrawer({
                 </form>
               </Grid>
             )}
-            <Grid sx={{ margin: "4%" }}>
-              <PageOrientationSelector
-                formLabelTitle={"Page Orientation"}
-                pageOrientation={pageOrientation}
-                setPageOrientation={setPageOrientation}
-              />
+            <Grid sx={{ margin: '4%' }}>
+              <PageOrientationSelector formLabelTitle={'Page Orientation'} pageOrientation={pageOrientation} setPageOrientation={setPageOrientation} />
             </Grid>
-            <Grid sx={{ margin: "4%" }}>
+            <Grid sx={{ margin: '4%' }}>
               <PageSizeSelector
-                formLabelTitle={"Page Size"}
+                formLabelTitle={'Page Size'}
                 pageSizes={printResources.pageSizes[pageOrientation]}
                 pageSize={pageSize}
                 setPageSize={setPageSize}
@@ -180,32 +123,18 @@ export default function PrintDrawer({
               />
             </Grid>
             {canChangeColumns && (
-              <Grid sx={{ margin: "4%" }}>
-                <ColumnsSelector
-                  formLabelTitle={"Columns"}
-                  listItems={columnsList}
-                  columns={printOptions.columns}
-                  setPrintOptions={setPrintOptions}
-                />
+              <Grid sx={{ margin: '4%' }}>
+                <ColumnsSelector formLabelTitle={'Columns'} listItems={columnsList} columns={printOptions.columns} setPrintOptions={setPrintOptions} />
               </Grid>
             )}
           </Grid>
-          <Tooltip
-            title={
-              printPreviewStatus == "ready"
-                ? "Save as PDF"
-                : "Print Preview Still Rendering"
-            }
-            arrow
-          >
+          <Tooltip title={printPreviewStatus == 'ready' ? 'Save as PDF' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
             <Button
               sx={{
-                margin: "4%",
-                backgroundColor:
-                  printPreviewStatus == "ready" ? "auto" : "#808080",
-                "&:hover": {
-                  backgroundColor:
-                    printPreviewStatus == "ready" ? "green" : "#404040",
+                margin: '5px',
+                backgroundColor: '#808080',
+                '&:hover': {
+                  backgroundColor: '#404040',
                 },
               }}
               onClick={() => {
@@ -219,35 +148,25 @@ export default function PrintDrawer({
                 variant="determinate"
                 value={printPreviewPercentDone}
                 sx={{
-                  position: "absolute",
+                  position: 'absolute',
                   top: 0,
-                  width: "100%",
-                  height: "100%",
-                  opacity: 0.4,
-                  borderRadius: 4,
-                  "& .MuiLinearProgress-bar": {
-                    backgroundColor: "green",
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0.5,
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: 'green',
                   },
                 }}
               />
             </Button>
           </Tooltip>
-          <Tooltip
-            title={
-              printPreviewStatus == "ready"
-                ? "Print"
-                : "Print Preview Still Rendering"
-            }
-            arrow
-          >
+          <Tooltip title={printPreviewStatus == 'ready' ? 'Print' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
             <Button
               sx={{
-                margin: "4%",
-                backgroundColor:
-                  printPreviewStatus == "ready" ? "auto" : "#808080",
-                "&:hover": {
-                  backgroundColor:
-                    printPreviewStatus == "ready" ? "green" : "#404040",
+                margin: '5px',
+                backgroundColor: '#808080',
+                '&:hover': {
+                  backgroundColor: '#404040',
                 },
               }}
               onClick={handlePrint}
@@ -258,24 +177,18 @@ export default function PrintDrawer({
                 variant="determinate"
                 value={printPreviewPercentDone}
                 sx={{
-                  position: "absolute",
+                  position: 'absolute',
                   top: 0,
-                  width: "100%",
-                  height: "100%",
-                  opacity: 0.4,
-                  borderRadius: 4,
-                  "& .MuiLinearProgress-bar": {
-                    backgroundColor: "green",
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0.5,
+                  '& .MuiLinearProgress-bar': {
+                    backgroundColor: 'green',
                   },
                 }}
               />
             </Button>
           </Tooltip>
-          <div style={{ padding: "10px" }}>
-            {printPreviewPercentDone < 100
-              ? `Preparing Print Preview: ${printPreviewPercentDone}%`
-              : "Ready to Print or Save as PDF"}
-          </div>
         </Box>
       </Drawer>
     </>

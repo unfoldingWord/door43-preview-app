@@ -1,32 +1,18 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import FormControl from '@mui/joy/FormControl'
-import FormLabel from '@mui/joy/FormLabel'
-import Radio from '@mui/joy/Radio'
-import RadioGroup from '@mui/joy/RadioGroup'
+// Importing prop-types for type checking
+import PropTypes from 'prop-types';
 
-export default function PageOrientationSelector({
-  formLabelTitle,
-  setPageOrientation,
-}) {
+// Importing components from Material UI Joy
+import { FormControl, FormLabel, Radio, RadioGroup } from '@mui/joy';
+
+export default function PageOrientationSelector({ formLabelTitle, setPageOrientation }) {
   return (
     <>
-      <form
-        style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}
-      >
+      <form style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
         <FormControl>
           <FormLabel>{formLabelTitle}</FormLabel>
-          <RadioGroup 
-            defaultValue="P"
-            variant="oulined"
-            name="radio-buttons-group-focus"
-            onChange={(e) => setPageOrientation(e?.target?.value)}
-          >
+          <RadioGroup defaultValue="P" variant="oulined" name="radio-buttons-group-focus" onChange={(e) => setPageOrientation(e?.target?.value)}>
             <Radio value="P" label="Portrait" />
-            <Radio
-              value="L"
-              label="Landscape"
-            />
+            <Radio value="L" label="Landscape" />
           </RadioGroup>
         </FormControl>
       </form>

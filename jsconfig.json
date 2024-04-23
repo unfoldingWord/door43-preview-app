@@ -4,11 +4,10 @@
     "paths": {
       "@common/*": ["src/common/*"],
       "@components/*": ["src/components/*"],
-      "@core/*": ["src/core/*"],
-      "@lib/*": ["src/lib/*"],
-      "@libs/*": ["src/libs/*"],
-      "@utils/*": ["src/utils/*"]
+      "@helpers/*": ["src/helpers/*"],
+      "@hooks/*": ["src/hooks/*"],
     }
   },
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }
