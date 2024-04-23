@@ -41,7 +41,6 @@ export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'row' }}>
-            {dcsRef && (
               <Tooltip title="View on DCS" arrow>
                 <IconButton disabled={!dcsRef} sx={sx.headerIcon} onClick={handleViewClick} size={'large'}>
                   <SvgIcon fontSize={'large'}>
@@ -71,17 +70,17 @@ export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
                   </SvgIcon>
                 </IconButton>
               </Tooltip>
-            )}
-
             <div>
-            <Typography variant="h1" sx={sx.title}>
-              <a href={'/'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                {title}
-              </a>
-            </Typography>
-            <Typography variant="h3" sx={sx.infoLine}>
-              {infoLine}
-            </Typography>
+              <Typography variant="h1" sx={{...sx.title, marginTop: infoLine ? 0 : "15px"}}>
+                <a href={'/'} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  {title}
+                </a>
+              </Typography>
+              {infoLine && (
+                <Typography variant="h3" sx={sx.infoLine}>
+                  aaa{infoLine}
+                </Typography>
+              )}
             </div>
           </div>
           <Tooltip title="Search for a project" arrow>

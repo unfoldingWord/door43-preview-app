@@ -104,10 +104,12 @@ export default function AppWorkspace() {
 
   let dcsRef = '';
   let infoLine = null;
-  if (urlInfo && serverInfo?.baseUrl) {
-    let repoFullName = `${urlInfo.owner}/${urlInfo.repo}`;
+  if (urlInfo && urlInfo.owner && urlInfo.repo && serverInfo?.baseUrl) {
+    let repoFullName = ``;
     if (repo) {
       repoFullName = repo.full_name;
+    } else {
+      repoFullName = `${urlInfo.owner}/${urlInfo.repo}`
     }
     dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`;
     if (catalogEntry) {
