@@ -67,19 +67,21 @@ const printCss = `
     padding-top: 1em;
     margin-top: 1em;
  }
+ counter-reset: footnote;
 }
 
 span.footnote {
   float: footnote;
   position: note(footnotes);
 }
-  
+
 ::footnote-call { 
+  /* content: counter(footnote, lower-alpha); */
   font-weight: 700;
   font-size: 1em;
   line-height: 0; 
 }
-  
+
 ::footnote-marker {
   /* content: counter(footnote, lower-alpha) ". "; */
   font-weight: 700;
@@ -254,7 +256,18 @@ export default function Bible() {
         `<span id="hash-${bookId}-$1" data-toc-title="${bookTitle} $1" $2><a href="#hash-${bookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+      
+      // const footnotes = _html.match(/<span class="footnote">/g);
+      // if (footnotes) {
+      //   footnotes.forEach((footnote, index) => {
+      //     const footnoteId = `footnote-${index}`;
+      //     const anchor = `<a href="#${footnoteId}">${index + 1}.</a>`;
+      //     _html = _html.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
+      //   });
+      // }
+      
       _html = `<section class="bible-book" id="hash-${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
+      
       setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
       setStatusMessage('');
       setWebCss(webCss);

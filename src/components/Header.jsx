@@ -78,7 +78,7 @@ export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
               </Typography>
               {infoLine && (
                 <Typography variant="h3" sx={sx.infoLine}>
-                  aaa{infoLine}
+                  {infoLine}
                 </Typography>
               )}
             </div>

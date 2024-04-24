@@ -33,7 +33,6 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
             setErrorMessage('There is no dublin_core.relation property in the manifest.yaml file.');
             return;
           }
-          console.log('RELATION', metadata.dublin_core.relation);
           return getRelationCatalogEntries(catalogEntry, metadata.dublin_core.relation, requiredSubjects);
         })
         .then((entries) => {

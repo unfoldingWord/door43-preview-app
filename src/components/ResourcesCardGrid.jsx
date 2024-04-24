@@ -3,9 +3,14 @@ import { useEffect, useState, useContext } from 'react';
 
 // Material UI imports
 import { styled } from '@mui/material/styles';
-import { Box, Paper, Unstable_Grid2 as Grid, AppBar, Button, IconButton, TextField, Autocomplete, Typography } from '@mui/material';
+import { Box, Paper, Unstable_Grid2 as Grid, AppBar, Button, IconButton, TextField, Autocomplete, Typography, ToggleButtonGroup, ToggleButton, Tooltip, FormControlLabel, Checkbox } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
+
+import { Dialog, DialogTitle, DialogContent, DialogActions, FormControl, Select, MenuItem } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
 // Context imports
 import { AppContext } from '@components/App.context';
@@ -59,7 +64,10 @@ export const ResourcesCardGrid = () => {
   const [searchClicked, setSearchClicked] = useState(false);
   const [loadMoreClicked, setLoadMoreClicked] = useState(false);
   const [error, setError] = useState();
+  const [onlyReleases, setOnlyReleases] = useState(false);
 
+  const [openSortModal, setOpenSortModal] = useState(false);
+  
   useEffect(() => {
     if (!urlParams.get('lang') && !urlParams.get('owner') && !urlParams.get('subject')) {
       setSelectedLanguages(['en']);
@@ -79,7 +87,7 @@ export const ResourcesCardGrid = () => {
       setOrder(urlParams.get('order'));
     }
     setSearchClicked(true);
-  }, []);
+  }, [urlParams]);
 
   useEffect(() => {
     const getLanguages = async () => {
@@ -190,12 +198,28 @@ export const ResourcesCardGrid = () => {
         });
     };
 
-    if (serverInfo?.baseUrl && (searchClicked || loadMoreClicked)) {
+    if (serverInfo?.baseUrl && (searchClicked || loadMoreClicked) && ! isFetchingEntries) {
       setError();
       setIsFetchingEntries(true);
       fetchCatalogEntries();
     }
-  }, [serverInfo, searchClicked, loadMoreClicked]);
+  }, [serverInfo, searchClicked, isFetchingEntries, loadMoreClicked, selectedLanguages, selectedOwners, selectedSubjects]);
+
+  const handleOpenSortModal = () => {
+    setOpenSortModal(true);
+  };
+
+  const handleCloseSortModal = (search) => {
+    setOpenSortModal(false);
+    if (search) {
+      setSearchClicked(true);
+      setCatalogEntries([]);
+    }
+  };
+
+  const handleSortChange = (event) => {
+    setSort(event.target.value);
+  };
 
   return (
     <>
@@ -247,7 +271,6 @@ export const ResourcesCardGrid = () => {
               setSelectedOwners(selected);
             }}
           />
-          <div style={{ display: 'inline-block' }}>
             <Autocomplete
               id="subject-select"
               multiple
@@ -262,16 +285,84 @@ export const ResourcesCardGrid = () => {
                 setSelectedSubjects(selected);
               }}
             />
-            <IconButton
+ 
+           <Button
               onClick={() => {
                 setSearchClicked(true);
                 setCatalogEntries([]);
               }}
               disabled={searchClicked}
             >
-              <SearchIcon />
+              <SearchIcon /> Search
+            </Button>
+
+          <div style={{ display: 'inline-block' }}>
+            <IconButton onClick={handleOpenSortModal}>
+              <FilterListIcon />
             </IconButton>
           </div>
+
+          <Dialog open={openSortModal} onClose={handleCloseSortModal}>
+            <DialogTitle>Sort by</DialogTitle>
+            <DialogContent>
+              <FormControl fullWidth>
+                <Select
+                  labelId="sort-label"
+                  id="sort-select"
+                  value={sort}
+                  onChange={handleSortChange}
+                >
+                  <MenuItem value="released">Release Date</MenuItem>
+                  <MenuItem value="lang">Language</MenuItem>
+                  <MenuItem value="title">Title</MenuItem>
+                  <MenuItem value="subject">Subject</MenuItem>
+                </Select>
+              <ToggleButtonGroup
+                value={order}
+                exclusive
+                onChange={(event, newOrder) => {
+                  setOrder(newOrder);
+                }}
+                aria-label="Sort Order"
+                >
+                <Tooltip title="Ascending" arrow>
+                  <ToggleButton value="asc" aria-label="Ascending">
+                    <ArrowUpwardIcon />
+                  </ToggleButton>
+                </Tooltip>
+                <Tooltip title="Descending" arrow>
+                <ToggleButton value="desc" aria-label="Descending">
+                  <ArrowDownwardIcon />
+                </ToggleButton>
+                </Tooltip>
+                </ToggleButtonGroup>
+              </FormControl>
+              </DialogContent>
+              <DialogActions>
+              <Button onClick={handleCloseSortModal}>Close</Button>
+              <Button onClick={() => {
+                // Apply filter and sort logic here
+                handleCloseSortModal(true);
+              }}>Apply</Button>
+            </DialogActions>
+          </Dialog>
+          <FormControlLabel
+            control={
+              <Tooltip title="Show only releases" arrow>
+              <Checkbox
+                checked={stage == "prod"}
+                onChange={(event) => {
+                  setStage(event.target.checked ? "prod" : "latest");
+                  setCatalogEntries([]);
+                  setSearchClicked(true);
+                }}
+                name="onlyReleases"
+                color="primary"
+              />
+              </Tooltip>
+            }
+            label="Releases"
+          />
         </Box>
       </AppBar>
       <Box sx={{ flexGrow: 1 }}>
@@ -290,13 +381,14 @@ export const ResourcesCardGrid = () => {
                 <Grid xs={6} lg={3} key={entry.id}>
                   <Item sx={styles[entry.language_direction]}>
                     <Box id="category-a" sx={{ fontSize: '12px', textAlign: 'center' }}>
-                      <a key="title" style={{ textDecoration: 'none', fontSize: "1.3em" }} href={`/u/${entry.full_name}`} target="_blank" rel="noopener noreferrer">
+                      <a key="title" style={{ textDecoration: 'none', fontSize: "1.3em" }} href={`/u/${entry.full_name}/${(stage == "prod" && entry.repo?.catalog?.prod?.branch_or_tag_name) || entry.repo?.catalog?.latest?.branch_or_tag_name || "master" }`} target="_blank" rel="noopener noreferrer">
                         {entry.title}
                       </a>{' '}
                       ({entry.abbreviation})
                       <div key="stages">
-                        {Object.values(entry.repo?.catalog || { latest: { branch_or_tag_name: entry.branch_or_tag_name } })
-                          .filter((c) => c)
+                        {Object.keys(entry.repo?.catalog || { latest: { branch_or_tag_name: entry.branch_or_tag_name } })
+                          .filter((st) => entry.repo.catalog[st] && (stage != "prod" || st == stage))
+                          .map(st => entry.repo.catalog[st])
                           .map((c, i) => (
                             <span key={c.branch_or_tag_name}>
                               {i == 0 ? '' : ', '}
