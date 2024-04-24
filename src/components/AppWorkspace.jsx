@@ -128,7 +128,7 @@ export default function AppWorkspace() {
       } else {
         infoLineInner = (
           <>
-            {repoFullName}, ${catalogEntry.branch_or_tag_name}
+            {repoFullName}, {catalogEntry.branch_or_tag_name}
           </>
         );
       }

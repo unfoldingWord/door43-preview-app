@@ -78,7 +78,7 @@ span.footnote {
 }
   
 ::footnote-marker {
-  /* content: counter(footnote, lower-alpha) ". "; */
+  content: counter(footnote, lower-alpha) ". ";
   font-weight: 700;
   line-height: 0; 
   font-style: italic !important;
