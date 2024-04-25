@@ -136,7 +136,7 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken },
     actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
@@ -181,6 +181,7 @@ export default function RcTranslationNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
+    authToken,
   });
 
   const sourceBibleCatalogEntries = useFetchCatalogEntriesBySubject({
@@ -237,6 +238,7 @@ export default function RcTranslationNotes() {
   });
 
   const taZipFileData = useFetchZipFileData({
+    authToken,
     catalogEntry: taCatalogEntries?.[0],
   });
 
@@ -254,6 +256,7 @@ export default function RcTranslationNotes() {
   });
 
   const twZipFileData = useFetchZipFileData({
+    authToken,
     catalogEntry: twCatalogEntries?.[0],
   });
 
@@ -305,7 +308,7 @@ export default function RcTranslationNotes() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -732,7 +735,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
       const md = new MarkdownIt();
       try {
-        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha)) + `</div>`;
+        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
       } catch (e) {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
       }

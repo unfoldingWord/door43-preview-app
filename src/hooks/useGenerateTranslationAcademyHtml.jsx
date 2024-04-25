@@ -12,6 +12,9 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
           depth = 6;
         }
         let { link, title, toctitle, body, sections = [] } = section;
+        if (! title) {
+          title = "NO TITLE FOUND!"
+        }
         if (!toctitle) {
           toctitle = title;
         }

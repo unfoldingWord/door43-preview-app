@@ -5,12 +5,11 @@ import PropTypes from 'prop-types';
 
 const S3_BUCKET_NAME = 'preview.door43.org';
 
-
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
 
 // Helper functions
-import { getCatalogEntry } from '@helpers/dcsApi';
+import { getCatalogEntry, getRepo } from '@helpers/dcsApi';
 
 // Converter components
 import Bible from '@components/Bible';
@@ -49,6 +48,7 @@ export function AppContextProvider({ children }) {
   const [documentAnchor, setDocumentAnchor] = useState('');
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
+  const [authToken, setAuthToken] = useState();
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -143,44 +143,56 @@ export function AppContextProvider({ children }) {
       }
     };
 
+    const getToken = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('token')) {
+        setAuthToken(params.get('token'));
+      }
+    };
+
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
+    getToken();
   }, [setErrorMessage]);
 
   useEffect(() => {
     const fetchRepo = async () => {
-      const repoUrl = `${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`;
-      fetch(repoUrl)
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
+      getRepo(`${serverInfo.baseUrl}/${API_PATH}/repos`, urlInfo.owner, urlInfo.repo, authToken)
+        .then((r) => setRepo(r))
+        .catch((err) => {
+          console.log(err.message);
+          if (!authToken) {
+            setErrorMessage(
+              <>
+                <span>Unable to to find this resource on DCS via the repo API. Perhaps this is a protected or private repository? If it is, please go to your&nbsp;</span>
+                <a href={`${serverInfo.baseUrl}/user/settings/applications`} target="_blank" rel="noreferrer">
+                  Manage Access Tokens
+                </a>
+                <span>
+                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put that in the URL above in the address bar
+                  after&nbsp;
+                </span>
+                <span style={{ fontWeight: 'bold', fontStyle: 'italic' }}>token=</span>
+                <span>&nbsp;and hit Enter/Return to reload the page.</span>
+              </>
+            );
+            const url = new URL(window.location.href);
+            url.searchParams.set('token', '');
+            window.history.replaceState({}, document.title, url.toString());
           } else {
-            throw new Error(`Repository not found: ${urlInfo.owner}/${urlInfo.repo}`);
+            setErrorMessage(<>Unable to to find this resource on DCS via the repo API. The token you gave is invalid or does not have access to this repository.</>);
           }
-        })
-        .then((data) => {
-          setRepo(data);
-        })
-        .catch(() => {
-          setErrorMessage(
-            <>
-              Failed to get resource. Unable to fetch{' '}
-              <a href={repoUrl} target="_blank" rel="noreferrer">
-                {urlInfo.owner}/{urlInfo.repo}
-              </a>
-            </>
-          );
         });
     };
 
     if (serverInfo && urlInfo && urlInfo.owner && urlInfo.repo) {
       fetchRepo().catch((e) => setErrorMessage(e.message));
     }
-  }, [serverInfo, urlInfo, setErrorMessage]);
+  }, [serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch)
+      getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken)
         .then((entry) => setCatalogEntry(entry))
         .catch((err) => setErrorMessage(err.message));
     };
@@ -188,7 +200,7 @@ export function AppContextProvider({ children }) {
     if (repo) {
       fetchCatalogEntry().catch((e) => setErrorMessage(e.message));
     }
-  }, [repo, serverInfo, urlInfo, setErrorMessage]);
+  }, [repo, serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -289,29 +301,26 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     if (htmlSections && htmlSections.html && htmlSections.copyright) {
-        // const s3 = new AWS.S3({
-        //   // Configure S3 with temporary credentials obtained from Netlify
-        //   credentials: {
-        //     accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-        //     secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-        //     sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN,
-        //   },
-        // });
-  
-        // const params = {
-        //   Bucket: S3_BUCKET_NAME,
-        //   Key: selectedFile.name, // File name in S3 bucket
-        //   Body: selectedFile,
-        // };
-  
-        // s3.upload(params).promise().then(() => {
-        //   console.log("JSON UPLOADED");
-        // }).error(e => {
-        //   console.error(e);
-        // });
+      // const s3 = new AWS.S3({
+      //   // Configure S3 with temporary credentials obtained from Netlify
+      //   credentials: {
+      //     accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+      //     secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
+      //     sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN,
+      //   },
+      // });
+      // const params = {
+      //   Bucket: S3_BUCKET_NAME,
+      //   Key: selectedFile.name, // File name in S3 bucket
+      //   Body: selectedFile,
+      // };
+      // s3.upload(params).promise().then(() => {
+      //   console.log("JSON UPLOADED");
+      // }).error(e => {
+      //   console.error(e);
+      // });
     }
-
-  }, [htmlSections])
+  }, [htmlSections]);
 
   // create the value for the context provider
   const context = {
@@ -334,6 +343,7 @@ export function AppContextProvider({ children }) {
       documentAnchor,
       printPreviewStatus,
       printPreviewPercentDone,
+      authToken,
     },
     actions: {
       onPrintClick,

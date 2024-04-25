@@ -100,7 +100,7 @@ a.footnote {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken },
     actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
@@ -165,7 +165,7 @@ export default function Bible() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, true)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).tree.map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
       }
@@ -223,7 +223,7 @@ export default function Bible() {
         setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`);
       }
 
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha)
+      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken)
         .then((_usfmText) => {
           const usfmJSON = usfm.toJSON(_usfmText);
           for (let i = 0; i < usfmJSON?.headers?.length; ++i) {
