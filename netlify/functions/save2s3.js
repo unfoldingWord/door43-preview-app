@@ -16,8 +16,8 @@ exports.handler = async function(event, context) {
   // Convert the payload to a JSON string
   const jsonString = JSON.stringify(payload);
 
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const accessKeyId = process.env.awsAccessKeyId;
+  const secretAccessKey = process.env.awsSecretAccessKey;
 
   // Configure AWS SDK
   AWS.config.update({
