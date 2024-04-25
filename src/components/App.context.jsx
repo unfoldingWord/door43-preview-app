@@ -300,6 +300,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const save2s3 = async () => {
       const path = `${catalogEntry.repo.full_name}/${catalogEntry.commit}/${catalogEntry.commit_sha}.json`;
+      const verification = import.meta.env.VITE_SAVE2S3_VERIFICATION_KEY;
       const payload = {
         preview_version: packageJson.version,
         date_iso: new Date().toISOString(),
@@ -315,6 +316,7 @@ export function AppContextProvider({ children }) {
         body: JSON.stringify({
           payload,
           path,
+          verification,
         }),
       })
         .then((response) => response.json())
