@@ -2,6 +2,11 @@
 const AWS = require('aws-sdk');
 
 exports.handler = async function(event, context) {
+  // Check if the request method is POST
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 400, body: 'Bad Request' };
+  }
+
   // Parse the JSON payload and the file path from the event body
   const { payload, path, verification } = JSON.parse(event.body);
   if (verification != process.env.VITE_SAVE2S3_VERIFICATION_KEY) {
