@@ -59,7 +59,7 @@ const theme = createTheme({
 
 export default function OpenBibleStories() {
   const {
-    state: { catalogEntry, urlInfo, documentAnchor },
+    state: { catalogEntry, urlInfo, documentAnchor, authToken },
     actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
   } = useContext(AppContext);
 

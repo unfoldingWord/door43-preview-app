@@ -48,7 +48,9 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   const [selectedRef, setSelectedRef] = useState();
   const [selectedBook, setSelectedBook] = useState();
 
-  const { serverInfo, urlInfo, catalogEntry: currentCatalogEntry, authToken } = useContext(AppContext);
+  const {
+    state: { serverInfo, urlInfo, catalogEntry: currentCatalogEntry, authToken },
+  } = useContext(AppContext);
 
   useEffect(() => {
     if (currentCatalogEntry) {
@@ -195,7 +197,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}${authToken ? `?token=${authToken}`: ''}`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}${authToken ? `?token=${authToken}` : ''}`, { cache: 'default' })
         .then((response) => response.json())
         .then((entry) => {
           setCatalogEntry(entry);
