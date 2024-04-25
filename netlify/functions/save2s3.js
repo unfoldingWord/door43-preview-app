@@ -3,7 +3,11 @@ const AWS = require('aws-sdk');
 
 exports.handler = async function(event, context) {
   // Parse the JSON payload and the file path from the event body
-  const { payload, path } = JSON.parse(event.body);
+  const { payload, path, verification } = JSON.parse(event.body);
+  if (verification != process.env.VITE_SAVE2S3_VERIFICATION_KEY) {
+    return { statusCode: 401, body: 'Unauthorized' };
+  }
+
   // Convert the payload to a JSON string
   const jsonString = JSON.stringify(payload);
 
