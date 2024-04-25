@@ -42,7 +42,7 @@ export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
         >
           <div style={{ display: 'flex', flexDirection: 'row' }}>
               <Tooltip title="View on DCS" arrow>
-                <IconButton disabled={!dcsRef} sx={sx.headerIcon} onClick={handleViewClick} size={'large'}>
+                <IconButton sx={sx.headerIcon} onClick={handleViewClick} size={'large'}>
                   <SvgIcon fontSize={'large'}>
                     <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path

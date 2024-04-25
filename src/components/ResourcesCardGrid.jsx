@@ -3,7 +3,22 @@ import { useEffect, useState, useContext } from 'react';
 
 // Material UI imports
 import { styled } from '@mui/material/styles';
-import { Box, Paper, Unstable_Grid2 as Grid, AppBar, Button, IconButton, TextField, Autocomplete, Typography, ToggleButtonGroup, ToggleButton, Tooltip, FormControlLabel, Checkbox } from '@mui/material';
+import {
+  Box,
+  Paper,
+  Unstable_Grid2 as Grid,
+  AppBar,
+  Button,
+  IconButton,
+  TextField,
+  Autocomplete,
+  Typography,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
 
@@ -67,7 +82,7 @@ export const ResourcesCardGrid = () => {
   const [onlyReleases, setOnlyReleases] = useState(false);
 
   const [openSortModal, setOpenSortModal] = useState(false);
-  
+
   useEffect(() => {
     if (!urlParams.get('lang') && !urlParams.get('owner') && !urlParams.get('subject')) {
       setSelectedLanguages(['en']);
@@ -198,7 +213,7 @@ export const ResourcesCardGrid = () => {
         });
     };
 
-    if (serverInfo?.baseUrl && (searchClicked || loadMoreClicked) && ! isFetchingEntries) {
+    if (serverInfo?.baseUrl && (searchClicked || loadMoreClicked) && !isFetchingEntries) {
       setError();
       setIsFetchingEntries(true);
       fetchCatalogEntries();
@@ -271,30 +286,30 @@ export const ResourcesCardGrid = () => {
               setSelectedOwners(selected);
             }}
           />
-            <Autocomplete
-              id="subject-select"
-              multiple
-              freeSolo
-              autoHighlight
-              clearOnEscape
-              sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-              options={subjects}
-              value={selectedSubjects}
-              renderInput={(params) => <TextField {...params} label="Subject" variant="outlined" />}
-              onChange={(event, selected) => {
-                setSelectedSubjects(selected);
-              }}
-            />
- 
-           <Button
-              onClick={() => {
-                setSearchClicked(true);
-                setCatalogEntries([]);
-              }}
-              disabled={searchClicked}
-            >
-              <SearchIcon /> Search
-            </Button>
+          <Autocomplete
+            id="subject-select"
+            multiple
+            freeSolo
+            autoHighlight
+            clearOnEscape
+            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+            options={subjects}
+            value={selectedSubjects}
+            renderInput={(params) => <TextField {...params} label="Subject" variant="outlined" />}
+            onChange={(event, selected) => {
+              setSelectedSubjects(selected);
+            }}
+          />
+
+          <Button
+            onClick={() => {
+              setSearchClicked(true);
+              setCatalogEntries([]);
+            }}
+            disabled={searchClicked}
+          >
+            <SearchIcon /> Search
+          </Button>
 
           <div style={{ display: 'inline-block' }}>
             <IconButton onClick={handleOpenSortModal}>
@@ -306,59 +321,58 @@ export const ResourcesCardGrid = () => {
             <DialogTitle>Sort by</DialogTitle>
             <DialogContent>
               <FormControl fullWidth>
-                <Select
-                  labelId="sort-label"
-                  id="sort-select"
-                  value={sort}
-                  onChange={handleSortChange}
-                >
+                <Select labelId="sort-label" id="sort-select" value={sort} onChange={handleSortChange}>
                   <MenuItem value="released">Release Date</MenuItem>
                   <MenuItem value="lang">Language</MenuItem>
                   <MenuItem value="title">Title</MenuItem>
                   <MenuItem value="subject">Subject</MenuItem>
                 </Select>
-              <ToggleButtonGroup
-                value={order}
-                exclusive
-                onChange={(event, newOrder) => {
-                  setOrder(newOrder);
-                }}
-                aria-label="Sort Order"
+                <ToggleButtonGroup
+                  value={order}
+                  exclusive
+                  onChange={(event, newOrder) => {
+                    setOrder(newOrder);
+                  }}
+                  aria-label="Sort Order"
                 >
-                <Tooltip title="Ascending" arrow>
-                  <ToggleButton value="asc" aria-label="Ascending">
-                    <ArrowUpwardIcon />
-                  </ToggleButton>
-                </Tooltip>
-                <Tooltip title="Descending" arrow>
-                <ToggleButton value="desc" aria-label="Descending">
-                  <ArrowDownwardIcon />
-                </ToggleButton>
-                </Tooltip>
+                  <Tooltip title="Ascending" arrow>
+                    <ToggleButton value="asc" aria-label="Ascending">
+                      <ArrowUpwardIcon />
+                    </ToggleButton>
+                  </Tooltip>
+                  <Tooltip title="Descending" arrow>
+                    <ToggleButton value="desc" aria-label="Descending">
+                      <ArrowDownwardIcon />
+                    </ToggleButton>
+                  </Tooltip>
                 </ToggleButtonGroup>
               </FormControl>
-              </DialogContent>
-              <DialogActions>
+            </DialogContent>
+            <DialogActions>
               <Button onClick={handleCloseSortModal}>Close</Button>
-              <Button onClick={() => {
-                // Apply filter and sort logic here
-                handleCloseSortModal(true);
-              }}>Apply</Button>
+              <Button
+                onClick={() => {
+                  // Apply filter and sort logic here
+                  handleCloseSortModal(true);
+                }}
+              >
+                Apply
+              </Button>
             </DialogActions>
           </Dialog>
           <FormControlLabel
             control={
               <Tooltip title="Show only releases" arrow>
-              <Checkbox
-                checked={stage == "prod"}
-                onChange={(event) => {
-                  setStage(event.target.checked ? "prod" : "latest");
-                  setCatalogEntries([]);
-                  setSearchClicked(true);
-                }}
-                name="onlyReleases"
-                color="primary"
-              />
+                <Checkbox
+                  checked={stage == 'prod'}
+                  onChange={(event) => {
+                    setStage(event.target.checked ? 'prod' : 'latest');
+                    setCatalogEntries([]);
+                    setSearchClicked(true);
+                  }}
+                  name="onlyReleases"
+                  color="primary"
+                />
               </Tooltip>
             }
             label="Releases"
@@ -381,14 +395,22 @@ export const ResourcesCardGrid = () => {
                 <Grid xs={6} lg={3} key={entry.id}>
                   <Item sx={styles[entry.language_direction]}>
                     <Box id="category-a" sx={{ fontSize: '12px', textAlign: 'center' }}>
-                      <a key="title" style={{ textDecoration: 'none', fontSize: "1.3em" }} href={`/u/${entry.full_name}/${(stage == "prod" && entry.repo?.catalog?.prod?.branch_or_tag_name) || entry.repo?.catalog?.latest?.branch_or_tag_name || "master" }`} target="_blank" rel="noopener noreferrer">
+                      <a
+                        key="title"
+                        style={{ textDecoration: 'none', fontSize: '1.3em' }}
+                        href={`/u/${entry.full_name}/${
+                          (stage == 'prod' && entry.repo?.catalog?.prod?.branch_or_tag_name) || entry.repo?.catalog?.latest?.branch_or_tag_name || 'master'
+                        }`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {entry.title}
                       </a>{' '}
                       ({entry.abbreviation})
                       <div key="stages">
                         {Object.keys(entry.repo?.catalog || { latest: { branch_or_tag_name: entry.branch_or_tag_name } })
-                          .filter((st) => entry.repo.catalog[st] && (stage != "prod" || st == stage))
-                          .map(st => entry.repo.catalog[st])
+                          .filter((st) => entry.repo.catalog[st] && (stage != 'prod' || st == stage))
+                          .map((st) => entry.repo.catalog[st])
                           .map((c, i) => (
                             <span key={c.branch_or_tag_name}>
                               {i == 0 ? '' : ', '}

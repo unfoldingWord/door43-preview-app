@@ -1,6 +1,7 @@
 // React imports
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
+
 // import AWS from 'aws-sdk';
 
 const S3_BUCKET_NAME = 'preview.door43.org';
@@ -156,6 +157,7 @@ export function AppContextProvider({ children }) {
   }, [setErrorMessage]);
 
   useEffect(() => {
+    console.log("HEY!", import.meta.env.VITE_AWS_ACESS_KEY_ID);
     const fetchRepo = async () => {
       getRepo(`${serverInfo.baseUrl}/${API_PATH}/repos`, urlInfo.owner, urlInfo.repo, authToken)
         .then((r) => setRepo(r))
@@ -169,8 +171,8 @@ export function AppContextProvider({ children }) {
                   Manage Access Tokens
                 </a>
                 <span>
-                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put that in the URL above in the address bar
-                  after&nbsp;
+                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put the token you are given in the URL above in the
+                  address bar after&nbsp;
                 </span>
                 <span style={{ fontWeight: 'bold', fontStyle: 'italic' }}>token=</span>
                 <span>&nbsp;and hit Enter/Return to reload the page.</span>
