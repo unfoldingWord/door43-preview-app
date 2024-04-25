@@ -17,7 +17,7 @@ exports.handler = async function(event, context) {
   const jsonString = JSON.stringify(payload);
 
   const accessKeyId = process.env.PREVIEW_S3_UPLOAD_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.PREVIEW_S3_SECRET_ACCESS_KEY;
+  const secretAccessKey = process.env.PREVIEW_S3_UPLOAD_SECRET_ACCESS_KEY;
 
   // Configure AWS SDK
   AWS.config.update({
