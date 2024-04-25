@@ -308,6 +308,7 @@ export function AppContextProvider({ children }) {
         catalogEntry: catalogEntry,
         html: htmlSections.body
       };
+      console.log("VERIFICATION", verification);
       fetch('/.netlify/functions/save2s3', {
         method: 'POST',
         headers: {
