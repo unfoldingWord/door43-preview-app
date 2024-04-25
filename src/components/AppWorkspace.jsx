@@ -472,7 +472,7 @@ export default function AppWorkspace() {
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != '' || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
+          canLoad={htmlSections?.body || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
         />
