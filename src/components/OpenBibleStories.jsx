@@ -77,7 +77,7 @@ export default function OpenBibleStories() {
     addOBS: true,
   });
 
-  const zipFileData = useFetchZipFileData({ catalogEntry });
+  const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
 
   const obsData = useGetOBSData({ catalogEntry, zipFileData, setErrorMessage });
 

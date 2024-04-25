@@ -148,7 +148,7 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken },
     actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
@@ -190,6 +190,7 @@ export default function RcTranslationQuestions() {
 
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
+    authToken,
   });
 
   const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({
@@ -221,7 +222,7 @@ export default function RcTranslationQuestions() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -466,7 +467,7 @@ export default function RcTranslationQuestions() {
 
       const md = new MarkdownIt();
       try {
-        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha)) + `</div>`;
+        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
       } catch (e) {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
       }

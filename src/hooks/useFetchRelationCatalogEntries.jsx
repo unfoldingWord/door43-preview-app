@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getRelationCatalogEntries } from '../helpers/dcsCatalog';
 
-export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects, setErrorMessage }) {
+export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects, setErrorMessage, authToken }) {
   const [relationCatalogEntries, setRelationCatalogEntries] = useState();
 
   useEffect(() => {
@@ -12,7 +12,7 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
         setErrorMessage('Catalog entry is invalid');
         return;
       }
-      const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}`;
+      const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}${authToken?`?token=${authToken}`:''}`;
       fetch(metadataUrl, { cache: 'default' })
         .then((response) => {
           if (!response.ok) {

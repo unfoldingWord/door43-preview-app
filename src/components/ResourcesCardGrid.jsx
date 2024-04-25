@@ -44,7 +44,7 @@ const Item = styled(Paper)(({ theme }) => ({
 
 export const ResourcesCardGrid = () => {
   const {
-    state: { serverInfo },
+    state: { serverInfo, authToken },
   } = useContext(AppContext);
 
   const [isFetchingEntries, setIsFetchingEntries] = useState(false);

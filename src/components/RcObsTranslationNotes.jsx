@@ -108,6 +108,7 @@ export default function RcObsTranslationNotes() {
     state: {
       urlInfo,
       catalogEntry,
+      authToken,
     },
     actions: {
       setWebCss,
@@ -151,6 +152,7 @@ export default function RcObsTranslationNotes() {
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
     setErrorMessage,
+    authToken,
   })
 
   const obsCatalogEntry = useFetchCatalogEntryBySubject({
@@ -160,6 +162,7 @@ export default function RcObsTranslationNotes() {
   })
 
   const obsZipFileData = useFetchZipFileData({
+    authToken,
     catalogEntry: obsCatalogEntry,
     setErrorMessage,
   })
@@ -177,6 +180,7 @@ export default function RcObsTranslationNotes() {
   })
 
   const taZipFileData = useFetchZipFileData({
+    authToken,
     catalogEntry: taCatalogEntry,
     setErrorMessage,
   })
@@ -204,7 +208,7 @@ export default function RcObsTranslationNotes() {
         setErrorMessage(`Project \`obs\` is not in repo's project list.`)
       }
 
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha).
+      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken).
       then(tsv => setTsvText(tsv)).
       catch(e => {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)

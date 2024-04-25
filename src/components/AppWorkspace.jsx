@@ -475,9 +475,6 @@ export default function AppWorkspace() {
           canLoad={htmlSections?.body != '' || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
-          serverInfo={serverInfo}
-          urlInfo={urlInfo}
-          currentCatalogEntry={catalogEntry}
         />
       )}
     </Sheet>

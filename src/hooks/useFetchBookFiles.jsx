@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { getRepoContentsContent } from '../helpers/dcsApi';
+import { AppContext } from '@components/App.context';
 
 export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMessage }) {
   const [bookFiles, setBookFiles] = useState([]);
+  const {
+    state: { authToken },
+  } = useContext(AppContext);
 
   useEffect(() => {
     const fetchBookFileContents = async () => {
@@ -23,7 +27,7 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
           setErrorMessage(`The required related resource ${catalogEntry.full_name} (${catalogEntry.subject}) does not contain a project for \`${bookId}\`.`);
           return;
         }
-        promises.push(getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.branch_or_tag_name));
+        promises.push(getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.branch_or_tag_name, authToken));
       });
 
       const contents = await Promise.all(promises);
@@ -31,7 +35,7 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
     };
 
     fetchBookFileContents();
-  }, [catalogEntries, bookId, setErrorMessage]);
+  }, [catalogEntries, bookId, authToken, setErrorMessage]);
 
   return bookFiles;
 }

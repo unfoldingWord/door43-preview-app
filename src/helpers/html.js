@@ -1,6 +1,9 @@
 import MarkdownIt from "markdown-it";
 
 export function encodeHTML(s) {
+  if( ! s) {
+    return '';
+  }
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 }
 

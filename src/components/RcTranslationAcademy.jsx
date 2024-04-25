@@ -113,12 +113,12 @@ const printCss = `
 
 export default function RcTranslationAcademy() {
   const {
-    state: { catalogEntry, documentAnchor },
+    state: { catalogEntry, documentAnchor, authToken },
     actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
 
-  const zipFileData = useFetchZipFileData({ catalogEntry });
+  const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
 
   let taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage });
 
@@ -156,7 +156,7 @@ export default function RcTranslationAcademy() {
 
       const md = new MarkdownIt();
       try {
-        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha)) + `</div>`;
+        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
       } catch (e) {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
       }

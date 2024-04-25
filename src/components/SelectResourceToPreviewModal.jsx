@@ -1,5 +1,6 @@
 // React imports
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AppContext } from './App.context';
 
 // Material UI imports
 import {
@@ -32,7 +33,7 @@ const StyledTextField = styled(TextField)(() => ({
   },
 }));
 
-export default function SelectResourceToPreviewModal({ canLoad, showModal, setShowModal, serverInfo, urlInfo, currentCatalogEntry }) {
+export default function SelectResourceToPreviewModal({ canLoad, showModal, setShowModal }) {
   const [languages, setLanguages] = useState();
   const [owners, setOwners] = useState({});
   const [repos, setRepos] = useState({});
@@ -46,6 +47,8 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   const [refTypeChoice, setRefTypeChoice] = useState('');
   const [selectedRef, setSelectedRef] = useState();
   const [selectedBook, setSelectedBook] = useState();
+
+  const { serverInfo, urlInfo, catalogEntry: currentCatalogEntry, authToken } = useContext(AppContext);
 
   useEffect(() => {
     if (currentCatalogEntry) {
@@ -150,7 +153,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
         .then((branches) => {
           setAvailableRefs((prevState) => ({
             ...prevState,
-            [selectedRepo.full_name]: { ...availableRefs[selectedRepo.full_name], branch: branches.map((branch) => branch.name) },
+            [selectedRepo.full_name]: { ...availableRefs[selectedRepo.full_name], branch: branches?.length ? branches.map((branch) => branch.name) : [] },
           }));
         })
         .catch((e) => {
@@ -192,7 +195,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}${authToken ? `?token=${authToken}`: ''}`, { cache: 'default' })
         .then((response) => response.json())
         .then((entry) => {
           setCatalogEntry(entry);
@@ -422,7 +425,7 @@ SelectResourceToPreviewModal.propTypes = {
   canLoad: PropTypes.bool.isRequired,
   showModal: PropTypes.bool.isRequired,
   setShowModal: PropTypes.func.isRequired,
-  serverInfo: PropTypes.object.isRequired,
-  urlInfo: PropTypes.object.isRequired,
+  serverInfo: PropTypes.object,
+  urlInfo: PropTypes.object,
   currentCatalogEntry: PropTypes.object,
 };

@@ -95,7 +95,7 @@ a.footnote {
 
 export default function TsBible() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken },
     actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
@@ -134,6 +134,7 @@ export default function TsBible() {
   });
 
   const zipFileData = useFetchZipFileData({
+    authToken,
     catalogEntry,
     setErrorMessage,
   });
