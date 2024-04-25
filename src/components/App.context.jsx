@@ -1,7 +1,7 @@
 // React imports
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import packageJson from '../../../package.json';
+import packageJson from '../../package.json';
 
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
