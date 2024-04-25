@@ -1,10 +1,7 @@
 // React imports
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-
-// import AWS from 'aws-sdk';
-
-const S3_BUCKET_NAME = 'preview.door43.org';
+import packageJson from '../../../package.json';
 
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
@@ -157,7 +154,6 @@ export function AppContextProvider({ children }) {
   }, [setErrorMessage]);
 
   useEffect(() => {
-    console.log("HEY!", import.meta.env.VITE_AWS_ACESS_KEY_ID);
     const fetchRepo = async () => {
       getRepo(`${serverInfo.baseUrl}/${API_PATH}/repos`, urlInfo.owner, urlInfo.repo, authToken)
         .then((r) => setRepo(r))
@@ -302,27 +298,34 @@ export function AppContextProvider({ children }) {
   }, [catalogEntry, setErrorMessage]);
 
   useEffect(() => {
-    if (htmlSections && htmlSections.html && htmlSections.copyright) {
-      // const s3 = new AWS.S3({
-      //   // Configure S3 with temporary credentials obtained from Netlify
-      //   credentials: {
-      //     accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-      //     secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-      //     sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN,
-      //   },
-      // });
-      // const params = {
-      //   Bucket: S3_BUCKET_NAME,
-      //   Key: selectedFile.name, // File name in S3 bucket
-      //   Body: selectedFile,
-      // };
-      // s3.upload(params).promise().then(() => {
-      //   console.log("JSON UPLOADED");
-      // }).error(e => {
-      //   console.error(e);
-      // });
+    const save2s3 = async () => {
+      const path = `${catalogEntry.repo.full_name}/${catalogEntry.commit}/${catalogEntry.commit_sha}.json`;
+      const payload = {
+        preview_version: packageJson.version,
+        date_iso: new Date().toISOString(),
+        date_unix: new Date().getTime(),
+        catalogEntry: catalogEntry,
+        html: htmlSections.body
+      };
+      fetch('/.netlify/functions/save2s3', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payload,
+          path,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => console.log('Upload Success', data))
+        .catch((err) => console.error('Error:', err));
+    };
+
+    if (catalogEntry && htmlSections.body != '') {
+      save2s3().catch((e) => console.log(e.message));
     }
-  }, [htmlSections]);
+  }, [htmlSections.body, catalogEntry]);
 
   // create the value for the context provider
   const context = {
