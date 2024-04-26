@@ -20,6 +20,7 @@
     "@oce-editor-tools/base": "^0.1.30",
     "@types/autosuggest-highlight": "^3.2.3",
     "@vivliostyle/react": "^2.27.0",
+    "append-field": "^2.0.0",
     "autosuggest-highlight": "^3.3.4",
     "aws-sdk": "^2.1607.0",
     "axios": "^1.6.7",

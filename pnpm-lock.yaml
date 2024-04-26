@@ -38,6 +38,9 @@ importers:
       '@vivliostyle/react':
         specifier: ^2.27.0
         version: 2.27.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      append-field:
+        specifier: ^2.0.0
+        version: 2.0.0
       autosuggest-highlight:
         specifier: ^3.3.4
         version: 3.3.4
@@ -1533,6 +1536,10 @@ packages:
 
   append-field@1.0.0:
     resolution: {integrity: sha512-klpgFSWLW1ZEs8svjfb7g4qWY0YS5imI82dTg+QahUvJ8YqAY0P10Uk8tTyh9ZGuYEZEMaeJYCF5BFuX552hsw==}
+
+  append-field@2.0.0:
+    resolution: {integrity: sha512-yUPXgerKgcuwakzrRyklfhX+Ma2aYYMjb+BO2RPUwq+tk928V/i5DFWcCUS3hQhj468N+Ktmwb0tfbEtmfC6WA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
@@ -4603,6 +4610,8 @@ snapshots:
       color-convert: 2.0.1
 
   append-field@1.0.0: {}
+
+  append-field@2.0.0: {}
 
   argparse@2.0.1: {}
 
