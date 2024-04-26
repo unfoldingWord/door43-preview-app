@@ -3,12 +3,14 @@ const AWS = require('aws-sdk');
 const multer = require('multer');
 const JSZip = require('jszip');
 
+const upload = multer(); // for parsing multipart/form-data
+
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const req = multer().any()(event, context, (error) => {
+  const req = upload.any()(event, context, (error) => {
     if (error instanceof multer.MulterError) {
       // A Multer error occurred when uploading.
       console.error('Multer error:', error);
