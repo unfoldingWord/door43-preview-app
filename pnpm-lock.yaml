@@ -59,6 +59,9 @@ importers:
       ieee754:
         specifier: ^1.2.1
         version: 1.2.1
+      jmespath:
+        specifier: ^0.16.0
+        version: 0.16.0
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
