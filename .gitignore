@@ -27,3 +27,7 @@ temp/*
 
 # Local Netlify folder
 .netlify
+
+# VSCode History
+.history
+
