@@ -1,20 +1,30 @@
 // Netlify function: save2s3.js
 const AWS = require('aws-sdk');
+const multer = require('multer');
+const JSZip = require('jszip');
 
-exports.handler = async function(event, context) {
-  // Check if the request method is POST
+exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 400, body: 'Bad Request' };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // Parse the JSON payload and the file path from the event body
-  const { payload, path, verification } = JSON.parse(event.body);
-  if (verification != process.env.VITE_SAVE2S3_VERIFICATION_KEY) {
+  const req = upload.any()(event, context, (error) => {
+    if (error instanceof multer.MulterError) {
+      // A Multer error occurred when uploading.
+      console.error('Multer error:', error);
+    } else if (error) {
+      // An unknown error occurred when uploading.
+      console.error('Unknown error:', error);
+    }
+  });
+
+  const file = req.files.find((f) => f.fieldname === 'file');
+  const verification = req.body.verification;
+  const path = req.body.path;
+  
+  if (verification !== process.env.VITE_SAVE2S3_VERIFICATION_KEY) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
-
-  // Convert the payload to a JSON string
-  const jsonString = JSON.stringify(payload);
 
   const accessKeyId = process.env.PREVIEW_S3_UPLOAD_ACCESS_KEY_ID;
   const secretAccessKey = process.env.PREVIEW_S3_UPLOAD_SECRET_ACCESS_KEY;
@@ -23,25 +33,29 @@ exports.handler = async function(event, context) {
   AWS.config.update({
     accessKeyId,
     secretAccessKey,
-    region: 'us-west-2',
+    region: process.env.PREVIEW_S3_REGION,
   });
 
   // Create an S3 instance
   const s3 = new AWS.S3();
 
-  // Parameters for the S3 upload operation
-  const uploadParams = {
-    Bucket: 'preview.door43.org',
+  // Unzip the file
+  const zip = new JSZip();
+  const contents = await zip.loadAsync(file.buffer);
+  const dataJson = await contents.file('data.json').async('string');
+
+  // Upload to S3
+  const params = {
+    Bucket: process.env.PREVIEW_S3_BUCKET_NAME,
     Key: path,
-    Body: jsonString,
-    ContentType: 'application/json',
+    Body: dataJson,
   };
 
   try {
-    // Upload the JSON file to S3
-    const data = await s3.upload(uploadParams).promise();
-    return { statusCode: 200, body: JSON.stringify(data) };
+    const data = await s3.upload(params).promise();
+    console.log('Upload Success', data);
   } catch (err) {
-    return { statusCode: 500, body: err.toString() };
+    console.error('Error:', err);
   }
+
 };

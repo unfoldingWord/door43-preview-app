@@ -4,7 +4,8 @@ import PropTypes from 'prop-types';
 
 // Material UI imports
 import { styled } from '@mui/material/styles';
-import { LinearProgress, Box, IconButton, Button, Grid, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
+import {LinearProgress} from '@mui/material';
+import { Box, IconButton, Button, Grid, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
 import PrintIcon from '@mui/icons-material/Print';
 import PdfIcon from '@mui/icons-material/PictureAsPdf';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -18,7 +19,8 @@ import PageOrientationSelector from '@components/PageOrientationSelector';
 import { AppContext } from '@components/App.context';
 
 // Helper imports
-import printResources from '../helpers/printResources';
+import { getColorForProgressBar } from '@helpers/loading';
+import printResources from '@helpers/printResources';
 
 const defaultIncludeNames = ['titles', 'headings', 'introductions', 'footnotes', 'xrefs', 'paraStyles', 'characterMarkup', 'chapterLabels', 'versesLabels'];
 
@@ -144,20 +146,21 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
             >
               <PdfIcon sx={{ fontSize: 40 }} />
               <LinearProgress
-                color="secondary"
-                variant="determinate"
-                value={printPreviewPercentDone}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0.5,
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: 'green',
-                  },
-                }}
-              />
+                  variant="determinate"
+                  value={printPreviewPercentDone}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.5,
+                    borderRadius: 1,
+                    backgroundColor: 'grey',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                    },
+                  }}
+                />
             </Button>
           </Tooltip>
           <Tooltip title={printPreviewStatus == 'ready' ? 'Print' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
@@ -173,20 +176,21 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
             >
               <PrintIcon sx={{ fontSize: 40 }} />
               <LinearProgress
-                color="secondary"
-                variant="determinate"
-                value={printPreviewPercentDone}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0.5,
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: 'green',
-                  },
-                }}
-              />
+                  variant="determinate"
+                  value={printPreviewPercentDone}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.5,
+                    borderRadius: 1,
+                    backgroundColor: 'grey',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                    },
+                  }}
+                />
             </Button>
           </Tooltip>
         </Box>

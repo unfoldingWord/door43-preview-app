@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,12 +21,14 @@
     "@types/autosuggest-highlight": "^3.2.3",
     "@vivliostyle/react": "^2.27.0",
     "autosuggest-highlight": "^3.3.4",
+    "aws-sdk": "^2.1607.0",
     "axios": "^1.6.7",
     "bible-reference-rcl": "^1.3.0",
     "dompurify": "^3.0.8",
     "jszip": "^3.10.1",
     "lodash": "4.17.21",
     "markdown-it": "^14.0.0",
+    "multer": "1.4.5-lts.1",
     "pagedjs": "^0.4.3",
     "papaparse": "^5.4.1",
     "prop-types": "^15.8.1",

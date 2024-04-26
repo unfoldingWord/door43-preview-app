@@ -148,11 +148,10 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
+    actions: { setBookId, setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
-  const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
@@ -257,7 +256,7 @@ export default function RcTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setWebCss, setStatusMessage, setBookTitle]);
+  }, [urlInfo, catalogEntry]);
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {

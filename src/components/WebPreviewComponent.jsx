@@ -10,7 +10,7 @@ import { AppContext } from '@components/App.context';
 
 export const WebPreviewComponent = forwardRef(({ style }, ref) => {
   const {
-    state: { webCss, printCss, htmlSections },
+    state: { webCss, printCss, htmlSections, cachedHtmlSection },
   } = useContext(AppContext);
 
   return (
@@ -20,7 +20,7 @@ export const WebPreviewComponent = forwardRef(({ style }, ref) => {
         id="web-preview"
         style={style}
         dangerouslySetInnerHTML={{
-          __html: DOMPurify.sanitize(htmlSections?.body, { ADD_ATTR: ['target'] }),
+          __html: DOMPurify.sanitize(htmlSections?.body || cachedHtmlSection?.body, { ADD_ATTR: ['target'] }),
         }}
         ref={ref}
       />

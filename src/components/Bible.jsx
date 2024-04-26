@@ -100,12 +100,11 @@ a.footnote {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken, bookId },
+    actions: { setBookId, setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
   const [supportedBooks, setSupportedBooks] = useState([]);
-  const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
   const [usfmText, setUsfmText] = useState();
 

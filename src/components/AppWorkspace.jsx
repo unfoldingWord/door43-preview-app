@@ -2,7 +2,7 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 
 // Material UI imports
-import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography } from '@mui/material';
+import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress } from '@mui/material';
 import { Alert, Box, Card, IconButton, Sheet, Tooltip } from '@mui/joy';
 import {
   Close as CloseIcon,
@@ -17,6 +17,7 @@ import {
 
 // Component imports
 import PrintDrawer from '@components/PrintDrawer';
+import LoadingBar from '@components/LoadingBar';
 import Header from '@components/Header';
 import SelectResourceToPreviewModal from '@components/SelectResourceToPreviewModal';
 import { ResourcesCardGrid } from '@components/ResourcesCardGrid';
@@ -33,6 +34,7 @@ import { APP_NAME, DCS_SERVERS } from '@common/constants';
 // Helper imports
 import { useReactToPrint } from 'react-to-print';
 import { updateUrlHashInAddressBar } from '@helpers/url';
+import { getColorForProgressBar } from '@helpers/loading';
 
 export default function AppWorkspace() {
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false);
@@ -40,6 +42,7 @@ export default function AppWorkspace() {
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
   const [isAtTop, setIsAtTop] = useState(window.scrollY === 0);
+  const [hidePercentDone, setHidePercentDone] = useState(false);
   const [scrolledToAnchorInView, setScrolledToAnchorInView] = useState({
     view: '',
     documentAnchor: '',
@@ -109,7 +112,7 @@ export default function AppWorkspace() {
     if (repo) {
       repoFullName = repo.full_name;
     } else {
-      repoFullName = `${urlInfo.owner}/${urlInfo.repo}`
+      repoFullName = `${urlInfo.owner}/${urlInfo.repo}`;
     }
     dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`;
     if (catalogEntry) {
@@ -266,6 +269,18 @@ export default function AppWorkspace() {
     }
   }, [view, documentAnchor, currentViewRef?.current?.current?.innerHTML, scrolledToAnchorInView]);
 
+  useEffect(() => {
+    if (printPreviewPercentDone === 100) {
+      const timeoutId = setTimeout(() => {
+        setHidePercentDone(true);
+      }, 5000);
+
+      return () => clearTimeout(timeoutId); // Clean up on unmount
+    } else if (hidePercentDone) {
+      setHidePercentDone(false);
+    }
+  }, [printPreviewPercentDone, hidePercentDone]);
+
   return (
     <Sheet>
       {!fullScreen &&
@@ -358,26 +373,6 @@ export default function AppWorkspace() {
                         setIsOpenPrint(true);
                       }}
                     />
-                    <CircularProgress
-                      variant="determinate"
-                      value={100}
-                      size={32} // adjust to match the size of the icon
-                      sx={{
-                        position: 'absolute',
-                        zIndex: 1,
-                        color: 'grey',
-                      }}
-                    />
-                    <CircularProgress
-                      variant="determinate"
-                      value={printPreviewPercentDone}
-                      size={32} // adjust to match the size of the icon
-                      sx={{
-                        position: 'absolute',
-                        zIndex: 1,
-                        color: printPreviewPercentDone < 50 ? 'red' : printPreviewPercentDone < 100 ? 'orange' : 'green',
-                      }}
-                    />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Full screen" arrow>
@@ -392,29 +387,46 @@ export default function AppWorkspace() {
                 </Tooltip>
               </div>
             </Toolbar>
+            {view === "print" && !hidePercentDone && (
+              <Tooltip title="Preview Rendering Status" arrow>
+                <LinearProgress
+                  variant="determinate"
+                  value={printPreviewPercentDone}
+                  sx={{
+                    height: 5,
+                    backgroundColor: 'grey',
+                    '& .MuiLinearProgress-bar': {
+                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                    },
+                  }}
+                />
+              </Tooltip>
+            )}
+            {view === 'web' && !htmlSections.body && !errorMessages && <LoadingBar />}
           </AppBar>
         )}
-        {errorMessages.map((message, i) => (
-          <Alert
-            key={`errorMessage${i}`}
-            sx={{ alignItems: 'flex-start' }}
-            startDecorator={<ReportIcon />}
-            variant="soft"
-            color="danger"
-            endDecorator={
-              <IconButton variant="soft" color="danger" onClick={() => clearErrorMessage(i)}>
-                <CloseRoundedIcon />
-              </IconButton>
-            }
-          >
-            <div>
-              <div>Error</div>
-              <Typography level="body-sm" color="danger">
-                {message}
-              </Typography>
-            </div>
-          </Alert>
-        ))}
+        {errorMessages &&
+          errorMessages.map((message, i) => (
+            <Alert
+              key={`errorMessage${i}`}
+              sx={{ alignItems: 'flex-start' }}
+              startDecorator={<ReportIcon />}
+              variant="soft"
+              color="danger"
+              endDecorator={
+                <IconButton variant="soft" color="danger" onClick={() => clearErrorMessage(i)}>
+                  <CloseRoundedIcon />
+                </IconButton>
+              }
+            >
+              <div>
+                <div>Error</div>
+                <Typography level="body-sm" color="danger">
+                  {message}
+                </Typography>
+              </div>
+            </Alert>
+          ))}
         <div
           id="main-content"
           style={{
@@ -451,7 +463,7 @@ export default function AppWorkspace() {
           {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
             <PrintPreviewComponent ref={printPreviewRef} view={view} />
           )}
-          {statusMessage && !imagesLoaded && !errorMessages.length && (
+          {statusMessage && !imagesLoaded && !errorMessages && (
             <Box
               sx={{
                 display: 'flex',
@@ -472,7 +484,7 @@ export default function AppWorkspace() {
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != '' || errorMessages.length > 0 || (urlInfo && !urlInfo.repo)}
+          canLoad={htmlSections?.body != '' || errorMessages || !urlInfo?.repo}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
         />
