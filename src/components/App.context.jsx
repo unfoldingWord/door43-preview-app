@@ -198,7 +198,7 @@ export function AppContextProvider({ children }) {
     const ref = urlInfo?.ref || repo?.default_branch || 'master';
 
     const fetchFromS3Cache = async () => {
-      const url = `http://${import.meta.env.VITE_S3_PREVIEW_BUCKET_NAME}.s3-website-${import.meta.env.VITE_S3_PREVIEW_REGION}.amazonaws.com/u/${urlInfo.owner}/${urlInfo.repo}/${ref}.json`;
+      const url = `http://${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}.s3-website-${import.meta.env.VITE_PREVIEW_S3_REGION}.amazonaws.com/u/${urlInfo.owner}/${urlInfo.repo}/${ref}.json`;
       const response = await fetch(url);
       let data = { owner: urlInfo.owner, repo: urlInfo.repo, ref, books: {} };
       if (response.ok) {
@@ -346,7 +346,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const save2s3 = async () => {
       const path = `u/${catalogEntry.repo.full_name}/${catalogEntry.branch_or_tag_name}.json`;
-      const verification = import.meta.env.VITE_SAVE2S3_VERIFICATION_KEY;
+      const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
       const fileContents = {
         firstBook: catalogEntry.ingredients?.filter((ingredient) => ingredient.identifier in BibleBookData).map((ingredient) => ingredient.identifier)[0] || '',
         ...cachedHtmlRenderings,

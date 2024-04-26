@@ -24,7 +24,7 @@ exports.handler = async function(event, context) {
   const verification = req.body.verification;
   const path = req.body.path;
   
-  if (verification !== process.env.VITE_SAVE2S3_VERIFICATION_KEY) {
+  if (verification !== process.env.VITE_PREVIEW_VERIFICATION_KEY) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
 
@@ -35,7 +35,7 @@ exports.handler = async function(event, context) {
   AWS.config.update({
     accessKeyId,
     secretAccessKey,
-    region: process.env.PREVIEW_S3_REGION,
+    region: process.env.VITE_PREVIEW_S3_REGION,
   });
 
   // Create an S3 instance
