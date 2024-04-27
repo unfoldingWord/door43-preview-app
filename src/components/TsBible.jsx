@@ -96,7 +96,7 @@ a.footnote {
 export default function TsBible() {
   const {
     state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
-    actions: { setBookId, setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [supportedBooks, setSupportedBooks] = useState([]);
@@ -229,14 +229,13 @@ export default function TsBible() {
       _html = `<section class="bible-book" id="hash-${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
       setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
       setStatusMessage('');
-      setWebCss(webCss);
-      setPrintCss(printCss);
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
     };
 
     if (htmlReady && renderedData) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
-  }, [bookId, htmlReady, renderedData, bookTitle, setWebCss, setPrintCss, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [bookId, htmlReady, renderedData, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   return (
     <ThemeProvider theme={theme}>

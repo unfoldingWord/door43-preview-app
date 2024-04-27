@@ -10,17 +10,18 @@ import { AppContext } from '@components/App.context';
 
 export const WebPreviewComponent = forwardRef(({ style }, ref) => {
   const {
-    state: { webCss, printCss, htmlSections, cachedHtmlSection },
+    state: {htmlSections, cachedHtmlSections },
   } = useContext(AppContext);
 
   return (
     <>
-      <style type="text/css">{webCss + printCss}</style>
+      <style type="text/css">{htmlSections?.css?.web || cachedHtmlSections?.css?.web}</style>
+      <style type="text/css">{htmlSections?.css?.print || cachedHtmlSections?.css?.print}</style>
       <div
         id="web-preview"
         style={style}
         dangerouslySetInnerHTML={{
-          __html: DOMPurify.sanitize(htmlSections?.body || cachedHtmlSection?.body, { ADD_ATTR: ['target'] }),
+          __html: DOMPurify.sanitize(htmlSections?.body || cachedHtmlSections?.body, { ADD_ATTR: ['target'] }),
         }}
         ref={ref}
       />

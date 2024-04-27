@@ -110,7 +110,7 @@ const printCss = `
 export default function RcTranslationWords() {
   const {
     state: { catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
   } = useContext(AppContext);
 
   const [copyright, setCopyright] = useState('');
@@ -129,9 +129,8 @@ export default function RcTranslationWords() {
         Please wait...
       </>
     );
-    setWebCss(webCss);
-    setPrintCss(printCss);
-  }, [catalogEntry, setWebCss, setPrintCss, setStatusMessage]);
+    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
+  }, [catalogEntry, setStatusMessage, setHtmlSections]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {

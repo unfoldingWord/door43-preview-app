@@ -26,12 +26,12 @@ export default defineConfig({
       }
     }
   },
-  server: {
-    proxy: {
-      '/.netlify/functions/': {
-        target: 'https://develop--door43-preview.netlify.app',
-        changeOrigin: true,
-      },
-    },
-  },
+  // server: {
+  //   proxy: {
+  //     '/.netlify/functions/': {
+  //       target: 'https://develop--door43-preview.netlify.app',
+  //       changeOrigin: true,
+  //     },
+  //   },
+  // },
 })

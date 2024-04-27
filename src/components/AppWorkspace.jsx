@@ -57,6 +57,8 @@ export default function AppWorkspace() {
       statusMessage,
       errorMessages,
       htmlSections,
+      cachedHtmlSections,
+      cachedBook,
       serverInfo,
       isOpenPrint,
       documentAnchor,
@@ -97,7 +99,7 @@ export default function AppWorkspace() {
   // }
 
   const printDrawerProps = {
-    openPrintDrawer: isOpenPrint && htmlSections?.body != '',
+    openPrintDrawer: isOpenPrint && !htmlSections?.body,
     onClosePrintDrawer: () => {
       setIsOpenPrint(false);
     },
@@ -286,6 +288,7 @@ export default function AppWorkspace() {
       {!fullScreen &&
         (window.location.hostname == 'preview.door43.org' ||
           window.location.hostname.includes('netlify') ||
+          window.location.host == 'localhost:8888' ||
           window.location.host == 'localhost:5173' ||
           window.location.host == 'localhost:4173') && (
           <Header title={title} dcsRef={dcsRef} infoLine={infoLine} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
@@ -387,7 +390,7 @@ export default function AppWorkspace() {
                 </Tooltip>
               </div>
             </Toolbar>
-            {view === "print" && !hidePercentDone && (
+            {view === 'print' && !hidePercentDone && (
               <Tooltip title="Preview Rendering Status" arrow>
                 <LinearProgress
                   variant="determinate"
@@ -402,7 +405,13 @@ export default function AppWorkspace() {
                 />
               </Tooltip>
             )}
-            {view === 'web' && !htmlSections.body && !errorMessages && <LoadingBar />}
+            {view === 'web' && !htmlSections.body && !errorMessages && (
+              <LoadingBar
+                message={
+                  cachedHtmlSections?.body && `You are viewing a previous rendering (${cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`
+                }
+              />
+            )}
           </AppBar>
         )}
         {errorMessages &&
@@ -450,20 +459,7 @@ export default function AppWorkspace() {
               ]}
             />
           )}
-          {urlInfo && !urlInfo.owner && serverInfo && <ResourcesCardGrid />}
-          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && view == 'web' && (
-            <WebPreviewComponent
-              ref={webPreviewRef}
-              style={{
-                backgroundColor: 'white',
-                direction: catalogEntry ? catalogEntry.language_direction : 'ltr',
-              }}
-            />
-          )}
-          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
-            <PrintPreviewComponent ref={printPreviewRef} view={view} />
-          )}
-          {statusMessage && !imagesLoaded && !errorMessages && (
+          {statusMessage && !htmlSections?.body && !errorMessages && (
             <Box
               sx={{
                 display: 'flex',
@@ -479,6 +475,19 @@ export default function AppWorkspace() {
                 {statusMessage}
               </Typography>
             </Box>
+          )}
+          {urlInfo && !urlInfo.owner && serverInfo && <ResourcesCardGrid />}
+          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && view == 'web' && (
+            <WebPreviewComponent
+              ref={webPreviewRef}
+              style={{
+                backgroundColor: 'white',
+                direction: catalogEntry ? catalogEntry.language_direction : 'ltr',
+              }}
+            />
+          )}
+          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
+            <PrintPreviewComponent ref={printPreviewRef} view={view} />
           )}
         </div>
       </Card>

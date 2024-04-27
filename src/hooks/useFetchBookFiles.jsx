@@ -15,7 +15,6 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
       }
 
       const promises = [];
-      console.log("CATALOG ENTRIES", catalogEntries)
       catalogEntries.forEach((catalogEntry) => {
         let filePath = '';
         catalogEntry.ingredients.forEach((ingredient) => {

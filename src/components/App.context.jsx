@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import packageJson from '../../package.json';
 import { BibleBookData } from '@common/books';
-import JSZip from 'jszip';
+import pako from 'pako';
 
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
@@ -39,9 +39,7 @@ export function AppContextProvider({ children }) {
   const [catalogEntry, setCatalogEntry] = useState();
   const [ResourceComponent, setResourceComponent] = useState();
   const [bookId, setBookId] = useState('');
-  const [htmlSections, setHtmlSections] = useState({ cover: '', copyright: '', toc: '', body: '' });
-  const [webCss, setWebCss] = useState('');
-  const [printCss, setPrintCss] = useState('');
+  const [htmlSections, setHtmlSections] = useState({ css: {web: '', print: ''}, cover: '', copyright: '', toc: '', body: '' });
   const [canChangeColumns, setCanChangeColumns] = useState(false);
   const [isOpenPrint, setIsOpenPrint] = useState(false);
   const [printOptions, setPrintOptions] = useState({});
@@ -50,9 +48,8 @@ export function AppContextProvider({ children }) {
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
   const [authToken, setAuthToken] = useState();
-  const [cachedHtmlRenderings, setCachedHtmlRenderings] = useState();
+  const [cachedBook, setCachedBook] = useState();
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
-  const [fetchingCachedHtmlRenderings, setFetchingCachedHtmlRenderings] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -61,8 +58,8 @@ export function AppContextProvider({ children }) {
   const setErrorMessage = useCallback(
     (message) => {
       setErrorMessages((prevState) => {
-        if (! prevState || ! prevState.includes(message)) {
-          return [...prevState, message];
+        if (!prevState || !prevState.includes(message)) {
+          return [...(prevState ?? []), message];
         }
         return prevState;
       });
@@ -195,59 +192,64 @@ export function AppContextProvider({ children }) {
   }, [serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
-    const ref = urlInfo?.ref || repo?.default_branch || 'master';
-
-    const fetchFromS3Cache = async () => {
-      const url = `http://${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}.s3-website-${import.meta.env.VITE_PREVIEW_S3_REGION}.amazonaws.com/u/${urlInfo.owner}/${urlInfo.repo}/${ref}.json`;
-      const response = await fetch(url);
-      let data = { owner: urlInfo.owner, repo: urlInfo.repo, ref, books: {} };
-      if (response.ok) {
-        data = await response.json();
-        console.log('WE GOT DATA!!!!', data);
-      }
-      setFetchingCachedHtmlRenderings(false);
-      setCachedHtmlRenderings(data);
-    };
-
-    console.log(fetchingCachedHtmlRenderings, urlInfo?.owner, urlInfo?.repo, htmlSections.body == '', cachedHtmlRenderings);
-    if (!fetchingCachedHtmlRenderings && urlInfo?.owner && urlInfo?.repo && htmlSections.body == '' && (!cachedHtmlRenderings || cachedHtmlRenderings.ref != ref)) {
-      setFetchingCachedHtmlRenderings(true);
-      fetchFromS3Cache();
-    }
-  }, [urlInfo, repo, htmlSections?.body, cachedHtmlRenderings, fetchingCachedHtmlRenderings]);
-
-  useEffect(() => {
     const fetchCatalogEntry = async () => {
-      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken)
+      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken);
       if (entry) {
-        console.log("ENTRY", entry)
-        let b = '';
-        if (urlInfo?.hashParts?.[0] in BibleBookData) {
-          b = urlInfo.hashParts[0].toLowerCase();
-        } else if (cachedHtmlRenderings.firstBook) {
-          b = cachedHtmlRenderings.firstBook;
-        }
-        console.log("BOOK", b);
-        setBookId(b);
-        const data = cachedHtmlRenderings?.books?.[b] || {};
-        console.log("data", data);
-        console.log("CHS", data?.htmlSections);
-        setCachedHtmlSections(data?.htmlSections);
-        if (data?.catalogEntry?.commit_sha == entry.commit_sha) {
-          console.log("htmlSections", data.htmlSections);
-          setHtmlSections(data.htmlSections);
-        }
         setCatalogEntry(entry);
+      } else {
+        setErrorMessage('Unable to find a valid catalog entry for this resource.');
       }
     };
 
-    if (repo && cachedHtmlRenderings) {
+    if (repo) {
       fetchCatalogEntry().catch((e) => setErrorMessage(e.message));
     }
-  }, [repo, cachedHtmlRenderings, serverInfo, urlInfo, authToken, setErrorMessage]);
+  }, [repo, serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
-    if (catalogEntry) {
+    const determinBookIdAndFetchCachedBook = async () => {
+      let b = ''
+      const sortedIngredients = catalogEntry?.ingredients?.sort((a, b) => a.sort - b.sort) || [];
+      for (let ingredient of sortedIngredients) {
+        if (ingredient.identifier in BibleBookData && (! urlInfo?.hashParts?.[0] || ingredient.identifier == urlInfo.hashParts[0].toLowerCase())) {
+          b = ingredient.identifier;
+          break;
+        }
+      }
+      setBookId(b);
+
+      let cb = {};
+      const url = `http://${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}.s3-website-${import.meta.env.VITE_PREVIEW_S3_REGION}.amazonaws.com/u/${catalogEntry.full_name}/${catalogEntry.branch_or_tag_name}/${b || 'all'}.gzip`;
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const jsonString = pako.inflate(new Uint8Array(await response.arrayBuffer()), { to: 'string' });
+          if (jsonString) {
+            cb = JSON.parse(jsonString);
+            if (cb.catalogEntry.commit_sha == catalogEntry.commit_sha && cb.preview_version == packageJson.version) {
+              setHtmlSections(cb.htmlSections)
+            } else {
+              setCachedHtmlSections(cb.htmlSections);
+            }
+          } else {
+            console.log(`No JSON file found in the zip at ${url}`);
+          }
+        } else {
+          console.log(`Bad response from server for ${url}: `, response.status, response.statusText);
+        }
+      } catch(err) {
+        console.log(`Error fetching cached book at ${url}: `, err.message);
+      }
+      setCachedBook(cb);
+    }
+
+    if(catalogEntry) {
+      determinBookIdAndFetchCachedBook()
+    }
+  }, [catalogEntry, urlInfo]);
+
+  useEffect(() => {
+    if (catalogEntry && cachedBook) {
       if (!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type) {
         if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
           catalogEntry.title = catalogEntry.repo.title;
@@ -341,59 +343,52 @@ export function AppContextProvider({ children }) {
       }
       setErrorMessage(`Not a valid repository that can be convert.`);
     }
-  }, [catalogEntry, setErrorMessage]);
+  }, [catalogEntry, cachedBook, setErrorMessage]);
 
   useEffect(() => {
-    const save2s3 = async () => {
-      const path = `u/${catalogEntry.repo.full_name}/${catalogEntry.branch_or_tag_name}.json`;
-      const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
-      const fileContents = {
-        firstBook: catalogEntry.ingredients?.filter((ingredient) => ingredient.identifier in BibleBookData).map((ingredient) => ingredient.identifier)[0] || '',
-        ...cachedHtmlRenderings,
-        books: {
-          ...cachedHtmlRenderings.books,
-          [bookId]: {
-            preview_version: packageJson.version,
-            date_iso: new Date().toISOString(),
-            date_unix: new Date().getTime(),
-            catalogEntry,
-            htmlSections: htmlSections,
-          },
-        },
+    const uploadCachedBook = async () => {
+      const cachedBook = {
+        bookId: bookId,
+        preview_version: packageJson.version,
+        date_iso: new Date().toISOString(),
+        date_unix: new Date().getTime(),
+        commit_sha: catalogEntry.commit_sha,
+        htmlSections: htmlSections,
+        catalogEntry: catalogEntry,
       };
-      const zip = new JSZip();
-      const fileContentsString = JSON.stringify(fileContents);
-      zip.file('data.json', fileContentsString);
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const formData = new FormData();
-      formData.append('file', zipBlob, 'data.zip');
-      formData.append('verification', verification);
-      formData.append('path', path);
+
+      const jsonString = JSON.stringify(cachedBook);
+      const compressedData = pako.gzip(jsonString, { to: 'string' });
+      console.log('Compressed Data Size:', compressedData?.length);
+
+      const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
+      const path = `u/${urlInfo.owner}/${urlInfo.repo}/${catalogEntry.branch_or_tag_name}/${bookId || 'all'}.gzip`;
 
       try {
-        const response = await fetch('/.netlify/functions/save2s3', {
+        const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {
           method: 'POST',
-          body: formData,
+          body: compressedData,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
         });
         if (response.ok) {
           console.log('Upload Success', await response.json());
         } else {
           console.log('UploadFailed', response);
         }
-      } catch(err) {
-        console.log("Upload Failed. Error: ", err)
+      } catch (err) {
+        console.log('Upload Failed. Error: ', err);
       }
     };
 
-    if (
-      catalogEntry &&
-      htmlSections.body != '' &&
-      cachedHtmlRenderings &&
-      (cachedHtmlRenderings?.books?.[bookId]?.preview_version != packageJson.version || cachedHtmlRenderings?.books?.[bookId]?.catalogEntry?.commit_sha != catalogEntry.commit_sha)
-    ) {
-      save2s3().catch((e) => console.log(e.message));
+    if (htmlSections.body != '' && 
+    (cachedBook?.bookId != bookId || cachedBook?.preview_version != packageJson.version || 
+      cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
+      JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))) {
+      uploadCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, cachedHtmlRenderings, bookId]);
+  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo]);
 
   // create the value for the context provider
   const context = {
@@ -406,8 +401,6 @@ export function AppContextProvider({ children }) {
       repo,
       ResourceComponent,
       htmlSections,
-      webCss,
-      printCss,
       canChangeColumns,
       buildInfo,
       serverInfo,
@@ -418,6 +411,7 @@ export function AppContextProvider({ children }) {
       printPreviewStatus,
       printPreviewPercentDone,
       authToken,
+      cachedBook,
       cachedHtmlSections,
     },
     actions: {
@@ -426,8 +420,6 @@ export function AppContextProvider({ children }) {
       setErrorMessage,
       clearErrorMessage,
       setHtmlSections,
-      setWebCss,
-      setPrintCss,
       setCanChangeColumns,
       setIsOpenPrint,
       setPrintOptions,

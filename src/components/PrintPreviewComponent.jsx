@@ -84,7 +84,7 @@ const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) =
 
 export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   const {
-    state: { catalogEntry, htmlSections, webCss, printCss, printOptions, printPreviewStatus, cachedHtmlSections },
+    state: { catalogEntry, htmlSections, printOptions, printPreviewStatus, cachedHtmlSections },
     actions: { setPrintPreviewStatus, setPrintPreviewPercentDone },
   } = useContext(AppContext);
 
@@ -299,9 +299,9 @@ h1 {
   font-size: 1.6em;
 }
 
-${webCss}
+${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
-${printCss}
+${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
 `;
       const htmlStr = `
 <div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
@@ -324,7 +324,7 @@ ${printCss}
     if ((htmlSections?.body || cachedHtmlSections?.body) && Object.keys(printOptions).length) {
       preparingForPrintPreview();
     }
-  }, [catalogEntry, htmlSections, cachedHtmlSections, printOptions, webCss, printCss, ref]);
+  }, [catalogEntry, htmlSections, cachedHtmlSections, printOptions, ref]);
 
   useEffect(() => {
     if (htmlToRender && cssToRender && ref.current) {

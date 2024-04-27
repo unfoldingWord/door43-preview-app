@@ -149,7 +149,7 @@ a.header-link:hover::after {
 export default function RcTranslationQuestions() {
   const {
     state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
-    actions: { setBookId, setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [bookTitle, setBookTitle] = useState();
@@ -241,7 +241,7 @@ export default function RcTranslationQuestions() {
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
       setBookId(_bookId);
       setBookTitle(title);
-      setWebCss(webCss);
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
       setStatusMessage(
         <>
@@ -256,7 +256,7 @@ export default function RcTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry]);
+  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns]);
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {

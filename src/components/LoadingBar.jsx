@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function LoadingBar() {
+export default function LoadingBar({message=""}) {
   return (
     <>
       <style>
@@ -13,11 +13,13 @@ export default function LoadingBar() {
       </style>
       <div
         style={{
-          height: 5,
           width: '100%',
+          minHeight: '5px',
           backgroundColor: 'grey',
           position: 'relative',
           overflow: 'hidden',
+          textAlign: 'center',
+          color: 'white',
         }}
       >
         <div
@@ -31,6 +33,7 @@ export default function LoadingBar() {
             animation: 'pulse 2s infinite linear',
           }}
         />
+        {message}
       </div>
     </>
   );

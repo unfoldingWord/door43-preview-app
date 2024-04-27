@@ -137,7 +137,7 @@ const quoteTokenDelimiter = ' … ';
 export default function RcTranslationNotes() {
   const {
     state: { urlInfo, catalogEntry, bookId, htmlSections, documentAnchor, authToken },
-    actions: { setBookId, setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [bookTitle, setBookTitle] = useState();
@@ -289,8 +289,6 @@ export default function RcTranslationNotes() {
     quoteTokenDelimiter,
   });
 
-  console.log("TWLTSVDATAWITHQUOTES", twlTsvDataWithGLQuotes)
-
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {
       const parts = documentAnchor.split('-');
@@ -341,10 +339,10 @@ export default function RcTranslationNotes() {
       }
     };
 
-    setWebCss(webCss);
+    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
     setCanChangeColumns(false);
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setWebCss]);
+  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -693,12 +691,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
-      console.log("GENERATED HTML!!!!")
       setHtml(html);
     };
 
     if (! htmlSections?.body && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes) {
-      console.log("GENERATING HTML!!!!")
       generateHtml();
     }
   }, [
