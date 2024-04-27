@@ -219,7 +219,7 @@ export function AppContextProvider({ children }) {
       setBookId(b);
 
       let cb = {};
-      const url = `https://${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}.s3-website-${import.meta.env.VITE_PREVIEW_S3_REGION}.amazonaws.com/u/${catalogEntry.full_name}/${catalogEntry.branch_or_tag_name}/${b || 'all'}.gzip`;
+      const url = `https://s3.us-west-2.amazonaws.com/${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${catalogEntry.full_name}/${catalogEntry.branch_or_tag_name}/${b || 'all'}.gzip`;
       try {
         const response = await fetch(url);
         if (response.ok) {
