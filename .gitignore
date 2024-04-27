@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 temp/*
+.env
 
 # Editor directories and files
 .vscode/*
@@ -26,3 +27,7 @@ temp/*
 
 # Local Netlify folder
 .netlify
+
+# VSCode History
+.history
+

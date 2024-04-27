@@ -13,7 +13,6 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
       }
       let data = JSON.parse(JSON.stringify(tsvData));
 
-      console.log("HERE DOING THIS!!!!")
       for (let chapter in data) {
         for (let verse in data[chapter]) {
           for (let row of data[chapter][verse]) {

@@ -111,7 +111,6 @@ export default function RcObsTranslationNotes() {
       authToken,
     },
     actions: {
-      setWebCss,
       setErrorMessage,
       setHtmlSections,
       setDocumentAnchor,
@@ -193,7 +192,7 @@ export default function RcObsTranslationNotes() {
 
   useEffect(() => {
     bibleReferenceActions.applyBooksFilter("obs")
-    setWebCss(webCss)
+    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
   }, [])
 
   useEffect(() => {

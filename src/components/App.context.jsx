@@ -1,9 +1,9 @@
 // React imports
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-// import AWS from 'aws-sdk';
-
-const S3_BUCKET_NAME = 'preview.door43.org';
+import packageJson from '../../package.json';
+import { BibleBookData } from '@common/books';
+import pako from 'pako';
 
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
@@ -31,16 +31,15 @@ export function AppContextProvider({ children }) {
       Please wait...
     </>
   );
-  const [errorMessages, setErrorMessages] = useState([]);
+  const [errorMessages, setErrorMessages] = useState();
   const [urlInfo, setUrlInfo] = useState();
   const [serverInfo, setServerInfo] = useState();
   const [buildInfo, setBuildInfo] = useState();
   const [repo, setRepo] = useState();
   const [catalogEntry, setCatalogEntry] = useState();
   const [ResourceComponent, setResourceComponent] = useState();
-  const [htmlSections, setHtmlSections] = useState({ cover: '', copyright: '', toc: '', body: '' });
-  const [webCss, setWebCss] = useState('');
-  const [printCss, setPrintCss] = useState('');
+  const [bookId, setBookId] = useState('');
+  const [htmlSections, setHtmlSections] = useState({ css: {web: '', print: ''}, cover: '', copyright: '', toc: '', body: '' });
   const [canChangeColumns, setCanChangeColumns] = useState(false);
   const [isOpenPrint, setIsOpenPrint] = useState(false);
   const [printOptions, setPrintOptions] = useState({});
@@ -49,6 +48,8 @@ export function AppContextProvider({ children }) {
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
   const [authToken, setAuthToken] = useState();
+  const [cachedBook, setCachedBook] = useState();
+  const [cachedHtmlSections, setCachedHtmlSections] = useState();
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -56,18 +57,18 @@ export function AppContextProvider({ children }) {
 
   const setErrorMessage = useCallback(
     (message) => {
-      setErrorMessages((prevErrorMessages) => {
-        if (!prevErrorMessages.includes(message)) {
-          return [...prevErrorMessages, message];
+      setErrorMessages((prevState) => {
+        if (!prevState || !prevState.includes(message)) {
+          return [...(prevState ?? []), message];
         }
-        return prevErrorMessages;
+        return prevState;
       });
     },
     [setErrorMessages]
   );
 
   const clearErrorMessage = (idxToRemove) => {
-    if (errorMessages.length > idxToRemove) {
+    if (errorMessages && errorMessages.length > idxToRemove) {
       errorMessages.splice(idxToRemove, 1);
       setErrorMessages(errorMessages.map((value, idx) => idx != idxToRemove));
     }
@@ -169,8 +170,8 @@ export function AppContextProvider({ children }) {
                   Manage Access Tokens
                 </a>
                 <span>
-                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put that in the URL above in the address bar
-                  after&nbsp;
+                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put the token you are given in the URL above in the
+                  address bar after&nbsp;
                 </span>
                 <span style={{ fontWeight: 'bold', fontStyle: 'italic' }}>token=</span>
                 <span>&nbsp;and hit Enter/Return to reload the page.</span>
@@ -192,9 +193,12 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken)
-        .then((entry) => setCatalogEntry(entry))
-        .catch((err) => setErrorMessage(err.message));
+      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken);
+      if (entry) {
+        setCatalogEntry(entry);
+      } else {
+        setErrorMessage('Unable to find a valid catalog entry for this resource.');
+      }
     };
 
     if (repo) {
@@ -203,7 +207,49 @@ export function AppContextProvider({ children }) {
   }, [repo, serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
-    if (catalogEntry) {
+    const determinBookIdAndFetchCachedBook = async () => {
+      let b = ''
+      const sortedIngredients = catalogEntry?.ingredients?.sort((a, b) => a.sort - b.sort) || [];
+      for (let ingredient of sortedIngredients) {
+        if (ingredient.identifier in BibleBookData && (! urlInfo?.hashParts?.[0] || ingredient.identifier == urlInfo.hashParts[0].toLowerCase())) {
+          b = ingredient.identifier;
+          break;
+        }
+      }
+      setBookId(b);
+
+      let cb = {};
+      const url = `https://s3.us-west-2.amazonaws.com/${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${catalogEntry.full_name}/${catalogEntry.branch_or_tag_name}/${b || 'all'}.gzip`;
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const jsonString = pako.inflate(new Uint8Array(await response.arrayBuffer()), { to: 'string' });
+          if (jsonString) {
+            cb = JSON.parse(jsonString);
+            if (cb.catalogEntry.commit_sha == catalogEntry.commit_sha && cb.preview_version == packageJson.version) {
+              setHtmlSections(cb.htmlSections)
+            } else {
+              setCachedHtmlSections(cb.htmlSections);
+            }
+          } else {
+            console.log(`No JSON file found in the zip at ${url}`);
+          }
+        } else {
+          console.log(`Bad response from server for ${url}: `, response.status, response.statusText);
+        }
+      } catch(err) {
+        console.log(`Error fetching cached book at ${url}: `, err.message);
+      }
+      setCachedBook(cb);
+    }
+
+    if(catalogEntry) {
+      determinBookIdAndFetchCachedBook()
+    }
+  }, [catalogEntry, urlInfo]);
+
+  useEffect(() => {
+    if (catalogEntry && cachedBook) {
       if (!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type) {
         if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
           catalogEntry.title = catalogEntry.repo.title;
@@ -297,43 +343,64 @@ export function AppContextProvider({ children }) {
       }
       setErrorMessage(`Not a valid repository that can be convert.`);
     }
-  }, [catalogEntry, setErrorMessage]);
+  }, [catalogEntry, cachedBook, setErrorMessage]);
 
   useEffect(() => {
-    if (htmlSections && htmlSections.html && htmlSections.copyright) {
-      // const s3 = new AWS.S3({
-      //   // Configure S3 with temporary credentials obtained from Netlify
-      //   credentials: {
-      //     accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-      //     secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-      //     sessionToken: process.env.REACT_APP_AWS_SESSION_TOKEN,
-      //   },
-      // });
-      // const params = {
-      //   Bucket: S3_BUCKET_NAME,
-      //   Key: selectedFile.name, // File name in S3 bucket
-      //   Body: selectedFile,
-      // };
-      // s3.upload(params).promise().then(() => {
-      //   console.log("JSON UPLOADED");
-      // }).error(e => {
-      //   console.error(e);
-      // });
+    const uploadCachedBook = async () => {
+      const cachedBook = {
+        bookId: bookId,
+        preview_version: packageJson.version,
+        date_iso: new Date().toISOString(),
+        date_unix: new Date().getTime(),
+        commit_sha: catalogEntry.commit_sha,
+        htmlSections: htmlSections,
+        catalogEntry: catalogEntry,
+      };
+
+      const jsonString = JSON.stringify(cachedBook);
+      const compressedData = pako.gzip(jsonString, { to: 'string' });
+      console.log('Compressed Data Size:', compressedData?.length);
+
+      const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
+      const path = `u/${urlInfo.owner}/${urlInfo.repo}/${catalogEntry.branch_or_tag_name}/${bookId || 'all'}.gzip`;
+
+      try {
+        const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {
+          method: 'POST',
+          body: compressedData,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+        });
+        if (response.ok) {
+          console.log('Upload Success', await response.json());
+        } else {
+          console.log('UploadFailed', response);
+        }
+      } catch (err) {
+        console.log('Upload Failed. Error: ', err);
+      }
+    };
+
+    if (htmlSections.body != '' && 
+    (cachedBook?.bookId != bookId || cachedBook?.preview_version != packageJson.version || 
+      cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
+      JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))) {
+      uploadCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections]);
+  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo]);
 
   // create the value for the context provider
   const context = {
     state: {
       urlInfo,
       catalogEntry,
+      bookId,
       statusMessage,
       errorMessages,
       repo,
       ResourceComponent,
       htmlSections,
-      webCss,
-      printCss,
       canChangeColumns,
       buildInfo,
       serverInfo,
@@ -344,6 +411,8 @@ export function AppContextProvider({ children }) {
       printPreviewStatus,
       printPreviewPercentDone,
       authToken,
+      cachedBook,
+      cachedHtmlSections,
     },
     actions: {
       onPrintClick,
@@ -351,8 +420,6 @@ export function AppContextProvider({ children }) {
       setErrorMessage,
       clearErrorMessage,
       setHtmlSections,
-      setWebCss,
-      setPrintCss,
       setCanChangeColumns,
       setIsOpenPrint,
       setPrintOptions,
@@ -360,6 +427,7 @@ export function AppContextProvider({ children }) {
       setDocumentAnchor,
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
+      setBookId,
     },
   };
 

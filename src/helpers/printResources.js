@@ -1,4 +1,4 @@
-const printResources = {
+export const printResources = {
   pageCssTemplate: `
     @page {
         size: %pageWidth% %pageHeight%;

@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,6 +28,7 @@
     "lodash": "4.17.21",
     "markdown-it": "^14.0.0",
     "pagedjs": "^0.4.3",
+    "pako": "^2.1.0",
     "papaparse": "^5.4.1",
     "prop-types": "^15.8.1",
     "proskomma-core": "^0.10.4",

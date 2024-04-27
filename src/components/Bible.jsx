@@ -100,12 +100,11 @@ a.footnote {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
+    state: { urlInfo, catalogEntry, documentAnchor, authToken, bookId, htmlSections },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
   const [supportedBooks, setSupportedBooks] = useState([]);
-  const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
   const [usfmText, setUsfmText] = useState();
 
@@ -178,7 +177,7 @@ export default function Bible() {
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
+      let _bookId = urlInfo.hashParts[0] || sb[0] || bookId;
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -201,10 +200,8 @@ export default function Bible() {
       setPrintOptions((prevState) => ({ ...prevState, columns: 2 }));
     };
 
-    if (!bookId) {
-      setInitialBookIdAndSupportedBooks();
-    }
-  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setPrintOptions]);
+    setInitialBookIdAndSupportedBooks();
+  }, [urlInfo, catalogEntry]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
@@ -240,10 +237,10 @@ export default function Bible() {
         });
     };
 
-    if (catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
+    if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
       fetchUsfmFileFromDCS();
     }
-  }, [supportedBooks, catalogEntry, bookId, setErrorMessage]);
+  }, [htmlSections, supportedBooks, catalogEntry, bookId, setErrorMessage]);
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
@@ -270,14 +267,13 @@ export default function Bible() {
       
       setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
       setStatusMessage('');
-      setWebCss(webCss);
-      setPrintCss(printCss);
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
     };
 
     if (htmlReady && renderedData) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
-  }, [bookId, htmlReady, renderedData, bookTitle, setWebCss, setPrintCss, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [bookId, htmlReady, renderedData, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   return (
     <ThemeProvider theme={theme}>

@@ -136,11 +136,10 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, htmlSections, documentAnchor, authToken },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
-  const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
@@ -340,10 +339,10 @@ export default function RcTranslationNotes() {
       }
     };
 
-    setWebCss(webCss);
+    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
     setCanChangeColumns(false);
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setWebCss]);
+  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -695,11 +694,12 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setHtml(html);
     };
 
-    if (targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes) {
+    if (! htmlSections?.body && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes) {
       generateHtml();
     }
   }, [
     catalogEntry,
+    htmlSections,
     taCatalogEntries,
     bookId,
     bookTitle,
@@ -743,13 +743,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && sourceBibleCatalogEntries && targetBibleCatalogEntries.length) {
+    if (! htmlSections?.copyright && catalogEntry && sourceBibleCatalogEntries && targetBibleCatalogEntries.length) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, setCopyright]);
+  }, [htmlSections, catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, authToken, setCopyright]);
 
   useEffect(() => {
-    if (html && copyright) {
+    if (! htmlSections?.body && html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
         cover: `<h3>${bookTitle}</h3>`,
@@ -758,7 +758,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       }));
       setStatusMessage('');
     }
-  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
+  }, [htmlSections, html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

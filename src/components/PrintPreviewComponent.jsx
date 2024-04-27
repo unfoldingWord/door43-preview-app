@@ -84,7 +84,7 @@ const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) =
 
 export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   const {
-    state: { catalogEntry, htmlSections, webCss, printCss, printOptions, printPreviewStatus },
+    state: { catalogEntry, htmlSections, printOptions, printPreviewStatus, cachedHtmlSections },
     actions: { setPrintPreviewStatus, setPrintPreviewPercentDone },
   } = useContext(AppContext);
 
@@ -93,10 +93,10 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
 
   useEffect(() => {
     const preparingForPrintPreview = async () => {
-      let copyright = htmlSections.copyright || '';
-      const body = htmlSections.body;
+      let copyright = htmlSections?.copyright || '';
+      const body = htmlSections?.body || cachedHtmlSections?.body || '';
       const doc = new DOMParser().parseFromString(body, 'text/html');
-      let toc = htmlSections.toc || '';
+      let toc = htmlSections?.toc || '';
       if (!toc) {
         toc = `
   <h1 class="toc-header">Table of Contents</h1>
@@ -299,9 +299,9 @@ h1 {
   font-size: 1.6em;
 }
 
-${webCss}
+${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
-${printCss}
+${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
 `;
       const htmlStr = `
 <div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
@@ -321,10 +321,10 @@ ${printCss}
       setCssToRender(cssStr);
     };
 
-    if (htmlSections?.body && Object.keys(printOptions).length) {
+    if ((htmlSections?.body || cachedHtmlSections?.body) && Object.keys(printOptions).length) {
       preparingForPrintPreview();
     }
-  }, [catalogEntry, printOptions, webCss, htmlSections?.body, htmlSections.copyright, htmlSections.cover, htmlSections.toc, printCss, ref, setPrintPreviewStatus]);
+  }, [catalogEntry, htmlSections, cachedHtmlSections, printOptions, ref]);
 
   useEffect(() => {
     if (htmlToRender && cssToRender && ref.current) {
@@ -386,7 +386,7 @@ ${printCss}
         styleTags.forEach((tag) => tag.remove());
       };
     }
-  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewPercentDone, setPrintPreviewStatus]);
+  }, [cssToRender, ref, htmlToRender, printOptions]);
 
   return <div id="print-preview" style={{ ...style, display: view != 'print' ? 'none' : 'block' }} ref={ref} />;
 });

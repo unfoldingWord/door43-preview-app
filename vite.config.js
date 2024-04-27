@@ -7,6 +7,9 @@ const aliases = ['common', 'components', 'hooks', 'helpers'];
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: {},
+  },
   resolve: {
     alias: aliases.map(alias => (
       {
@@ -23,4 +26,12 @@ export default defineConfig({
       }
     }
   },
+  // server: {
+  //   proxy: {
+  //     '/.netlify/functions/': {
+  //       target: 'https://develop--door43-preview.netlify.app',
+  //       changeOrigin: true,
+  //     },
+  //   },
+  // },
 })

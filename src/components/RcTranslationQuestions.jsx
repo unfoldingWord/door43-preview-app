@@ -148,11 +148,10 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, documentAnchor, authToken },
-    actions: { setWebCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
+    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
-  const [bookId, setBookId] = useState();
   const [bookTitle, setBookTitle] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
@@ -242,7 +241,7 @@ export default function RcTranslationQuestions() {
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
       setBookId(_bookId);
       setBookTitle(title);
-      setWebCss(webCss);
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
       setStatusMessage(
         <>
@@ -257,7 +256,7 @@ export default function RcTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setWebCss, setStatusMessage, setBookTitle]);
+  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns]);
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {

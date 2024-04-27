@@ -60,7 +60,7 @@ const theme = createTheme({
 export default function OpenBibleStories() {
   const {
     state: { catalogEntry, urlInfo, documentAnchor, authToken },
-    actions: { setWebCss, setPrintCss, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
@@ -109,11 +109,10 @@ export default function OpenBibleStories() {
       setHtmlSections((prevState) => {
         return { ...prevState, ...obsHtmlSections };
       });
-      setWebCss(webCss);
-      setPrintCss(printCss);
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
       setStatusMessage('');
     }
-  }, [obsHtmlSections, setHtmlSections, setWebCss, setPrintCss, setStatusMessage]);
+  }, [obsHtmlSections, setHtmlSections, setStatusMessage]);
 
   return (
     <ThemeProvider theme={theme}>
