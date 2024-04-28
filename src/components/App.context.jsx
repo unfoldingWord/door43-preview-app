@@ -288,9 +288,9 @@ export function AppContextProvider({ children }) {
               case 'Translation Words':
                 setResourceComponent(() => RcTranslationWords);
                 return;
-              case 'TSV OBS Translation Notes':
+              // case 'TSV OBS Translation Notes':
                 // setResourceComponent(() => RcObsTranslationNotes)
-                return;
+                // return;
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`);
             }

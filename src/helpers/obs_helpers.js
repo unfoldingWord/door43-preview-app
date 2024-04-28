@@ -124,7 +124,7 @@ export async function getOBSData(catalogEntry, zipFileData) {
       obsData.stories.push(story);
     }
   } else {
-    const frameNumRegex = /-(\d+)\.jpg$/;
+    const frameNumRegex = /-(\d+)\.jpg/;
     const parser = new DOMParser();
     for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
       const storyNum = storyIdx + 1;
