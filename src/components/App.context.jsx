@@ -217,6 +217,10 @@ export function AppContextProvider({ children }) {
           if (previousVersion[previousVersion.length - 1] > 0) {
             previousVersion[previousVersion.length - 1]--;
             const previousVersionString = 'v'+previousVersion.join('.');
+            if (previousVersion[previousVersion.length - 1] > 0) {
+              previousVersion[previousVersion.length - 1]--;
+              tryRefs = ['v'+previousVersion.join('.'), ...tryRefs];
+            }
             tryRefs = [previousVersionString, ...tryRefs];
           }
         }
@@ -226,7 +230,7 @@ export function AppContextProvider({ children }) {
       let tryBookIds = [bookId, 'gen'];
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
         tryBookIds = [urlInfo.hashParts[0].toLowerCase(), ''];
-      } else if(!bookId && /_(tn|tq|ult|ust|glt|gst|)/.test(urlInfo.repo)) {
+      } else if(!bookId && /_(tn|tq|ult|ust|glt|gst|)$/.test(urlInfo.repo)) {
         tryBookIds = ['gen'];
       }
 
