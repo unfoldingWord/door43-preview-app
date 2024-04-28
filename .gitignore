@@ -31,3 +31,6 @@ temp/*
 # VSCode History
 .history
 
+# Python
+.venv
+venv
