@@ -99,7 +99,7 @@ export default function AppWorkspace() {
   // }
 
   const printDrawerProps = {
-    openPrintDrawer: isOpenPrint && !htmlSections?.body,
+    openPrintDrawer: isOpenPrint && htmlSections?.body,
     onClosePrintDrawer: () => {
       setIsOpenPrint(false);
     },

@@ -26,32 +26,43 @@ driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
 root = 'https://preview.door43.org'
 # Open the webpage
-driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Words+Links&subject=TSV+Translation+Questions&stage=prod&sort=released&order=desc")
+# driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Words+Links&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
+driver.get(root + "?stage=latest&sort=released&order=desc")
 
 # Wait for the component to load
 wait = WebDriverWait(driver, 60)  # adjust the timeout as needed
 wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'css-1kv5bp7')))  # replace with the actual class name of your component
 
-print(driver.page_source)
+# time.sleep(3)
+
+# # Click the button with class name "css-1ujsas3"
+# button = driver.find_element(By.CLASS_NAME, 'css-1ujsas3')
+# button.click()
+# # Wait for a few seconds before clicking the button
+# time.sleep(3)
+
+# Wait for the button with class name "css-1ujsas3" to appear again
+# wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'css-1ujsas3')))
+
+# print(driver.page_source)
 
 # Parse the page source with BeautifulSoup
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-print(str(soup))
+# print(str(soup))
 
 # Find all the URLs on the page
 urls = list(set([a['href'] for a in soup.find_all('a', href=True)]))
 
 # Loop through the URLs
 for url in urls:
-    # Open the page
-    print(url)
-
-    if not url.startsWith('/u/') or url in completed_urls:
+    if not url.startswith('/u/') or url in completed_urls:
       continue
 
     try:
-      print(root+url)
+      # print(root+url)
+
+      # Open the page
       driver.get(root+url)
 
       # Wait for the component to load
