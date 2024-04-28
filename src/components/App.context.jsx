@@ -224,7 +224,9 @@ export function AppContextProvider({ children }) {
       }
 
       let tryBookIds = [bookId, 'gen'];
-      if(!bookId && /_(tn|tq|ult|ust|glt|gst|)/.test(urlInfo.repo)) {
+      if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
+        tryBookIds = [urlInfo.hashParts[0].toLowerCase(), ''];
+      } else if(!bookId && /_(tn|tq|ult|ust|glt|gst|)/.test(urlInfo.repo)) {
         tryBookIds = ['gen'];
       }
 
@@ -391,10 +393,10 @@ export function AppContextProvider({ children }) {
     };
 
     if (htmlSections.body != '' && 
-    (cachedBook?.bookId != bookId || cachedBook?.preview_version != packageJson.version || 
+    (cachedBook?.preview_version != packageJson.version || 
       cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
       JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))) {
-      uploadCachedBook().catch((e) => console.log(e.message));
+        uploadCachedBook().catch((e) => console.log(e.message));
     }
   }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo]);
 
