@@ -408,7 +408,7 @@ export default function AppWorkspace() {
             {view === 'web' && !htmlSections.body && !errorMessages && (
               <LoadingBar
                 message={
-                  cachedHtmlSections?.body && `You are viewing a previous rendering (${cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`
+                  cachedBook && cachedHtmlSections?.body && catalogEntry && cachedBook.catalogEntry.commit_sha != catalogEntry.commit_sha && `You are viewing a previous rendering (${cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name ? cachedBook.catalogEntry.branch_or_tag_name : cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`
                 }
               />
             )}
@@ -459,7 +459,7 @@ export default function AppWorkspace() {
               ]}
             />
           )}
-          {statusMessage && !htmlSections?.body && !errorMessages && (
+          {statusMessage && !htmlSections?.body && !cachedHtmlSections?.body && !errorMessages && (
             <Box
               sx={{
                 display: 'flex',

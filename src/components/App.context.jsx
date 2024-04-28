@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import packageJson from '../../package.json';
 import { BibleBookData } from '@common/books';
+import { getCachedBook } from '@helpers/books';
 import pako from 'pako';
 
 // Constants
@@ -50,6 +51,7 @@ export function AppContextProvider({ children }) {
   const [authToken, setAuthToken] = useState();
   const [cachedBook, setCachedBook] = useState();
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
+  const [fetchingCachedBook, setFetchingCachedBook] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -91,7 +93,7 @@ export function AppContextProvider({ children }) {
         }
       } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
         setServerInfo(DCS_SERVERS['prod']);
-      } else if (url.hostname == 'develop.door43.org') {
+      } else if (url.hostname === 'develop.door43.org') {
         setServerInfo(DCS_SERVERS['dev']);
       } else {
         setServerInfo(DCS_SERVERS['qa']);
@@ -108,7 +110,7 @@ export function AppContextProvider({ children }) {
       const info = {
         owner: urlParts[0] || '',
         repo: urlParts[1] || '',
-        ref: urlParts[2] == 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
+        ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
         hash: url.hash.replace('#', ''),
         hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
       };
@@ -186,10 +188,10 @@ export function AppContextProvider({ children }) {
         });
     };
 
-    if (serverInfo && urlInfo && urlInfo.owner && urlInfo.repo) {
+    if (serverInfo && urlInfo && urlInfo.owner && urlInfo.repo && cachedBook) {
       fetchRepo().catch((e) => setErrorMessage(e.message));
     }
-  }, [serverInfo, urlInfo, authToken, setErrorMessage]);
+  }, [serverInfo, urlInfo, authToken, cachedBook, setErrorMessage]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
@@ -201,52 +203,58 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    if (repo) {
+    if (repo && cachedBook) {
       fetchCatalogEntry().catch((e) => setErrorMessage(e.message));
     }
-  }, [repo, serverInfo, urlInfo, authToken, setErrorMessage]);
+  }, [repo, serverInfo, urlInfo, cachedBook, authToken, setErrorMessage]);
 
   useEffect(() => {
-    const determinBookIdAndFetchCachedBook = async () => {
-      let b = ''
-      const sortedIngredients = catalogEntry?.ingredients?.sort((a, b) => a.sort - b.sort) || [];
-      for (let ingredient of sortedIngredients) {
-        if (ingredient.identifier in BibleBookData && (! urlInfo?.hashParts?.[0] || ingredient.identifier == urlInfo.hashParts[0].toLowerCase())) {
-          b = ingredient.identifier;
-          break;
-        }
-      }
-      setBookId(b);
-
-      let cb = {};
-      const url = `https://s3.us-west-2.amazonaws.com/${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${catalogEntry.full_name}/${catalogEntry.branch_or_tag_name}/${b || 'all'}.gzip`;
-      try {
-        const response = await fetch(url);
-        if (response.ok) {
-          const jsonString = pako.inflate(new Uint8Array(await response.arrayBuffer()), { to: 'string' });
-          if (jsonString) {
-            cb = JSON.parse(jsonString);
-            if (cb.catalogEntry.commit_sha == catalogEntry.commit_sha && cb.preview_version == packageJson.version) {
-              setHtmlSections(cb.htmlSections)
-            } else {
-              setCachedHtmlSections(cb.htmlSections);
-            }
-          } else {
-            console.log(`No JSON file found in the zip at ${url}`);
+    const fetchCachedBook = async () => {
+      let tryRefs = ['master', 'main', 'scribe-main']
+      if (urlInfo?.ref && ! (urlInfo.ref in tryRefs)) {
+        if (/^v\d/.test(urlInfo.ref)) {
+          const previousVersion = urlInfo.ref.replace(/^v/, '').split('.').map(Number);
+          if (previousVersion[previousVersion.length - 1] > 0) {
+            previousVersion[previousVersion.length - 1]--;
+            const previousVersionString = 'v'+previousVersion.join('.');
+            tryRefs = [previousVersionString, ...tryRefs];
           }
-        } else {
-          console.log(`Bad response from server for ${url}: `, response.status, response.statusText);
         }
-      } catch(err) {
-        console.log(`Error fetching cached book at ${url}: `, err.message);
+        tryRefs = [urlInfo.ref, ...tryRefs];
       }
-      setCachedBook(cb);
+
+      let tryBookIds = [bookId, 'gen'];
+      if(!bookId && /_(tn|tq|ult|ust|glt|gst|)/.test(urlInfo.repo)) {
+        tryBookIds = ['gen'];
+      }
+
+      let cb = null;
+      for (let ref of tryRefs) {
+        for (let book of tryBookIds) {
+          if (! cb) {
+            cb = await getCachedBook(urlInfo.owner, urlInfo.repo, ref, book);
+          }
+        }
+      }
+
+      setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
+      setCachedHtmlSections(cb?.htmlSections);
+      setFetchingCachedBook(false);
     }
 
-    if(catalogEntry) {
-      determinBookIdAndFetchCachedBook()
+    if(!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo) {
+      setFetchingCachedBook(true);
+      fetchCachedBook()
     }
-  }, [catalogEntry, urlInfo]);
+  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook]);
+
+  useEffect(() => {
+    if (cachedBook?.catalogEntry && catalogEntry) {
+      if (cachedBook.catalogEntry.commit_sha === catalogEntry.commit_sha) {
+        setHtmlSections(cachedBook.htmlSections);
+      }
+    }
+  }, [cachedBook, catalogEntry])
 
   useEffect(() => {
     if (catalogEntry && cachedBook) {
