@@ -48,20 +48,26 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
 };
 
-export const getCatalogEntryBySubject = async (apiUrl, subject, lang, owners = ['unfoldingWord', 'Door43-Catalog'], stage = 'prod') => {
+export const getCatalogEntryBySubject = async (apiUrl, subject, lang = ['en'], owners = ['unfoldingWord', 'Door43-Catalog'], stage = 'prod') => {
   let stages = [stage];
   if (stage != 'latest') {
     stages.push('latest');
   }
-  for (let s of stages) {
-    for (let owner of owners) {
-      let resp = await fetch(
-        `${apiUrl}/catalog/search?owner=${encodeURIComponent(owner)}&stage=${encodeURIComponent(s)}&subject=${encodeURIComponent(subject)}&lang=${encodeURIComponent(lang)}`
-      );
-      if (resp) {
-        const entries = await resp.json();
-        if (entries?.data?.length > 0) {
-          return entries.data[0];
+  let langs = [lang];
+  if (lang != 'en') {
+    langs.push('en');
+  }
+  for (let l of langs) {
+    for (let s of stages) {
+      for (let owner of owners) {
+        let resp = await fetch(
+          `${apiUrl}/catalog/search?owner=${encodeURIComponent(owner)}&stage=${encodeURIComponent(s)}&subject=${encodeURIComponent(subject)}&lang=${encodeURIComponent(l)}`
+        );
+        if (resp) {
+          const entries = await resp.json();
+          if (entries?.data?.length > 0) {
+            return entries.data[0];
+          }
         }
       }
     }

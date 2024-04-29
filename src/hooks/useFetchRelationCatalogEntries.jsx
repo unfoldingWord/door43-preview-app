@@ -47,7 +47,7 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
     if (catalogEntry) {
       fetchRelationEntries();
     }
-  }, [catalogEntry, requiredSubjects, setErrorMessage]);
+  }, [catalogEntry, requiredSubjects, authToken, setErrorMessage]);
 
   return relationCatalogEntries;
 }
