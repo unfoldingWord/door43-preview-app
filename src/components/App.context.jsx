@@ -40,7 +40,7 @@ export function AppContextProvider({ children }) {
   const [ResourceComponent, setResourceComponent] = useState();
   const [bookId, setBookId] = useState('');
   const [supportedBooks, setSupportedBooks] = useState([]);
-  const [htmlSections, setHtmlSections] = useState({ css: {web: '', print: ''}, cover: '', copyright: '', toc: '', body: '' });
+  const [htmlSections, setHtmlSections] = useState({ css: { web: '', print: '' }, cover: '', copyright: '', toc: '', body: '' });
   const [canChangeColumns, setCanChangeColumns] = useState(false);
   const [isOpenPrint, setIsOpenPrint] = useState(false);
   const [printOptions, setPrintOptions] = useState({});
@@ -52,6 +52,8 @@ export function AppContextProvider({ children }) {
   const [cachedBook, setCachedBook] = useState();
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
   const [fetchingCachedBook, setFetchingCachedBook] = useState(false);
+  const [forceRerender, setForceRerender] = useState(false);
+  const [noCache, setNoCache] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -146,16 +148,33 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    const getToken = () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('token')) {
-        setAuthToken(params.get('token'));
+    const getOtherUrlParameters = () => {
+      if (url.searchParams.get('token')) {
+        setAuthToken(url.searchParams.get('token'));
+      }
+      if (
+        url.searchParams.get('rerender') === '1' ||
+        url.searchParams.get('rerender') === 'true' ||
+        url.searchParams.get('force-rerender') === '1' ||
+        url.searchParams.get('force-rerender') === 'true' ||
+        url.searchParams.get('force-render') === '1' ||
+        url.searchParams.get('force-render') === 'true'
+      ) {
+        setForceRerender(true);
+      }
+      if (
+        url.searchParams.get('nocache') === '1' ||
+        url.searchParams.get('nocache') === 'true' ||
+        url.searchParams.get('no-cache') === '1' ||
+        url.searchParams.get('no-cache') === 'true'
+      ) {
+        setNoCache(true);
       }
     };
 
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
-    getToken();
+    getOtherUrlParameters();
   }, [setErrorMessage]);
 
   useEffect(() => {
@@ -210,16 +229,16 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let tryRefs = ['master', 'main', 'scribe-main']
-      if (urlInfo?.ref && ! (urlInfo.ref in tryRefs)) {
+      let tryRefs = ['master', 'main', 'scribe-main'];
+      if (urlInfo?.ref && !(urlInfo.ref in tryRefs)) {
         if (/^v\d/.test(urlInfo.ref)) {
           const previousVersion = urlInfo.ref.replace(/^v/, '').split('.').map(Number);
           if (previousVersion[previousVersion.length - 1] > 0) {
             previousVersion[previousVersion.length - 1]--;
-            const previousVersionString = 'v'+previousVersion.join('.');
+            const previousVersionString = 'v' + previousVersion.join('.');
             if (previousVersion[previousVersion.length - 1] > 0) {
               previousVersion[previousVersion.length - 1]--;
-              tryRefs = ['v'+previousVersion.join('.'), ...tryRefs];
+              tryRefs = ['v' + previousVersion.join('.'), ...tryRefs];
             }
             tryRefs = [previousVersionString, ...tryRefs];
           }
@@ -230,14 +249,14 @@ export function AppContextProvider({ children }) {
       let tryBookIds = [bookId || 'default', 'gen'];
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
         tryBookIds = [urlInfo.hashParts[0].toLowerCase()];
-      } else if(!bookId && /_(tn|tq|ult|ust|glt|gst|)$/.test(urlInfo.repo)) {
+      } else if (!bookId && /_(tn|tq|ult|ust|glt|gst|)$/.test(urlInfo.repo)) {
         tryBookIds = ['gen', 'default'];
       }
 
       let cb = null;
       for (let ref of tryRefs) {
         for (let book of tryBookIds) {
-          if (! cb) {
+          if (!cb) {
             cb = await downloadCachedBook(urlInfo.owner, urlInfo.repo, ref, book);
           }
         }
@@ -246,13 +265,17 @@ export function AppContextProvider({ children }) {
       setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
       setCachedHtmlSections(cb?.htmlSections);
       setFetchingCachedBook(false);
-    }
+    };
 
-    if(!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo) {
+    if (forceRerender || noCache) {
+      if (!cachedBook) {
+        setCachedBook({});
+      }
+    } else if (!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo) {
       setFetchingCachedBook(true);
-      fetchCachedBook()
+      fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook]);
+  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, forceRerender]);
 
   useEffect(() => {
     if (cachedBook?.catalogEntry && catalogEntry) {
@@ -260,7 +283,7 @@ export function AppContextProvider({ children }) {
         setHtmlSections(cachedBook.htmlSections);
       }
     }
-  }, [cachedBook, catalogEntry])
+  }, [cachedBook, catalogEntry]);
 
   useEffect(() => {
     if (catalogEntry && cachedBook) {
@@ -303,8 +326,8 @@ export function AppContextProvider({ children }) {
                 setResourceComponent(() => RcTranslationWords);
                 return;
               // case 'TSV OBS Translation Notes':
-                // setResourceComponent(() => RcObsTranslationNotes)
-                // return;
+              // setResourceComponent(() => RcObsTranslationNotes)
+              // return;
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`);
             }
@@ -361,21 +384,24 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const sendCachedBook = async () => {
-      if (! bookId || bookId === "gen" || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, "default", packageJson.version, catalogEntry, htmlSections);
+      if (!bookId || bookId === 'gen' || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', packageJson.version, catalogEntry, htmlSections);
       }
       if (bookId) {
         uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, bookId, packageJson.version, catalogEntry, htmlSections);
       }
     };
 
-    if (htmlSections.body != '' && 
-    (cachedBook?.preview_version != packageJson.version || 
-      cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
-      JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))) {
-        sendCachedBook().catch((e) => console.log(e.message));
+    if (
+      !noCache &&
+      htmlSections.body != '' &&
+      (cachedBook?.preview_version != packageJson.version ||
+        cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
+        JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))
+    ) {
+      sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo]);
+  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, supportedBooks]);
 
   // create the value for the context provider
   const context = {

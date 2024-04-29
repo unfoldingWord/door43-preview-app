@@ -180,6 +180,7 @@ export default function RcTranslationNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
+    bookId,
     authToken,
   });
 
@@ -698,7 +699,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setHtml(html);
     };
 
-    if (! htmlSections?.body && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes) {
+    if (! htmlSections?.body && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes && taFileContents && twFileContents) {
       generateHtml();
     }
   }, [
