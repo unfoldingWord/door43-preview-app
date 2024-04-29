@@ -95,11 +95,10 @@ a.footnote {
 
 export default function TsBible() {
   const {
-    state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
-    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, supportedBooks, documentAnchor, authToken },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
-  const [supportedBooks, setSupportedBooks] = useState([]);
   const [bookTitle, setBookTitle] = useState();
   const [usfmText, setUsfmText] = useState();
 

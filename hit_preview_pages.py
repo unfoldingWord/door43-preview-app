@@ -26,8 +26,8 @@ driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
 root = 'https://preview.door43.org'
 # Open the webpage
-driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
-# driver.get(root + "?subject=Aligned+Bible&subject=Bible&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
+# driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
+driver.get(root + "?subject=Aligned+Bible&subject=Bible&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
 
 # Wait for the component to load
 wait = WebDriverWait(driver, 60)  # adjust the timeout as needed
@@ -62,8 +62,7 @@ for url in urls:
     if url in completed_urls:
       continue
 
-    print(url)
-    continue
+    print(root+url)
 
     try:
       # print(root+url)

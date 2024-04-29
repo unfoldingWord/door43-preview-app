@@ -20,8 +20,8 @@ export const getSupportedBooks = (catalogEntry, fileList = null) => {
   return supportedBooks;
 };
 
-export const getCachedBook = async (owner, repo, ref, book) => {
-  const url = `https://s3.us-west-2.amazonaws.com/${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${owner}/${repo}/${ref}/${book || 'all'}.gzip`;
+export const downloadCachedBook = async (owner, repo, ref, bookId) => {
+  const url = `https://s3.us-west-2.amazonaws.com/${import.meta.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${owner}/${repo}/${ref}/${bookId}.gzip`;
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -39,3 +39,40 @@ export const getCachedBook = async (owner, repo, ref, book) => {
   }
   return null;
 };
+
+export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion, catalogEntry, htmlSections) => {
+  const cachedBook = {
+    bookId: bookId,
+    preview_version: previewVersion,
+    date_iso: new Date().toISOString(),
+    date_unix: new Date().getTime(),
+    commit_sha: catalogEntry.commit_sha,
+    htmlSections: htmlSections,
+    catalogEntry: catalogEntry,
+  };
+
+  const jsonString = JSON.stringify(cachedBook);
+  const compressedData = pako.gzip(jsonString, { to: 'string' });
+  console.log('Compressed Data Size:', compressedData?.length);
+
+  const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
+  const path = `u/${owner}/${repo}/${ref}/${bookId}.gzip`;
+
+  try {
+    const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {
+      method: 'POST',
+      body: compressedData,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+    });
+    if (response.ok) {
+      console.log('Upload Success', await response.json());
+    } else {
+      console.log('UploadFailed', response);
+    }
+  } catch (err) {
+    console.log('Upload Failed. Error: ', err);
+  }
+
+}

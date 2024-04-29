@@ -3,8 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import packageJson from '../../package.json';
 import { BibleBookData } from '@common/books';
-import { getCachedBook } from '@helpers/books';
-import pako from 'pako';
+import { downloadCachedBook, uploadCachedBook } from '@helpers/books';
 
 // Constants
 import { DCS_SERVERS, API_PATH } from '@common/constants';
@@ -40,6 +39,7 @@ export function AppContextProvider({ children }) {
   const [catalogEntry, setCatalogEntry] = useState();
   const [ResourceComponent, setResourceComponent] = useState();
   const [bookId, setBookId] = useState('');
+  const [supportedBooks, setSupportedBooks] = useState([]);
   const [htmlSections, setHtmlSections] = useState({ css: {web: '', print: ''}, cover: '', copyright: '', toc: '', body: '' });
   const [canChangeColumns, setCanChangeColumns] = useState(false);
   const [isOpenPrint, setIsOpenPrint] = useState(false);
@@ -227,18 +227,18 @@ export function AppContextProvider({ children }) {
         tryRefs = [urlInfo.ref, ...tryRefs];
       }
 
-      let tryBookIds = [bookId, 'gen'];
+      let tryBookIds = [bookId || 'default', 'gen'];
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
-        tryBookIds = [urlInfo.hashParts[0].toLowerCase(), ''];
+        tryBookIds = [urlInfo.hashParts[0].toLowerCase()];
       } else if(!bookId && /_(tn|tq|ult|ust|glt|gst|)$/.test(urlInfo.repo)) {
-        tryBookIds = ['gen'];
+        tryBookIds = ['gen', 'default'];
       }
 
       let cb = null;
       for (let ref of tryRefs) {
         for (let book of tryBookIds) {
           if (! cb) {
-            cb = await getCachedBook(urlInfo.owner, urlInfo.repo, ref, book);
+            cb = await downloadCachedBook(urlInfo.owner, urlInfo.repo, ref, book);
           }
         }
       }
@@ -360,39 +360,12 @@ export function AppContextProvider({ children }) {
   }, [catalogEntry, cachedBook, setErrorMessage]);
 
   useEffect(() => {
-    const uploadCachedBook = async () => {
-      const cachedBook = {
-        bookId: bookId,
-        preview_version: packageJson.version,
-        date_iso: new Date().toISOString(),
-        date_unix: new Date().getTime(),
-        commit_sha: catalogEntry.commit_sha,
-        htmlSections: htmlSections,
-        catalogEntry: catalogEntry,
-      };
-
-      const jsonString = JSON.stringify(cachedBook);
-      const compressedData = pako.gzip(jsonString, { to: 'string' });
-      console.log('Compressed Data Size:', compressedData?.length);
-
-      const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
-      const path = `u/${urlInfo.owner}/${urlInfo.repo}/${catalogEntry.branch_or_tag_name}/${bookId || 'all'}.gzip`;
-
-      try {
-        const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {
-          method: 'POST',
-          body: compressedData,
-          headers: {
-            'Content-Type': 'application/octet-stream',
-          },
-        });
-        if (response.ok) {
-          console.log('Upload Success', await response.json());
-        } else {
-          console.log('UploadFailed', response);
-        }
-      } catch (err) {
-        console.log('Upload Failed. Error: ', err);
+    const sendCachedBook = async () => {
+      if (! bookId || bookId === "gen" || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, "default", packageJson.version, catalogEntry, htmlSections);
+      }
+      if (bookId) {
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, bookId, packageJson.version, catalogEntry, htmlSections);
       }
     };
 
@@ -400,7 +373,7 @@ export function AppContextProvider({ children }) {
     (cachedBook?.preview_version != packageJson.version || 
       cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
       JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))) {
-        uploadCachedBook().catch((e) => console.log(e.message));
+        sendCachedBook().catch((e) => console.log(e.message));
     }
   }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo]);
 
@@ -427,6 +400,7 @@ export function AppContextProvider({ children }) {
       authToken,
       cachedBook,
       cachedHtmlSections,
+      supportedBooks,
     },
     actions: {
       onPrintClick,
@@ -442,6 +416,7 @@ export function AppContextProvider({ children }) {
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
       setBookId,
+      setSupportedBooks,
     },
   };
 

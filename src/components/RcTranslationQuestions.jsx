@@ -148,8 +148,8 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, documentAnchor, authToken },
-    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, supportedBooks, documentAnchor, authToken },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [bookTitle, setBookTitle] = useState();
@@ -226,14 +226,15 @@ export default function RcTranslationQuestions() {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
 
-      let supportedBooks = getSupportedBooks(catalogEntry, repoFileList);
-      if (!supportedBooks.length) {
+      let sb = getSupportedBooks(catalogEntry, repoFileList);
+      if (!sb.length) {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      bibleReferenceActions.applyBooksFilter(supportedBooks);
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
 
-      let _bookId = urlInfo.hashParts[0] || supportedBooks[0];
+      let _bookId = urlInfo.hashParts[0] || sb[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -249,9 +250,9 @@ export default function RcTranslationQuestions() {
           Please wait...
         </>
       );
-      if (!supportedBooks.includes(_bookId)) {
+      if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        supportedBooks = [_bookId, ...supportedBooks];
+        sb = [_bookId, ...sb];
       }
     };
 

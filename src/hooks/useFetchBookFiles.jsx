@@ -29,8 +29,15 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
         promises.push(getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.branch_or_tag_name, authToken));
       });
 
-      const contents = await Promise.all(promises);
-      setBookFiles(contents);
+      try {
+        const contents = await Promise.all(promises.map(promise => promise.catch(error => {
+          console.log(error); // Log the error
+          return null; // Return null or any other value to indicate the error
+        })));
+        setBookFiles(contents.filter(content => content));
+      } catch (error) {
+        console.log(error); // Handle any error that occurred during Promise.all
+      }
     };
 
     fetchBookFileContents();

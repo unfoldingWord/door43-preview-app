@@ -136,8 +136,8 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, htmlSections, documentAnchor, authToken },
-    actions: { setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, supportedBooks, htmlSections, documentAnchor, authToken },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [bookTitle, setBookTitle] = useState();
@@ -312,14 +312,15 @@ export default function RcTranslationNotes() {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
 
-      let supportedBooks = getSupportedBooks(catalogEntry, repoFileList);
-      if (!supportedBooks.length) {
+      let sb = getSupportedBooks(catalogEntry, repoFileList);
+      if (!sb.length) {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      bibleReferenceActions.applyBooksFilter(supportedBooks);
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
 
-      let _bookId = urlInfo.hashParts[0] || supportedBooks[0];
+      let _bookId = urlInfo.hashParts[0] || sb[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -333,9 +334,9 @@ export default function RcTranslationNotes() {
           Please wait...
         </>
       );
-      if (!supportedBooks.includes(_bookId)) {
+      if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        supportedBooks = [_bookId, ...supportedBooks];
+        sb = [_bookId, ...sb];
       }
     };
 
@@ -457,6 +458,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           let scripture = {};
           for (let targetIdx in targetBibleCatalogEntries) {
             const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+            if (! (chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
+              continue
+            }
             if (! (verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
               for(let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
                 if (v.includes('-') || v.includes(',')) {

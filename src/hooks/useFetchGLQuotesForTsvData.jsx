@@ -9,7 +9,7 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
       const sourceBook = getParsedUSFM(sourceUsfm).chapters;
       const targetBooks = [];
       for (let targetUsfm of targetUsfms) {
-        targetBooks.push(getParsedUSFM(targetUsfm).chapters);
+        targetBooks.push(getParsedUSFM(targetUsfm)?.chapters);
       }
       let data = JSON.parse(JSON.stringify(tsvData));
 
