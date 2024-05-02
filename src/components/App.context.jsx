@@ -133,7 +133,6 @@ export function AppContextProvider({ children }) {
       } else if (urlParts.length === 1 && urlParts[0] != 'u') {
         info.lang = urlParts[0];
       }
-      console.log("INFO!!!", info)
 
       // The below is handling old door43.org links which had books and stories as .html files
       // Can be removed if we no longer care about handling old door43.org links
@@ -279,7 +278,6 @@ export function AppContextProvider({ children }) {
         return;
       }
       const url = await response.text();
-      console.log(url);
       const cb = await downloadCachedBook(url);
       setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
       setCachedHtmlSections(cb?.htmlSections);

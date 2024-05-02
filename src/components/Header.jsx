@@ -141,15 +141,24 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
             <div>
               {urlInfo?.owner && urlInfo?.repo && (
                 <>
-                  <Typography sx={{...sx.title, direction: catalogEntry?.language_direction || 'ltr'}}>{repo ? `${repo.title} (${repo.abbreviation})` : urlInfo?.repo}{bookTitle && ` :: ${bookTitle} (${bookId})`}</Typography>
+                  <Typography sx={{...sx.title, direction: catalogEntry?.language_direction || 'ltr'}}>
+                    {repo ? `${repo.title} (${repo.abbreviation})` : urlInfo?.repo}{bookTitle && ` :: ${bookTitle} (${bookId})`}
+                  </Typography>
                   <Typography sx={{textAlign: "center"}}>
-                    <Tooltip title="View on DCS" arrow>
-                      <a style={sx.subtitle} href={dcsRefUrl} target="_blank" rel="noopener noreferrer">{urlInfo.owner}/{urlInfo.repo} ({urlInfo.ref || catalogEntry?.branch_or_tag_name || repo?.default_branch || "master"}{catalogEntry?.ref_type === "branch" ? `, ${catalogEntry?.commit_sha.substring(0, 8)}` : ''})</a>
-                    </Tooltip>
-                    {' :: '}
-                    <Tooltip title="See other resources in this language" arrow>
-                      {repo?.language && (<a style={sx.subtitle} href={`/${repo.language}`}>{repo.language_title} ({repo.language})</a>)}
-                    </Tooltip>
+                    <a style={sx.subtitle} href={dcsRefUrl} target="_blank" rel="noopener noreferrer">
+                      <Tooltip title="View on DCS" arrow>
+                        <span>{urlInfo.owner}/{urlInfo.repo}</span>
+                      </Tooltip>
+                      <Tooltip title={`${catalogEntry?.ref_type === "branch" ? "Updated" : "Released"}: ${catalogEntry?.released}${catalogEntry?.ref_type === "branch" ? ` (${catalogEntry.commit_sha.substring(0, 8)})` : ''}`}>
+                        <span>{' '}({catalogEntry?.branch_or_tag_name || urlInfo.ref  || repo?.default_branch || "master"})</span>
+                      </Tooltip>
+                    </a>
+                    {repo?.language && (<>
+                      {' :: '}
+                      <Tooltip title="See other resources in this language" arrow>
+                        <a style={sx.subtitle} href={`/${repo.language}`}>{repo.language_title} ({repo.language})</a>
+                      </Tooltip>
+                    </>)}
                   </Typography>
                 </>
               )}

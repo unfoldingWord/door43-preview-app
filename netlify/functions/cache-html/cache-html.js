@@ -10,6 +10,7 @@ AWS.config.update({
 });
 
 exports.handler = async function (event, context) {
+  console.log("KEY2: "+process.env.PREVIEW_S3_UPLOAD_SECRET_ACCESS_KEY);
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 400,
