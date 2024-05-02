@@ -148,11 +148,10 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, supportedBooks, documentAnchor, authToken },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, documentAnchor, authToken },
+    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
-  const [bookTitle, setBookTitle] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
 
@@ -213,6 +212,13 @@ export default function RcTranslationQuestions() {
   });
 
   useEffect(() => {
+    if (catalogEntry) {
+      setBuiltWith([catalogEntry, ...(targetBibleCatalogEntries || [])])
+    }
+  }, [ catalogEntry, targetBibleCatalogEntries, setBuiltWith])
+
+
+  useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
       if (!catalogEntry) {
         setErrorMessage('No catalog entry for this resource found.');
@@ -257,7 +263,7 @@ export default function RcTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns]);
+  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length) {
@@ -430,14 +436,16 @@ export default function RcTranslationQuestions() {
       setHtml(html);
     };
 
-    if (targetBibleCatalogEntries?.length && Object.keys(tqTsvData).length && targetUsfmBookFiles?.length) {
+    if (!html && targetBibleCatalogEntries?.length && Object.keys(tqTsvData).length && targetUsfmBookFiles?.length) {
       generateHtml();
     }
   }, [
     catalogEntry,
+    html,
     targetBibleCatalogEntries,
     tqTsvBookFiles,
     targetUsfmBookFiles,
+    tqTsvData,
     bookId,
     bookTitle,
     setHtmlSections,
@@ -478,7 +486,7 @@ export default function RcTranslationQuestions() {
     if (catalogEntry && targetBibleCatalogEntries.length) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, targetBibleCatalogEntries, setCopyright]);
+  }, [catalogEntry, targetBibleCatalogEntries, authToken, setCopyright]);
 
 
   useEffect(() => {

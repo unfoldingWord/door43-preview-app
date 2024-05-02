@@ -1,47 +1,102 @@
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Typography } from '@mui/joy';
-import { AppBar, Toolbar, Tooltip, IconButton, SvgIcon } from '@mui/material';
+
+// MUI components
+import { AppBar, Toolbar, Tooltip, IconButton, SvgIcon, Collapse, Box, Grid, Tab, Typography } from '@mui/material';
+
+// MUI icons
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+
+// Custom components
+import CatalogEntriesGrid from './CatalogEntriesGrid';
+
+// Constants
+import { APP_NAME, APP_VERSION } from '@common/constants';
 
 const sx = {
   title: {
     flexGrow: 1,
     color: '#ffffff',
     fontWeight: 'bold',
+    textAlign: "center",
   },
-  infoLine: {
+  subtitle: {
     flexGrow: 1,
     color: '#ffffff',
+    fontSize: '14px',
+    textAlign: "center",
+    // fontStyle: "italic",
+    textDecoration: "none",
   },
   headerIcon: {
     color: '#ffffff',
+    textAlign: "center",
   },
   extendedIcon: {
     marginRight: (theme) => theme.spacing(1),
   },
 };
 
-export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
-  const handleViewClick = () => {
-    if (dcsRef) window.open(dcsRef, '_blank', 'noreferrer');
+export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry, builtWith, bookId, bookTitle, onOpenClick }) {
+  const [isSubAppBarOpen, setSubAppBarOpen] = useState(false);
+  const [dcsRefUrl, setDcsRefUrl] = useState('');
+
+  const handleSubAppBarToggle = () => {
+    setSubAppBarOpen(!isSubAppBarOpen);
   };
+
+  const handleViewClick = () => {
+    if (dcsRefUrl) window.open(dcsRefUrl, '_blank', 'noreferrer');
+  };
+
+  useEffect(() => {
+    let url = serverInfo?.baseUrl;
+    if (serverInfo?.baseUrl && urlInfo) {
+      if (urlInfo.owner && urlInfo.repo) {
+        url = `${serverInfo.baseUrl}/${urlInfo.owner}/${urlInfo.repo}`;
+        if (catalogEntry) {
+          url += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`;
+        } else {
+          url += `/src/branch/${urlInfo.ref || 'master'}`;
+        }
+      } else if (urlInfo?.owner) {
+        url = `${serverInfo.baseUrl}/${urlInfo?.owner}`
+      }
+    }
+    setDcsRefUrl(url)
+  }, [urlInfo, catalogEntry, serverInfo]);
 
   return (
     <header>
       <AppBar position="relative">
-        <Toolbar
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            width: '100%',
-            overflowX: 'scroll',
-            button: {
-              flex: 'none',
-            },
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
-              <Tooltip title="View on DCS" arrow>
+        <Box display="flex" flexDirection="column">
+          <Toolbar
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              width: '100%',
+              overflowX: 'scroll',
+              '& > div': {
+                flex: '1 1 auto',  // Reset the flex property
+              },
+              '& > div:first-of-type': {
+                flex: '1 1 25%',  // The first cell takes up 15% of the toolbar
+              },
+              '& > div:nth-of-type(2)': {
+                flex: '1 1 50%',  // The second cell takes up 70% of the toolbar
+              },
+              '& > div:last-child': {
+                flex: '1 1 25%',  // The third cell takes up 15% of the toolbar
+              },
+              button: {
+                flex: 'none',
+              },
+            }}
+          >
+            <div style={{textAlign: "center"}}>
+              <Tooltip title="Go to DCS" arrow>
                 <IconButton sx={sx.headerIcon} onClick={handleViewClick} size={'large'}>
                   <SvgIcon fontSize={'large'}>
                     <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,35 +125,114 @@ export default function Header({ title, infoLine, dcsRef, onOpenClick }) {
                   </SvgIcon>
                 </IconButton>
               </Tooltip>
-            <div>
-              <Typography variant="h1" sx={{...sx.title, marginTop: infoLine ? 0 : "15px"}}>
+              <div style={{display: "inline-block", verticalAlign: "middle"}}>
+              <div style={{ ...sx.title, display: 'block' }}>
                 <a href={'/'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  {title}
+                  {APP_NAME}
                 </a>
-              </Typography>
-              {infoLine && (
-                <Typography variant="h3" sx={sx.infoLine}>
-                  {infoLine}
-                </Typography>
+              </div>
+              {urlInfo?.owner && (<div style={{ ...sx.subtitle, display: 'block' }}>
+                <a href={`/u/${owner?.username || urlInfo.owner}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  {owner?.full_name || owner?.username || urlInfo.owner}
+                </a>
+              </div>)}
+              </div>
+            </div>
+            <div>
+              {urlInfo?.owner && urlInfo?.repo && (
+                <>
+                  <Typography sx={{...sx.title, direction: catalogEntry?.language_direction || 'ltr'}}>{repo ? `${repo.title} (${repo.abbreviation})` : urlInfo?.repo}{bookTitle && ` :: ${bookTitle} (${bookId})`}</Typography>
+                  <Typography sx={{textAlign: "center"}}>
+                    <Tooltip title="View on DCS" arrow>
+                      <a style={sx.subtitle} href={dcsRefUrl} target="_blank" rel="noopener noreferrer">{urlInfo.owner}/{urlInfo.repo} ({urlInfo.ref || catalogEntry?.branch_or_tag_name || repo?.default_branch || "master"}{catalogEntry?.ref_type === "branch" ? `, ${catalogEntry?.commit_sha.substring(0, 8)}` : ''})</a>
+                    </Tooltip>
+                    {' :: '}
+                    <Tooltip title="See other resources in this language" arrow>
+                      {repo?.language && (<a style={sx.subtitle} href={`/${repo.language}`}>{repo.language_title} ({repo.language})</a>)}
+                    </Tooltip>
+                  </Typography>
+                </>
               )}
             </div>
-          </div>
-          <Tooltip title="Search for a project" arrow>
-            <IconButton sx={sx.headerIcon} onClick={onOpenClick}>
-              <ZoomInIcon sx={sx.extendedIcon} />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
+            <div style={{textAlign: "right"}}>
+            <Tooltip title="Search for a project" arrow>
+              <IconButton sx={sx.headerIcon} onClick={onOpenClick}>
+                <ZoomInIcon sx={sx.extendedIcon} />
+              </IconButton>
+            </Tooltip>
+            </div>
+          </Toolbar>
+          <Box
+            sx={{
+              width: '100%',
+              textAlign: 'center',
+              height: '20px',
+            }}
+          >
+            <Tooltip title={builtWith.length ? "Show app and resource versions" : "Show app info"} arrow>
+              <Tab
+                label={isSubAppBarOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                onClick={handleSubAppBarToggle}
+                sx={{
+                  paddingTop: '20px !important',
+                  minHeight: 'auto', // Reduce the height
+                  padding: '6px 12px', // Adjust the padding as needed
+                  justifyContent: 'center', // Center the icon
+                  backgroundColor: 'rgb(25, 118, 210)',
+                  borderBottomLeftRadius: '10px',
+                  borderBottomRightRadius: '10px',
+                  height: '25px',
+                }}
+              />
+            </Tooltip>
+          </Box>
+        </Box>
+        <Collapse in={isSubAppBarOpen}>
+          <AppBar position="static" sx={{ backgroundColor: 'lightgrey', padding: '10px', color: 'black' }}>
+            {(builtWith.length || catalogEntry) && (<>
+              <div style={{paddingBottom: "10px"}}>
+                <div id="built-with">
+                  <Typography style={{fontWeight: "bold"}}>Built with:</Typography>
+                </div>
+                <Box sx={{ flexGrow: 1 }}>
+                  <Grid container>
+                    <CatalogEntriesGrid catalogEntries={builtWith.length ? builtWith : [catalogEntry]} showJustThisCatalogEntry={true} linkToDCS={true} bookId={bookId} />
+                  </Grid>
+                </Box>
+                <div style={{textAlign: "center"}}>
+                  <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
+                    {"Click for the resource's metadata"}
+                  </a>
+                </div>
+              </div>
+            </>)}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div id="server-info">
+                Server:{' '}
+                <a href={dcsRefUrl || serverInfo?.baseUrl} target="_blank" rel="noopener noreferrer">
+                  {serverInfo?.baseUrl}
+                </a>{' '}
+                ({serverInfo?.ID})
+              </div>
+              <div id="app-version"><a href="https://github.com/unfoldingWord/door43-preview-app/releases/latest" target="_blank" rel="noopener noreferrer" style={{textDecoration: "none"}}>App Version: v{APP_VERSION}</a></div>
+            </div>
+          </AppBar>
+        </Collapse>
       </AppBar>
     </header>
   );
 }
 
 Header.propTypes = {
-  title: PropTypes.string,
-  infoLine: PropTypes.object,
-  dcsRef: PropTypes.string,
   ready: PropTypes.bool,
   onPrintClick: PropTypes.func,
   onOpenClick: PropTypes.func,
+  serverInfo: PropTypes.object,
+  repo: PropTypes.object,
+  owner: PropTypes.object,
+  catalogEntry: PropTypes.object,
+  builtWith: PropTypes.arrayOf(PropTypes.object),
+  bookId: PropTypes.string,
+  bookTitle: PropTypes.string,
+  urlInfo: PropTypes.object,
 };

@@ -1,15 +1,14 @@
 // React imports
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import packageJson from '../../package.json';
 import { BibleBookData } from '@common/books';
 import { downloadCachedBook, uploadCachedBook } from '@helpers/books';
 
 // Constants
-import { DCS_SERVERS, API_PATH } from '@common/constants';
+import { DCS_SERVERS, API_PATH, APP_VERSION } from '@common/constants';
 
 // Helper functions
-import { getCatalogEntry, getRepo } from '@helpers/dcsApi';
+import { getCatalogEntry, getRepo, getOwner } from '@helpers/dcsApi';
 
 // Converter components
 import Bible from '@components/Bible';
@@ -20,6 +19,7 @@ import RcTranslationQuestions from '@components/RcTranslationQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
 // import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcObsTranslationNotes' // Uncomment this if you need to use RcObsTranslationNotes
 import TsBible from '@components/TsBible';
+import { set } from 'lodash';
 
 export const AppContext = React.createContext();
 
@@ -34,11 +34,12 @@ export function AppContextProvider({ children }) {
   const [errorMessages, setErrorMessages] = useState();
   const [urlInfo, setUrlInfo] = useState();
   const [serverInfo, setServerInfo] = useState();
-  const [buildInfo, setBuildInfo] = useState();
   const [repo, setRepo] = useState();
+  const [owner, setOwner] = useState();
   const [catalogEntry, setCatalogEntry] = useState();
   const [ResourceComponent, setResourceComponent] = useState();
   const [bookId, setBookId] = useState('');
+  const [bookTitle, setBookTitle] = useState('');
   const [supportedBooks, setSupportedBooks] = useState([]);
   const [htmlSections, setHtmlSections] = useState({ css: { web: '', print: '' }, cover: '', copyright: '', toc: '', body: '' });
   const [canChangeColumns, setCanChangeColumns] = useState(false);
@@ -49,11 +50,13 @@ export function AppContextProvider({ children }) {
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
   const [authToken, setAuthToken] = useState();
+  const [builtWith, setBuiltWith] = useState([]);
   const [cachedBook, setCachedBook] = useState();
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
   const [fetchingCachedBook, setFetchingCachedBook] = useState(false);
-  const [forceRerender, setForceRerender] = useState(false);
+  const [renderMessage, setRenderMessage] = useState(''); // Gives reason for rendering, also a flag that a new render is needed
   const [noCache, setNoCache] = useState(false);
+  const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -103,19 +106,34 @@ export function AppContextProvider({ children }) {
     };
 
     const getUrlInfo = async () => {
-      const urlParts = url.pathname
-        .replace(/^\/(u\/){0,1}/, '')
-        .replace(/\/+$/, '')
-        .replace(/\/preview\//, '/')
-        .replace(/\/(branch|tag)\//, '/')
-        .split('/');
-      const info = {
-        owner: urlParts[0] || '',
-        repo: urlParts[1] || '',
-        ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
-        hash: url.hash.replace('#', ''),
-        hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
-      };
+      let urlParts = url.pathname.replace(/^\/(.*)\/*$/, '$1').split('/');
+      let info = {
+        owner: '',
+        repo: '',
+        lang: '',
+        ref: '',
+        hash: '',
+        hashParts: [],
+      }
+      if (urlParts.length > 1) {
+        urlParts = url.pathname
+          .replace(/^\/(u\/){0,1}/, '')
+          .replace(/\/+$/, '')
+          .replace(/\/preview\//, '/')
+          .replace(/\/(branch|tag)\//, '/')
+          .split('/');
+        info = {
+          owner: urlParts[0] || '',
+          repo: urlParts[1] || '',
+          lang: urlParts[1]?.includes('_') ? urlParts[1].split('_')[0] : '',
+          ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
+          hash: url.hash.replace('#', ''),
+          hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
+        };
+      } else if (urlParts.length === 1 && urlParts[0] != 'u') {
+        info.lang = urlParts[0];
+      }
+      console.log("INFO!!!", info)
 
       // The below is handling old door43.org links which had books and stories as .html files
       // Can be removed if we no longer care about handling old door43.org links
@@ -151,6 +169,8 @@ export function AppContextProvider({ children }) {
     const getOtherUrlParameters = () => {
       if (url.searchParams.get('token')) {
         setAuthToken(url.searchParams.get('token'));
+      } else {
+        setAuthToken(import.meta.env.VITE_DCS_READ_ONLY_TOKEN);
       }
       if (
         url.searchParams.get('rerender') === '1' ||
@@ -160,7 +180,7 @@ export function AppContextProvider({ children }) {
         url.searchParams.get('force-render') === '1' ||
         url.searchParams.get('force-render') === 'true'
       ) {
-        setForceRerender(true);
+        setRenderMessage("Rerender requested. Generating new copy, ignoring cache.");
       }
       if (
         url.searchParams.get('nocache') === '1' ||
@@ -178,115 +198,142 @@ export function AppContextProvider({ children }) {
   }, [setErrorMessage]);
 
   useEffect(() => {
+    const fetchOwner = async () => {
+      try {
+        const o = await getOwner(`${serverInfo.baseUrl}/${API_PATH}/users`, urlInfo.owner, authToken)
+        setOwner(o);
+      } catch(err) {
+        console.log(err.message);
+      }
+    };
+
+    if (serverInfo?.baseUrl && urlInfo && urlInfo.owner && !owner) {
+      fetchOwner();
+    }
+  }, [serverInfo, urlInfo, owner, authToken, setErrorMessage]);
+
+  useEffect(() => {
     const fetchRepo = async () => {
       getRepo(`${serverInfo.baseUrl}/${API_PATH}/repos`, urlInfo.owner, urlInfo.repo, authToken)
-        .then((r) => setRepo(r))
+        .then((r) => {
+          setRepo(r)
+          if (!owner) {
+            setOwner(r.owner)
+          }
+        })
         .catch((err) => {
           console.log(err.message);
-          if (!authToken) {
-            setErrorMessage(
-              <>
-                <span>Unable to to find this resource on DCS via the repo API. Perhaps this is a protected or private repository? If it is, please go to your&nbsp;</span>
-                <a href={`${serverInfo.baseUrl}/user/settings/applications`} target="_blank" rel="noreferrer">
-                  Manage Access Tokens
-                </a>
-                <span>
-                  &nbsp;page (login if needed), and generate a new token that has at least read access for repositories. Then put the token you are given in the URL above in the
-                  address bar after&nbsp;
-                </span>
-                <span style={{ fontWeight: 'bold', fontStyle: 'italic' }}>token=</span>
-                <span>&nbsp;and hit Enter/Return to reload the page.</span>
-              </>
-            );
-            const url = new URL(window.location.href);
-            url.searchParams.set('token', '');
-            window.history.replaceState({}, document.title, url.toString());
-          } else {
-            setErrorMessage(<>Unable to to find this resource on DCS via the repo API. The token you gave is invalid or does not have access to this repository.</>);
-          }
+          setErrorMessage(<>Unable to to find <a href={`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`} target="_blank" rel="noreferrer">this resource on DCS</a> via the repo API.</>);
         });
     };
 
-    if (serverInfo && urlInfo && urlInfo.owner && urlInfo.repo && cachedBook) {
-      fetchRepo().catch((e) => setErrorMessage(e.message));
+    if (serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !repo) {
+      fetchRepo()
     }
-  }, [serverInfo, urlInfo, authToken, cachedBook, setErrorMessage]);
+  }, [serverInfo, urlInfo, authToken, repo, owner, setErrorMessage]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, repo.owner.username, repo.name, urlInfo.ref || repo.default_branch, authToken);
+      if( repo && (! repo.subject || ! repo.metadata_type)){
+        setErrorMessage("This repository does not appear to be a valid resource that we can render.");
+        setFetchingCatalogEntry(false);
+        return;
+      }
+      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, urlInfo.owner, urlInfo.repo, urlInfo.ref || repo?.default_branch || "master", authToken);
       if (entry) {
         setCatalogEntry(entry);
+        if (! repo) {
+          setRepo(entry.repo);
+        }
+        if (! owner) {
+          setOwner(entry.repo.owner)
+        }
       } else {
-        setErrorMessage('Unable to find a valid catalog entry for this resource.');
+        if (repo) {
+          setErrorMessage(<>Unable to <a href={`${serverInfo.baseUrl}/${API_PATH}/catalog/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || "master"}`} target="_blank" rel="noreferrer">get a valid catalog entry</a> for this resource.</>);
+        }
       }
+      setFetchingCatalogEntry(false);
     };
 
-    if (repo && cachedBook) {
-      fetchCatalogEntry().catch((e) => setErrorMessage(e.message));
+    if (!fetchingCatalogEntry && !errorMessages?.length &&  serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !catalogEntry) {
+      setFetchingCatalogEntry(true);
+      fetchCatalogEntry();
     }
-  }, [repo, serverInfo, urlInfo, cachedBook, authToken, setErrorMessage]);
+  }, [fetchingCatalogEntry, catalogEntry, repo, owner, errorMessages, serverInfo, urlInfo, authToken, setErrorMessage]);
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let tryRefs = ['master', 'main', 'scribe-main'];
-      if (urlInfo?.ref && !(urlInfo.ref in tryRefs)) {
-        if (/^v\d/.test(urlInfo.ref)) {
-          const previousVersion = urlInfo.ref.replace(/^v/, '').split('.').map(Number);
-          if (previousVersion[previousVersion.length - 1] > 0) {
-            previousVersion[previousVersion.length - 1]--;
-            const previousVersionString = 'v' + previousVersion.join('.');
-            if (previousVersion[previousVersion.length - 1] > 0) {
-              previousVersion[previousVersion.length - 1]--;
-              tryRefs = ['v' + previousVersion.join('.'), ...tryRefs];
-            }
-            tryRefs = [previousVersionString, ...tryRefs];
-          }
-        }
-        tryRefs = [urlInfo.ref, ...tryRefs];
-      }
-
-      let tryBookIds = [bookId || 'default', 'gen'];
+      let b = bookId || "default";
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
-        tryBookIds = [urlInfo.hashParts[0].toLowerCase()];
-      } else if (!bookId && /_(tn|tq|ult|ust|glt|gst|)$/.test(urlInfo.repo)) {
-        tryBookIds = ['gen', 'default'];
+        b = urlInfo.hashParts[0].toLowerCase()
       }
-
-      let cb = null;
-      for (let ref of tryRefs) {
-        for (let book of tryBookIds) {
-          if (!cb) {
-            cb = await downloadCachedBook(urlInfo.owner, urlInfo.repo, ref, book);
-          }
+      const response = await fetch(`/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${b}`, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
+      });
+      if (!response.ok && catalogEntry) {
+        setCachedBook({});
+        return;
       }
-
+      const url = await response.text();
+      console.log(url);
+      const cb = await downloadCachedBook(url);
       setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
       setCachedHtmlSections(cb?.htmlSections);
       setFetchingCachedBook(false);
     };
 
-    if (forceRerender || noCache) {
+    if (renderMessage || noCache) {
       if (!cachedBook) {
         setCachedBook({});
       }
-    } else if (!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo) {
-      setFetchingCachedBook(true);
+    } else if (!cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
       fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, forceRerender]);
+  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
-    if (cachedBook?.catalogEntry && catalogEntry) {
-      if (cachedBook.catalogEntry.commit_sha === catalogEntry.commit_sha) {
-        setHtmlSections(cachedBook.htmlSections);
-      }
+    if (renderMessage || ! cachedBook) {
+      return; // just waiting for cache to be checked. Will be {} (true) if checked but not there.
     }
-  }, [cachedBook, catalogEntry]);
+    if (! Object.keys(cachedBook).length) {
+      console.log("No cached copy of this resource/book, so rendering first time.");
+      return;
+    }
+    if (! catalogEntry) {
+      return; // Just waiting for catalog entry to be fetched
+    }
+    if (cachedBook.catalogEntry.commit_sha !== catalogEntry.commit_sha) {
+      console.log(`The cached copy's catalog entry's sha and the newly fetched catalog entry sha do not match! Cached: ${cachedBook.catalogEntry.commit_sha}, New: ${catalogEntry.commit_sha}. Rendering new.`);
+      setRenderMessage(`You are viewing a previous rendering (${cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name ? cachedBook.catalogEntry.branch_or_tag_name : cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`);
+      return;
+    }
+    if (cachedBook.preview_version !== APP_VERSION ) {
+      console.log(`The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`);
+      setRenderMessage(`You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated to use v${APP_VERSION}...`);
+      return;
+    }
+    if (Object.keys(cachedBook.builtWith).length !== builtWith.length) {
+      console.log(`The number of resources used to build the cached copy and this one do not match: Cached: ${Object.keys(cachedBook.builtWith).length}, New: ${builtWith.length}.`);
+      return;
+    }
+
+    for (let entry of (builtWith || [])) {
+      if (!(entry.full_name in cachedBook.builtWith) || cachedBook.builtWith[entry.full_name] !== entry.commit_sha) {
+        console.log(`Commit SHA for ${entry.full_name} used to build the cached copy is not the same as the current one to be used. Cached: ${cachedBook.builtWith[entry.full_name]}, New: ${entry.commit_sha}. Rendering new.`);
+        setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`)
+        return;
+      }
+    }    
+    console.log("All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.")
+    setHtmlSections(cachedBook.htmlSections);
+  }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
 
   useEffect(() => {
-    if (catalogEntry && cachedBook) {
+    if (catalogEntry) {
       if (!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type) {
         if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
           catalogEntry.title = catalogEntry.repo.title;
@@ -380,28 +427,22 @@ export function AppContextProvider({ children }) {
       }
       setErrorMessage(`Not a valid repository that can be convert.`);
     }
-  }, [catalogEntry, cachedBook, setErrorMessage]);
+  }, [catalogEntry, setErrorMessage]);
 
   useEffect(() => {
     const sendCachedBook = async () => {
       if (!bookId || bookId === 'gen' || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', packageJson.version, catalogEntry, htmlSections);
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
       }
       if (bookId) {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, bookId, packageJson.version, catalogEntry, htmlSections);
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, bookId, APP_VERSION, catalogEntry, builtWith, htmlSections);
       }
     };
 
-    if (
-      !noCache &&
-      htmlSections.body != '' &&
-      (cachedBook?.preview_version != packageJson.version ||
-        cachedBook?.catalogEntry?.commit_sha != catalogEntry.commit_sha ||
-        JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections))
-    ) {
+    if (!noCache && htmlSections.body != '' && (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)) {
       sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, supportedBooks]);
+  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, builtWith, supportedBooks]);
 
   // create the value for the context provider
   const context = {
@@ -409,13 +450,14 @@ export function AppContextProvider({ children }) {
       urlInfo,
       catalogEntry,
       bookId,
+      bookTitle,
       statusMessage,
       errorMessages,
       repo,
+      owner,
       ResourceComponent,
       htmlSections,
       canChangeColumns,
-      buildInfo,
       serverInfo,
       isOpenPrint,
       printOptions,
@@ -427,6 +469,8 @@ export function AppContextProvider({ children }) {
       cachedBook,
       cachedHtmlSections,
       supportedBooks,
+      builtWith,
+      renderMessage,
     },
     actions: {
       onPrintClick,
@@ -442,7 +486,10 @@ export function AppContextProvider({ children }) {
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
       setBookId,
+      setBookTitle,
       setSupportedBooks,
+      setBuiltWith,
+      setRenderMessage,
     },
   };
 

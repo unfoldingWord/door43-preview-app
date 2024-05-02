@@ -78,7 +78,9 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const getLanguages = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other`, {
+        cache: 'default',
+      })
         .then((response) => {
           return response.json();
         })
@@ -102,7 +104,9 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchOwners = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&lang=${encodeURIComponent(selectedLanguage.lc)}`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=other&lang=${encodeURIComponent(selectedLanguage.lc)}`, {
+        cache: 'default',
+      })
         .then((response) => {
           return response.json();
         })
@@ -126,8 +130,11 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, { 
         cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
       })
         .then((response) => response.json())
         .then(({ data }) => {
@@ -145,12 +152,17 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
     if (selectedOwner && !(selectedOwner.username in repos) && canLoad) {
       fetchRepos();
     }
-  }, [serverInfo, repos, selectedLanguage, selectedOwner, canLoad]);
+  }, [serverInfo, repos, selectedLanguage, selectedOwner, canLoad, authToken]);
 
   useEffect(() => {
     const fetchBranches = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches/`, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      })
         .then((response) => response.json())
         .then((branches) => {
           setAvailableRefs((prevState) => ({
@@ -169,7 +181,12 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
 
     const fetchTags = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags/`, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      })
         .then((response) => response.json())
         .then((tags) => {
           setAvailableRefs((prevState) => ({ ...prevState, [selectedRepo.full_name]: { ...availableRefs[selectedRepo.full_name], tag: tags.map((tag) => tag.name) } }));
@@ -192,12 +209,17 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
         }
       }
     }
-  }, [serverInfo, availableRefs, selectedRepo, selectedOwner, refTypeChoice, canLoad]);
+  }, [serverInfo, availableRefs, selectedRepo, selectedOwner, refTypeChoice, authToken, canLoad]);
 
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}${authToken ? `?token=${authToken}` : ''}`, { cache: 'default' })
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, { 
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      })
         .then((response) => response.json())
         .then((entry) => {
           setCatalogEntry(entry);

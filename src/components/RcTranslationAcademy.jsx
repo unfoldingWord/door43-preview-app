@@ -114,7 +114,7 @@ const printCss = `
 export default function RcTranslationAcademy() {
   const {
     state: { catalogEntry, documentAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setBuiltWith },
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
 
@@ -134,6 +134,12 @@ export default function RcTranslationAcademy() {
     );
     setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
   }, [catalogEntry?.subject, setHtmlSections, setStatusMessage]);
+
+  useEffect(() => {
+    if (catalogEntry) {
+      setBuiltWith([catalogEntry])
+    }
+  }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
     const generateCopyrightPage = async () => {

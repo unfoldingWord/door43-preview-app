@@ -1,4 +1,4 @@
-export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'Door43-Catalog'], repo, ref = 'master', stage = 'prod') => {
+export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'Door43-Catalog'], repo, ref = 'master', stage = 'prod', authToken = '') => {
   // Try first to find the catalog entry given the ref and all the owners
   let repos = [repo];
   if (repo.endsWith('_ult')) {
@@ -9,7 +9,12 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   for (let owner of owners) {
     for (let r of repos) {
-      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
+      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, { 
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
       if (resp && resp.status == '200') {
         const json = await resp.json();
         return json;
@@ -20,11 +25,21 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   if (stage != 'latest') {
     for (let owner of owners) {
       for (let r of repos) {
-        let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`);
+        let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, { 
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        });
         if (resp && resp.status == '200') {
           const repoObj = resp.json();
           if (repoObj?.catalog?.prod) {
-            resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`);
+            resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, { 
+              cache: 'default',
+              headers: {
+                Authorization: `Bearer ${authToken}`
+              }
+            });
             if (resp && resp.status == '200') {
               return await resp.json();
             }
@@ -35,11 +50,21 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   // Now we just get the latest catalog entry for the repo if it exists
   for (let owner of owners) {
-    let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`);
+    let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`, { 
+      cache: 'default',
+      headers: {
+        Authorization: `Bearer ${authToken}`
+      }
+    });
     if (resp) {
       const repoObj = resp.json();
       if (repoObj?.catalog?.latest) {
-        resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`);
+        resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, { 
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        });
         if (resp) {
           return await resp.json();
         }
@@ -74,7 +99,7 @@ export const getCatalogEntryBySubject = async (apiUrl, subject, lang = ['en'], o
   }
 };
 
-export const getRelationCatalogEntries = async (catalogEntry, relation, requiredSubjects = []) => {
+export const getRelationCatalogEntries = async (catalogEntry, relation, requiredSubjects = [], authToken = '') => {
   if (!catalogEntry || !relation?.length) {
     return [];
   }
@@ -90,10 +115,10 @@ export const getRelationCatalogEntries = async (catalogEntry, relation, required
       ref = catalogEntry.repo.default_branch;
       stage = 'latest';
     }
-    let entry = await getCatalogEntryByRef(apiUrl, [catalogEntry.owner, `${lang}_gl`, 'unfoldingWord', 'Door43-Catalog'], repo, ref, stage);
+    let entry = await getCatalogEntryByRef(apiUrl, [catalogEntry.owner, `${lang}_gl`, 'unfoldingWord', 'Door43-Catalog'], repo, ref, stage, authToken);
     if (!entry) {
       // Try getting English fallback
-      entry = await getCatalogEntryByRef(apiUrl, [catalogEntry.owner, 'unfoldingWord', 'Door43-Catalog'], `en_${abbreviation}`, ref, stage);
+      entry = await getCatalogEntryByRef(apiUrl, [catalogEntry.owner, 'unfoldingWord', 'Door43-Catalog'], `en_${abbreviation}`, ref, stage, authToken);
     }
     if (entry) {
       subjects.push(entry.subject);

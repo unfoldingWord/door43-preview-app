@@ -136,11 +136,10 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, supportedBooks, htmlSections, documentAnchor, authToken },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, htmlSections, documentAnchor, authToken, builtWith },
+    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
-  const [bookTitle, setBookTitle] = useState();
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
 
@@ -249,7 +248,7 @@ export default function RcTranslationNotes() {
   });
 
   const twCatalogEntries = useFetchCatalogEntriesBySubject({
-    catalogEntries: relationCatalogEntries,
+  catalogEntries: relationCatalogEntries,
     subject: 'Translation Words',
     firstOnly: true,
     setErrorMessage,
@@ -298,6 +297,12 @@ export default function RcTranslationNotes() {
       }
     }
   }, [documentAnchor]);
+
+  useEffect(() => {
+    if (catalogEntry) {
+      setBuiltWith([catalogEntry, ...(sourceBibleCatalogEntries || []), ...(targetBibleCatalogEntries || []), ...(taCatalogEntries || []), ...(twCatalogEntries || []), ...(twlCatalogEntries || [])])
+    }
+  }, [ catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith])
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
@@ -699,12 +704,12 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setHtml(html);
     };
 
-    if (! htmlSections?.body && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes && taFileContents && twFileContents) {
+    if (!html && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes && taFileContents && twFileContents) {
       generateHtml();
     }
   }, [
     catalogEntry,
-    htmlSections,
+    html,
     taCatalogEntries,
     bookId,
     bookTitle,
@@ -722,10 +727,8 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const entries = [catalogEntry, ...sourceBibleCatalogEntries, ...targetBibleCatalogEntries, ...taCatalogEntries, ...twCatalogEntries];
-
       let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
-      for (let entry of entries) {
+      for (let entry of builtWith) {
         const date = new Date(entry.released);
         const formattedDate = date.toISOString().split('T')[0];
         copyrightAndLicense += `
@@ -748,13 +751,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (! htmlSections?.copyright && catalogEntry && sourceBibleCatalogEntries && targetBibleCatalogEntries.length) {
+    if (! htmlSections?.copyright && catalogEntry && builtWith.length) {
       generateCopyrightPage();
     }
-  }, [htmlSections, catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, authToken, setCopyright]);
+  }, [htmlSections, catalogEntry, builtWith, authToken, setCopyright]);
 
   useEffect(() => {
-    if (! htmlSections?.body && html && copyright) {
+    if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
         cover: `<h3>${bookTitle}</h3>`,
@@ -763,7 +766,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       }));
       setStatusMessage('');
     }
-  }, [htmlSections, html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

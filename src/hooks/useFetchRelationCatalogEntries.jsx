@@ -12,8 +12,13 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
         setErrorMessage('Catalog entry is invalid');
         return;
       }
-      const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}${authToken?`?token=${authToken}`:''}`;
-      fetch(metadataUrl, { cache: 'default' })
+      const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}`;
+      fetch(metadataUrl, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      })
         .then((response) => {
           if (!response.ok) {
             console.log(`Bad response from DCS for ${metadataUrl}: `, response);
@@ -33,7 +38,7 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
             setErrorMessage('There is no dublin_core.relation property in the manifest.yaml file.');
             return;
           }
-          return getRelationCatalogEntries(catalogEntry, metadata.dublin_core.relation, requiredSubjects);
+          return getRelationCatalogEntries(catalogEntry, metadata.dublin_core.relation, requiredSubjects, authToken);
         })
         .then((entries) => {
           setRelationCatalogEntries(entries);

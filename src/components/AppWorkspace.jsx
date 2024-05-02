@@ -1,8 +1,9 @@
 // React imports
-import { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { Helmet } from 'react-helmet';
 
 // Material UI imports
-import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress } from '@mui/material';
+import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress, Grid } from '@mui/material';
 import { Alert, Box, Card, IconButton, Sheet, Tooltip } from '@mui/joy';
 import {
   Close as CloseIcon,
@@ -24,6 +25,7 @@ import { ResourcesCardGrid } from '@components/ResourcesCardGrid';
 import { ResourceLanguagesAccordion } from '@components/ResourceLanguagesAccordion';
 import { WebPreviewComponent } from '@components/WebPreviewComponent';
 import { PrintPreviewComponent } from '@components/PrintPreviewComponent';
+import CatalogEntriesGrid from './CatalogEntriesGrid';
 
 // Context imports
 import { AppContext } from '@components/App.context';
@@ -50,20 +52,25 @@ export default function AppWorkspace() {
 
   const {
     state: {
-      repo,
       urlInfo,
+      repo,
+      owner,
       catalogEntry,
       ResourceComponent,
       statusMessage,
       errorMessages,
       htmlSections,
-      cachedHtmlSections,
+      builtWith,
       cachedBook,
+      cachedHtmlSections,
       serverInfo,
       isOpenPrint,
       documentAnchor,
       printPreviewStatus,
       printPreviewPercentDone,
+      renderMessage,
+      bookId,
+      bookTitle,
     },
     actions: { clearErrorMessage, setIsOpenPrint, setDocumentAnchor, setDocumentReady },
   } = useContext(AppContext);
@@ -106,50 +113,6 @@ export default function AppWorkspace() {
     canChangeAtts: false,
     handlePrint,
   };
-
-  let dcsRef = '';
-  let infoLine = null;
-  if (urlInfo && urlInfo.owner && urlInfo.repo && serverInfo?.baseUrl) {
-    let repoFullName = ``;
-    if (repo) {
-      repoFullName = repo.full_name;
-    } else {
-      repoFullName = `${urlInfo.owner}/${urlInfo.repo}`;
-    }
-    dcsRef = `${serverInfo?.baseUrl}/${repoFullName}`;
-    if (catalogEntry) {
-      dcsRef += `/src/${catalogEntry.ref_type}/${catalogEntry.branch_or_tag_name}`;
-    } else {
-      dcsRef += `/src/branch/${urlInfo.ref || repo?.default_branch || 'master'}`;
-    }
-    let infoLineInner = <>{repoFullName}</>;
-    if (catalogEntry?.branch_or_tag_name) {
-      if (catalogEntry.ref_type == 'branch') {
-        infoLineInner = (
-          <>
-            {repoFullName}, {catalogEntry.branch_or_tag_name} <span style={{ fontStyle: 'italic' }}>({catalogEntry.commit_sha?.substring(0, 8)})</span>
-          </>
-        );
-      } else {
-        infoLineInner = (
-          <>
-            {repoFullName}, {catalogEntry.branch_or_tag_name}
-          </>
-        );
-      }
-    }
-
-    infoLine = (
-      <a href={dcsRef} target={'_blank'} style={{ textDecoration: 'none', color: 'inherit' }} rel="noreferrer">
-        {infoLineInner}
-      </a>
-    );
-  }
-
-  let title = APP_NAME;
-  if (serverInfo?.ID && serverInfo?.ID != DCS_SERVERS['prod'].ID) {
-    title += ` (${serverInfo.ID})`;
-  }
 
   const processModalStyle = {
     position: 'absolute',
@@ -283,7 +246,13 @@ export default function AppWorkspace() {
     }
   }, [printPreviewPercentDone, hidePercentDone]);
 
-  return (
+  return (<>
+    <Helmet>
+     <title>{repo && repo.metadata_type ? `${repo.title} (${repo.abbreviation})${bookTitle && ` - ${bookTitle} (${bookId})`} - ${repo.language_title} (${repo.language})` : APP_NAME}</title>
+      <meta name="description" content={`unrestricted biblical content in every language; ${repo?.description}`} />
+      <meta name="keywords" content={`door43, unfoldingWord, bible, jesus${repo && `, ${repo.owner.full_name}, ${repo.owner.username}, ${repo.subject}, ${repo.language_title}, ${repo.language}`}`} />
+      <html lang={repo ? repo.language : 'en'} />
+    </Helmet>
     <Sheet>
       {!fullScreen &&
         (window.location.hostname == 'preview.door43.org' ||
@@ -291,7 +260,7 @@ export default function AppWorkspace() {
           window.location.host == 'localhost:8888' ||
           window.location.host == 'localhost:5173' ||
           window.location.host == 'localhost:4173') && (
-          <Header title={title} dcsRef={dcsRef} infoLine={infoLine} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
+          <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={bookId} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
         )}
       <Card>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
@@ -334,7 +303,7 @@ export default function AppWorkspace() {
               }}
             >
               <div>&nbsp;</div>
-              {ResourceComponent ? <ResourceComponent /> : ''}
+              {catalogEntry && cachedBook && ResourceComponent ? <ResourceComponent /> : ''}
               <div style={{ whiteSpace: 'nowrap' }}>
                 <ToggleButtonGroup
                   value={view}
@@ -407,9 +376,7 @@ export default function AppWorkspace() {
             )}
             {view === 'web' && !htmlSections.body && !errorMessages && (
               <LoadingBar
-                message={
-                  cachedBook && cachedHtmlSections?.body && catalogEntry && cachedBook.catalogEntry.commit_sha != catalogEntry.commit_sha && `You are viewing a previous rendering (${cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name ? cachedBook.catalogEntry.branch_or_tag_name : cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`
-                }
+                message={renderMessage}
               />
             )}
           </AppBar>
@@ -476,8 +443,8 @@ export default function AppWorkspace() {
               </Typography>
             </Box>
           )}
-          {urlInfo && !urlInfo.owner && serverInfo && <ResourcesCardGrid />}
-          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && view == 'web' && (
+          {!urlInfo?.repo && serverInfo && <ResourcesCardGrid />}
+          {urlInfo?.repo && serverInfo && view == 'web' && (
             <WebPreviewComponent
               ref={webPreviewRef}
               style={{
@@ -493,11 +460,11 @@ export default function AppWorkspace() {
       </Card>
       {serverInfo && (
         <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body != '' || errorMessages || !urlInfo?.repo}
+          canLoad={htmlSections?.body !== '' || errorMessages != null || !(urlInfo?.repo)}
           showModal={showSelectResourceModal}
           setShowModal={setShowSelectResourceModal}
         />
       )}
     </Sheet>
-  );
+  </>);
 }
