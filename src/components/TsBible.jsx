@@ -96,7 +96,7 @@ a.footnote {
 export default function TsBible() {
   const {
     state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, documentAnchor, authToken },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
@@ -144,6 +144,12 @@ export default function TsBible() {
     htmlRender: true,
     setErrorMessage,
   });
+
+  useEffect(() => {
+    if (catalogEntry) {
+      setBuiltWith([catalogEntry])
+    }
+  }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length == 3) {

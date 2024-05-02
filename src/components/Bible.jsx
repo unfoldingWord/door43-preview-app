@@ -101,7 +101,7 @@ a.footnote {
 export default function Bible() {
   const {
     state: { urlInfo, catalogEntry, documentAnchor, authToken, bookId, bookTitle, supportedBooks, htmlSections },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
+    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
@@ -143,6 +143,12 @@ export default function Bible() {
     htmlRender: true,
     setErrorMessage,
   });
+
+  useEffect(() => {
+    if (catalogEntry) {
+      setBuiltWith([catalogEntry])
+    }
+  }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
     if (documentAnchor && documentAnchor.split('-').length == 3) {
