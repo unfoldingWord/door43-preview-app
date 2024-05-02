@@ -1,5 +1,4 @@
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
 
 // Configure AWS SDK
 AWS.config.update({
@@ -9,7 +8,6 @@ AWS.config.update({
 });
 
 exports.handler = async (event, context) => {
-  console.log("KEY1: "+process.env.PREVIEW_S3_UPLOAD_SECRET_ACCESS_KEY);
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -23,6 +21,9 @@ exports.handler = async (event, context) => {
   }
 
   const absoluteKey = `u/${owner}/${repo}/${ref}/${bookId}.json.gzip`;
+
+  // Create an S3 instance
+  const s3 = new AWS.S3();
 
   try {
     await s3.headObject({
