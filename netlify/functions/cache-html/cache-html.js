@@ -44,6 +44,7 @@ exports.handler = async function (event, context) {
     Key: path,
     Body: Buffer.from(event.body, 'base64'),
     ContentType: 'application/zip',
+    CacheControl: 'max-age=60',
   };
 
   try {

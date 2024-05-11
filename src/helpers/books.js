@@ -23,7 +23,7 @@ export const getSupportedBooks = (catalogEntry, fileList = null) => {
 export const downloadCachedBook = async (url) => {
   try {
     const response = await fetch(url, { 
-      cache: 'default',
+      cache: 'reload',
     });
     if (response.ok) {
       const jsonString = pako.inflate(new Uint8Array(await response.arrayBuffer()), { to: 'string' });
