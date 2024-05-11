@@ -24,7 +24,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
         }
         if (body) {
           html += `
-<article id="ta-${link}" data-nav-id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
+<article id="${link}" data-nav-id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
