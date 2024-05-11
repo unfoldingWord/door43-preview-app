@@ -136,8 +136,8 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, htmlSections, documentAnchor, authToken, builtWith },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, htmlSections, navAnchor, authToken, builtWith },
+    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -162,8 +162,8 @@ export default function RcTranslationNotes() {
       window.location.reload();
     } else {
       const hash = `${b}-${c}-${v}`;
-      if (!documentAnchor.startsWith(hash)) {
-        setDocumentAnchor(hash);
+      if (!navAnchor.startsWith(hash)) {
+        setNavAnchor(hash);
       }
     }
   };
@@ -290,13 +290,13 @@ export default function RcTranslationNotes() {
   });
 
   useEffect(() => {
-    if (documentAnchor && documentAnchor.split('-').length) {
-      const parts = documentAnchor.split('-');
+    if (navAnchor && navAnchor.split('-').length) {
+      const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
       }
     }
-  }, [documentAnchor]);
+  }, [navAnchor]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -397,8 +397,8 @@ export default function RcTranslationNotes() {
 
     const generateHtml = async () => {
       let html = `
-<div class="section tn-book-section" id="hash-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tn-book-section-header"><a href="#hash-${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
+<div class="section tn-book-section" id="tn-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tn-book-section-header"><a href="#tn-${bookId}" data-nav-anchor="${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
 `;
       let usfmJSONs = []
       for (let targetUsfm of targetUsfms) {
@@ -415,7 +415,7 @@ export default function RcTranslationNotes() {
         <article class="tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
-${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           </div>
         </article>
 `;
@@ -428,19 +428,19 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
         html += `
-      <div id="hash-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tn-chapter-header"><a href="#hash-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+      <div id="tn-${bookId}-${chapterStr}" data-nav-id="${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
+        <h2 class="tn-chapter-header"><a href="#tn-${bookId}-${chapterStr}" data-nav-anchor="${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
           html += `
         <div class="section tn-chapter-intro-section">
 `;
           for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
-            const link = `hash-${bookId}-${chapterStr}-intro-${row.ID}`;
+            const link = `${bookId}-${chapterStr}-intro-${row.ID}`;
             const article = `
-          <article id="${link}">
+          <article id="tn-${link}" data-nav-id"${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
-            ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
+            ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, chapterStr)}
           </article>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
@@ -454,11 +454,11 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
           const verseStr = String(verseIdx + 1);
           const refStr = `${chapterStr}:${verseStr}`;
-          const verseLink = `hash-${bookId}-${chapterStr}-${verseStr}`;
+          const verseLink = `${bookId}-${chapterStr}-${verseStr}`;
           let usfmJSONVerseStr = verseStr;
           html += `
-        <div id="${verseLink}" class="section tn-chapter-verse-section">
-          <h3 class="tn-verse-header"><a href="#hash-${bookId}-${chapterStr}-${verseStr}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+        <div id="tn-${verseLink}" data-nav-id="${verseLink}" class="section tn-chapter-verse-section">
+          <h3 class="tn-verse-header"><a href="#tn-${verseLink}" data-nav-anchor="${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -490,11 +490,11 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
-            const scriptureLink = `hash-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            const scriptureLink = `${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
-          <article class="tn-scripture-block" id="${scriptureLink}">
+          <article class="tn-scripture-block" id="tn-${scriptureLink}" data-nav-id="${scriptureLink}">
             <h4 class="tn-scripture-header">
-              <a href="#hash-${scriptureLink}" class="header-link">
+              <a href="#tn-${scriptureLink}" data-nav-anchor="${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
             </h4>
@@ -507,18 +507,18 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
             for (let rowIdx in tnTsvDataWithGLQuotes[chapterStr][verseStr]) {
               const row = tnTsvDataWithGLQuotes[chapterStr][verseStr][rowIdx];
-              const noteLink = `hash-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
+              const noteLink = `${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
               let verseBridge = '';
               if (refStr != row.Reference) {
                 verseBridge += `(${row.Reference})`;
               }
               let article = `
-              <article id="${noteLink}" class="tn-note-article">
+              <article id="tn-${noteLink}" data-nav-id="${noteLink}" class="tn-note-article">
 `;
               if (!row.Quote) {
                 article += `
                 <h4 class="tn-note-header">
-                  <a href="#${noteLink}" class="header-link">
+                  <a href="#tn-${noteLink}" data-nav-anchor="${noteLink}" class="header-link">
                   Note: ${verseBridge}
                   </a>
                 </h4>
@@ -544,7 +544,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               article += `
               <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${row.Reference}</span>
               <div class="tn-note-body">
-                ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
+                ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, chapterStr)}
               </div>
 `;
               if (row.SupportReference) {
@@ -722,7 +722,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     twlTsvDataWithGLQuotes,
     setHtmlSections,
     setErrorMessage,
-    setDocumentAnchor,
+    setNavAnchor,
   ]);
 
   useEffect(() => {

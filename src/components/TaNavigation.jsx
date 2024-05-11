@@ -25,7 +25,7 @@ const findTocSection = (link, sections) => {
   }
 };
 
-export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
+export default function TaNavigation({ taManuals, anchor, setNavAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
 
@@ -41,7 +41,7 @@ export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
         }
       }
       setSelectedTocSection(option);
-      setDocumentAnchor(option.link);
+      setNavAnchor(option.link);
     }
   };
 
@@ -49,7 +49,7 @@ export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
     if (option && option.link) {
       setSelectedManual(option);
       setSelectedTocSection(option);
-      setDocumentAnchor(option.link);
+      setNavAnchor(option.link);
     }
   };
 
@@ -115,5 +115,5 @@ export default function TaNavigation({ taManuals, anchor, setDocumentAnchor }) {
 TaNavigation.propTypes = {
   taManuals: PropTypes.array,
   anchor: PropTypes.string,
-  setDocumentAnchor: PropTypes.func.isRequired,
+  setNavAnchor: PropTypes.func.isRequired,
 };

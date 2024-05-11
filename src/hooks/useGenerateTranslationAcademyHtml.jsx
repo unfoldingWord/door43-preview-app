@@ -24,12 +24,12 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
         }
         if (body) {
           html += `
-<article id="hash-${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
+<article id="ta-${link}" data-nav-id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
   <h${depth} class="header article-header">
-    <a href="#hash-${link}" class="header-link">${title}</a>
+    <a href="#ta-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
   </h${depth}>
 `
       : ``
@@ -53,7 +53,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
             toctitle
           )}">
   <h${depth} class="header section-header">
-    <a href="#hash-${link}" class="header-link">${title}</a>
+    <a href="#ta-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}
@@ -70,7 +70,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
     if (taManuals && taManuals) {
       flattenToHtml();
     }
-  }, [catalogEntry, taManuals, taManuals, setHtml]);
+  }, [catalogEntry, taManuals, setHtml]);
 
   return html;
 }

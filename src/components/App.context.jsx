@@ -19,7 +19,6 @@ import RcTranslationQuestions from '@components/RcTranslationQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
 // import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcObsTranslationNotes' // Uncomment this if you need to use RcObsTranslationNotes
 import TsBible from '@components/TsBible';
-import { set } from 'lodash';
 
 export const AppContext = React.createContext();
 
@@ -46,7 +45,7 @@ export function AppContextProvider({ children }) {
   const [isOpenPrint, setIsOpenPrint] = useState(false);
   const [printOptions, setPrintOptions] = useState({});
   const [documentReady, setDocumentReady] = useState(false);
-  const [documentAnchor, setDocumentAnchor] = useState('');
+  const [navAnchor, setNavAnchor] = useState('');
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
   const [authToken, setAuthToken] = useState();
@@ -57,6 +56,7 @@ export function AppContextProvider({ children }) {
   const [renderMessage, setRenderMessage] = useState(''); // Gives reason for rendering, also a flag that a new render is needed
   const [noCache, setNoCache] = useState(false);
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
+  const [fetchingRepo, setFetchingRepo] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -159,7 +159,7 @@ export function AppContextProvider({ children }) {
         window.history.replaceState({}, document.title, url.toString());
       }
       setUrlInfo(info);
-      setDocumentAnchor(info.hash);
+      setNavAnchor(info.hash);
       if (!info.repo) {
         setStatusMessage('');
       }
@@ -199,7 +199,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const fetchOwner = async () => {
       try {
-        const o = await getOwner(`${serverInfo.baseUrl}/${API_PATH}/users`, urlInfo.owner, authToken)
+        const o = await getOwner(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, authToken)
         setOwner(o);
       } catch(err) {
         console.log(err.message);
@@ -213,7 +213,7 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchRepo = async () => {
-      getRepo(`${serverInfo.baseUrl}/${API_PATH}/repos`, urlInfo.owner, urlInfo.repo, authToken)
+      getRepo(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, urlInfo.repo, authToken)
         .then((r) => {
           setRepo(r)
           if (!owner) {
@@ -222,14 +222,16 @@ export function AppContextProvider({ children }) {
         })
         .catch((err) => {
           console.log(err.message);
-          setErrorMessage(<>Unable to to find <a href={`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`} target="_blank" rel="noreferrer">this resource on DCS</a> via the repo API.</>);
-        });
+          setErrorMessage(<>Unable to find <a href={`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`} target="_blank" rel="noreferrer">this resource on DCS</a> via the repo API.</>);
+        })
+        .finally(() => setFetchingRepo(false));
     };
 
-    if (serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !repo) {
+    if (! fetchingRepo && !errorMessages?.length && serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !repo) {
+      setFetchingRepo(true);
       fetchRepo()
     }
-  }, [serverInfo, urlInfo, authToken, repo, owner, setErrorMessage]);
+  }, [serverInfo, urlInfo, authToken, fetchingRepo, repo, owner, errorMessages, setErrorMessage]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
@@ -238,7 +240,7 @@ export function AppContextProvider({ children }) {
         setFetchingCatalogEntry(false);
         return;
       }
-      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}/catalog`, urlInfo.owner, urlInfo.repo, urlInfo.ref || repo?.default_branch || "master", authToken);
+      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, urlInfo.repo, urlInfo.ref || repo?.default_branch || "master", authToken);
       if (entry) {
         setCatalogEntry(entry);
         if (! repo) {
@@ -460,7 +462,7 @@ export function AppContextProvider({ children }) {
       isOpenPrint,
       printOptions,
       documentReady,
-      documentAnchor,
+      navAnchor,
       printPreviewStatus,
       printPreviewPercentDone,
       authToken,
@@ -480,7 +482,7 @@ export function AppContextProvider({ children }) {
       setIsOpenPrint,
       setPrintOptions,
       setDocumentReady,
-      setDocumentAnchor,
+      setNavAnchor,
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
       setBookId,

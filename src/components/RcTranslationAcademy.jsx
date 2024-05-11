@@ -113,8 +113,8 @@ const printCss = `
 
 export default function RcTranslationAcademy() {
   const {
-    state: { catalogEntry, documentAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setBuiltWith },
+    state: { catalogEntry, navAnchor, authToken },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
 
@@ -185,5 +185,5 @@ export default function RcTranslationAcademy() {
     }
   }, [html, copyright, setHtmlSections, setStatusMessage]);
 
-  return <TaNavigation taManuals={taManuals} anchor={documentAnchor} setDocumentAnchor={setDocumentAnchor} />;
+  return <TaNavigation taManuals={taManuals} anchor={navAnchor} setNavAnchor={setNavAnchor} />;
 }

@@ -59,14 +59,14 @@ const theme = createTheme({
 
 export default function OpenBibleStories() {
   const {
-    state: { catalogEntry, urlInfo, documentAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setBuiltWith },
+    state: { catalogEntry, urlInfo, navAnchor, authToken },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
 
   const onBibleReferenceChange = (b, c, v) => {
-    setDocumentAnchor(`${b}-${c}-${v}`);
+    setNavAnchor(`${b}-${c}-${v}`);
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
@@ -101,13 +101,13 @@ export default function OpenBibleStories() {
   }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
-    if (documentAnchor && documentAnchor.split('-').length >= 2) {
-      const parts = documentAnchor.split('-');
+    if (navAnchor && navAnchor.split('-').length >= 2) {
+      const parts = navAnchor.split('-');
       if (parts[0] == 'obs' && (bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2] || '1');
       }
     }
-  }, [documentAnchor]);
+  }, [navAnchor]);
 
   useEffect(() => {
     // Handle Print Preview & Status & Navigation

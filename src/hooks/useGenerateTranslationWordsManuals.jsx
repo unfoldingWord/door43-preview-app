@@ -26,7 +26,7 @@ const addPropertiesToTocSections = (twFileContents, manual, sections) => {
         sections[i].body = twFileContents[manual.id].articles[sections[i].link].body;
       }
     }
-    sections[i].link = `hash-${manual.id}--${sections[i].link}`;
+    sections[i].link = `${manual.id}--${sections[i].link}`;
     sections[i].sections = addPropertiesToTocSections(twFileContents, manual, sections[i].sections);
   }
   return sections;

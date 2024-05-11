@@ -114,7 +114,7 @@ export const ResourcesCardGrid = () => {
 
   useEffect(() => {
     const getLanguages = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc`, {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&metadataType=ts`, {
         cache: 'default',
       })
         .then((response) => {
@@ -136,7 +136,7 @@ export const ResourcesCardGrid = () => {
 
   useEffect(() => {
     const fetchOwners = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=${stage}&metadataType=rc&metadataType=sb&metadataType=tc`, {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?stage=${stage}&metadataType=rc&metadataType=sb&metadataType=tc&metadataType=ts`, {
         cache: 'default',
       })
         .then((response) => {
@@ -158,7 +158,7 @@ export const ResourcesCardGrid = () => {
 
   useEffect(() => {
     const fetchSubjects = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/subjects?stage=${stage}&metadataType=rc&metadataType=sb&metadataType=tc`, {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/subjects?stage=${stage}&metadataType=rc&metadataType=sb&metadataType=tc&metadataType=ts`, {
         cache: 'default',
       })
         .then((response) => {

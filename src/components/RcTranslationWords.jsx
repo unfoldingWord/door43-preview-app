@@ -109,8 +109,8 @@ const printCss = `
 
 export default function RcTranslationWords() {
   const {
-    state: { catalogEntry, documentAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setBuiltWith },
+    state: { catalogEntry, navAnchor, authToken },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
 
   const [copyright, setCopyright] = useState('');
@@ -182,5 +182,5 @@ export default function RcTranslationWords() {
     }
   }, [html, copyright, setHtmlSections, setStatusMessage]);
 
-  return <TwNavigation twManuals={twManuals} anchor={documentAnchor} setDocumentAnchor={setDocumentAnchor} />;
+  return <TwNavigation twManuals={twManuals} anchor={navAnchor} setNavAnchor={setNavAnchor} />;
 }

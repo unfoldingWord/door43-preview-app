@@ -95,8 +95,8 @@ a.footnote {
 
 export default function TsBible() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, documentAnchor, authToken },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setDocumentAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, navAnchor, authToken },
+    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
@@ -118,8 +118,8 @@ export default function TsBible() {
     if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload();
-    } else if (setDocumentAnchor) {
-      setDocumentAnchor(`${b}-${c}-${v}`);
+    } else if (setNavAnchor) {
+      setNavAnchor(`${b}-${c}-${v}`);
     }
   };
 
@@ -152,13 +152,13 @@ export default function TsBible() {
   }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
-    if (documentAnchor && documentAnchor.split('-').length == 3) {
-      const parts = documentAnchor.split('-');
+    if (navAnchor && navAnchor.split('-').length == 3) {
+      const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId != parts[0] || bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != parts[2]) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2]);
       }
     }
-  }, [documentAnchor]);
+  }, [navAnchor]);
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
@@ -223,14 +223,14 @@ export default function TsBible() {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-        `<span id="hash-${bookId}-$1-$2"$3><a href="#hash-${bookId}-$1-$2" class="header-link">$4</a></span>`
+        `<span id="bible-${bookId}-$1-$2" data-nav-id="${bookId}-$1-$2"$3><a href="#bible-${bookId}-$1-$2" data-nav-anchor="${bookId}-$1-$2" class="header-link">$4</a></span>`
       );
       _html = _html.replaceAll(
-        /<span id="chapter-(\d+)" ([^>]+)>([\d]+)<\/span>/gi,
-        `<span id="hash-${bookId}-$1" data-toc-title="${bookTitle} $1" $2><a href="#hash-${bookId}-$1-1" class="header-link">$3</a></span>`
+        /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
+        `<span id="bible-${bookId}-$1" data-nav-id="${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#bible-${bookId}-$1-1" data-nav-anchor="${bookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
-      _html = `<section class="bible-book" id="hash-${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
+      _html = `<section class="bible-book" id="bible-${bookId}" data-nav-id"${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
       setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
       setStatusMessage('');
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});

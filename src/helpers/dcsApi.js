@@ -1,7 +1,7 @@
 import * as base64 from './base64';
 
-export const getCatalogEntry = async (catalogApiUrl, owner, repo, ref, authToken = '') => {
-  const catalogEntryUrl = `${catalogApiUrl}/entry/${owner}/${repo}/${ref}`;
+export const getCatalogEntry = async (apiUrl, owner, repo, ref, authToken = '') => {
+  const catalogEntryUrl = `${apiUrl}/catalog/entry/${owner}/${repo}/${ref}`;
   return fetch(catalogEntryUrl, { 
     cache: 'default',
     headers: {
@@ -14,8 +14,8 @@ export const getCatalogEntry = async (catalogApiUrl, owner, repo, ref, authToken
   });
 };
 
-export const getRepo = async (repoApiUrl, owner, repo, authToken = '') => {
-  const repoUrl = `${repoApiUrl}/${owner}/${repo}`;
+export const getRepo = async (apiUrl, owner, repo, authToken = '') => {
+  const repoUrl = `${apiUrl}/repos/${owner}/${repo}`;
   return fetch(repoUrl, { 
     cache: 'default',
     headers: {
@@ -30,8 +30,8 @@ export const getRepo = async (repoApiUrl, owner, repo, authToken = '') => {
   });
 };
 
-export const getOwner = async (usersApiUrl, owner, authToken = '') => {
-  const usersUrl = `${usersApiUrl}/${owner}`;
+export const getOwner = async (apiUrl, owner, authToken = '') => {
+  const usersUrl = `${apiUrl}/users/${owner}`;
   return fetch(usersUrl, { 
     cache: 'default',
     headers: {

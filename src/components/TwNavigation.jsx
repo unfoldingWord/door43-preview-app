@@ -25,7 +25,7 @@ const findTocSection = (link, sections) => {
   }
 };
 
-export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
+export default function TwNavigation({ twManuals, anchor, setNavAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
 
@@ -41,7 +41,7 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
         }
       }
       setSelectedTocSection(option);
-      setDocumentAnchor(option.link);
+      setNavAnchor(option.link);
     }
   };
 
@@ -49,7 +49,7 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
     if (option && option.link) {
       setSelectedManual(option);
       setSelectedTocSection(option);
-      setDocumentAnchor(option.link);
+      setNavAnchor(option.link);
     }
   };
 
@@ -59,7 +59,7 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
       let section = twManuals[0].sections[0];
       if (anchor) {
         if (!anchor.includes('--')) {
-          setDocumentAnchor(`${anchor}--${anchor}`);
+          setNavAnchor(`${anchor}--${anchor}`);
           return
         }
         section = findTocSection(anchor, twManuals);
@@ -119,5 +119,5 @@ export default function TwNavigation({ twManuals, anchor, setDocumentAnchor }) {
 TwNavigation.propTypes = {
   twManuals: PropTypes.array,
   anchor: PropTypes.string,
-  setDocumentAnchor: PropTypes.func.isRequired,
+  setNavAnchor: PropTypes.func.isRequired,
 };

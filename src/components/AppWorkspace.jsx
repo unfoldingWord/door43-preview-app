@@ -47,7 +47,7 @@ export default function AppWorkspace() {
   const [hidePercentDone, setHidePercentDone] = useState(false);
   const [scrolledToAnchorInView, setScrolledToAnchorInView] = useState({
     view: '',
-    documentAnchor: '',
+    navAnchor: '',
   });
 
   const {
@@ -65,14 +65,14 @@ export default function AppWorkspace() {
       cachedHtmlSections,
       serverInfo,
       isOpenPrint,
-      documentAnchor,
+      navAnchor,
       printPreviewStatus,
       printPreviewPercentDone,
       renderMessage,
       bookId,
       bookTitle,
     },
-    actions: { clearErrorMessage, setIsOpenPrint, setDocumentAnchor, setDocumentReady },
+    actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady },
   } = useContext(AppContext);
 
   const webPreviewRef = useRef();
@@ -129,9 +129,9 @@ export default function AppWorkspace() {
 
   const scrollToAnchor = (myAnchor, myRef, myView) => {
     if (myAnchor && myRef?.current?.innerHTML) {
-      let elementToScrollTo = myRef.current.querySelector(`[id='${myAnchor}']`);
+      let elementToScrollTo = myRef.current.querySelector(`[data-nav-id='${myAnchor}']`);
       if (!elementToScrollTo) {
-        elementToScrollTo = myRef.current.querySelector(`[id='hash-${myAnchor}']`);
+        elementToScrollTo = myRef.current.querySelector(`[id='${myAnchor}']`);
       }
       if (elementToScrollTo) {
         window.scrollTo({
@@ -168,15 +168,18 @@ export default function AppWorkspace() {
         return;
       }
       let href = a.getAttribute('href');
-      if (href && href.startsWith('#')) {
-        href = href.replace(/^#/, '');
-        if (href.startsWith('hash-')) {
-          console.log('SET DOCUMENT ANCHOR', href);
-          href = href.replace(/^hash-/, '');
-          setDocumentAnchor(href);
-        } else {
-          console.log('Scrolling without setting to: ', href);
-          scrollToAnchor(href, currentViewRef.current, view);
+      if (href.startsWith('#')) {
+        let anchor = href.replace('#', '');
+        let dataNavAnchor = a.getAttribute('data-nav-anchor');
+        if (!dataNavAnchor && anchor && currentViewRef?.current?.current && currentViewRef.current.current.querySelector(`[data-nav-id='${anchor}']`)) {
+          dataNavAnchor = anchor;
+        }
+        if (dataNavAnchor) {
+          console.log("SET NAV ANCHOR", dataNavAnchor)
+          setNavAnchor(dataNavAnchor);
+        } else if (anchor) {
+          console.log('Scrolling without setting to: ', anchor);
+          scrollToAnchor(anchor, currentViewRef.current, view);
         }
         e.preventDefault();
         e.stopPropagation();
@@ -187,13 +190,13 @@ export default function AppWorkspace() {
     return () => {
       document.querySelector('#root').removeEventListener('click', handleClick);
     };
-  }, [setDocumentAnchor]);
+  }, [setNavAnchor]);
 
   useEffect(() => {
-    if (documentAnchor) {
-      updateUrlHashInAddressBar(documentAnchor);
+    if (navAnchor) {
+      updateUrlHashInAddressBar(navAnchor);
     }
-  }, [documentAnchor]);
+  }, [navAnchor]);
 
   useEffect(() => {
     const determineIfImagesLoaded = async () => {
@@ -225,14 +228,14 @@ export default function AppWorkspace() {
   }, [imagesLoaded, printPreviewStatus]);
 
   useEffect(() => {
-    if (currentViewRef.current?.current?.innerHTML && documentAnchor && (scrolledToAnchorInView.view != view || scrolledToAnchorInView.documentAnchor != documentAnchor)) {
-      console.log('SCROLLING TO DOCUMENT ANCHOR: ', documentAnchor);
-      const didScroll = scrollToAnchor(documentAnchor, currentViewRef.current, view);
+    if (currentViewRef.current?.current?.innerHTML && navAnchor && (scrolledToAnchorInView.view != view || scrolledToAnchorInView.navAnchor != navAnchor)) {
+      console.log('SCROLLING TO NAV ANCHOR: ', navAnchor);
+      const didScroll = scrollToAnchor(navAnchor, currentViewRef.current, view);
       if (didScroll) {
-        setScrolledToAnchorInView({ view, documentAnchor });
+        setScrolledToAnchorInView({ view, navAnchor });
       }
     }
-  }, [view, documentAnchor, currentViewRef?.current?.current?.innerHTML, scrolledToAnchorInView]);
+  }, [view, navAnchor, currentViewRef?.current?.current?.innerHTML, scrolledToAnchorInView]);
 
   useEffect(() => {
     if (printPreviewPercentDone === 100) {

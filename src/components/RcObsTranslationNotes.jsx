@@ -113,7 +113,7 @@ export default function RcObsTranslationNotes() {
     actions: {
       setErrorMessage,
       setHtmlSections,
-      setDocumentAnchor,
+      setNavAnchor,
       setStatusMessage,
     },
   } = useContext(AppContext)
@@ -136,7 +136,7 @@ export default function RcObsTranslationNotes() {
   }
 
   const onBibleReferenceChange = (b, c, v) => {
-    setDocumentAnchor(`${b}-${c}-${v}`)
+    setNavAnchor(`${b}-${c}-${v}`)
   }
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } =
