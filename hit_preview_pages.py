@@ -26,13 +26,14 @@ driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
 root = 'https://preview.door43.org'
 # Open the webpage
-driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
-# driver.get(root + "?subject=Aligned+Bible&subject=Bible&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
+#driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
+driver.get(root + "?subject=Aligned+Bible&subject=Bible&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc")
 #driver.get(root + "?owner=unfoldingWord&owner=Door43-Catalog&subject=TSV%20Translation%20Notes&stage=latest&sort=released&order=desc")
 
 # Wait for the component to load
 wait = WebDriverWait(driver, 60)  # adjust the timeout as needed
-wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'css-1kv5bp7')))  # replace with the actual class name of your component
+# wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'css-c0czuf')))  # replace with the actual class name of your component
+time.sleep(10)
 
 # time.sleep(3)
 
@@ -54,6 +55,8 @@ soup = BeautifulSoup(driver.page_source, 'html.parser')
 
 # Find all the URLs on the page
 urls = list(set([a['href'] for a in soup.find_all('a', href=True)]))
+
+print(urls);
 
 # Loop through the URLs
 for url in urls:

@@ -17,7 +17,8 @@ import RcTranslationAcademy from '@components/RcTranslationAcademy';
 import RcTranslationNotes from '@components/RcTranslationNotes';
 import RcTranslationQuestions from '@components/RcTranslationQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
-// import RcObsTranslationNotes from '@libs/rcObsTranslationNotes/components/RcObsTranslationNotes' // Uncomment this if you need to use RcObsTranslationNotes
+import RcObsTranslationNotes from '@components/RcObsTranslationNotes';
+import RcObsTranslationQuestions from '@components/RcObsTranslationQuestions';
 import TsBible from '@components/TsBible';
 
 export const AppContext = React.createContext();
@@ -372,9 +373,12 @@ export function AppContextProvider({ children }) {
               case 'Translation Words':
                 setResourceComponent(() => RcTranslationWords);
                 return;
-              // case 'TSV OBS Translation Notes':
-              // setResourceComponent(() => RcObsTranslationNotes)
-              // return;
+              case 'TSV OBS Translation Notes':
+                setResourceComponent(() => RcObsTranslationNotes)
+                return;
+              case 'TSV OBS Translation Questions':
+                setResourceComponent(() => RcObsTranslationQuestions)
+                return;
               default:
                 setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`);
             }

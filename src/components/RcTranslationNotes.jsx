@@ -24,7 +24,7 @@ import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslati
 import usfm from 'usfm-js';
 import MarkdownIt from 'markdown-it';
 import { verseObjectsToString } from 'uw-quote-helpers';
-import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes'
+import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes';
 
 // Context imports
 import { AppContext } from '@components/App.context';
@@ -219,8 +219,8 @@ export default function RcTranslationNotes() {
   });
 
   const tnTsvData = usePivotTsvFileOnReference({
-    tsvBookFile: tnTsvBookFiles?.[0]
-  })
+    tsvBookFile: tnTsvBookFiles?.[0],
+  });
 
   const tnTsvDataWithGLQuotes = useFetchGLQuotesForTsvData({
     tsvData: tnTsvData,
@@ -248,7 +248,7 @@ export default function RcTranslationNotes() {
   });
 
   const twCatalogEntries = useFetchCatalogEntriesBySubject({
-  catalogEntries: relationCatalogEntries,
+    catalogEntries: relationCatalogEntries,
     subject: 'Translation Words',
     firstOnly: true,
     setErrorMessage,
@@ -300,9 +300,16 @@ export default function RcTranslationNotes() {
 
   useEffect(() => {
     if (catalogEntry) {
-      setBuiltWith([catalogEntry, ...(sourceBibleCatalogEntries || []), ...(targetBibleCatalogEntries || []), ...(taCatalogEntries || []), ...(twCatalogEntries || []), ...(twlCatalogEntries || [])])
+      setBuiltWith([
+        catalogEntry,
+        ...(sourceBibleCatalogEntries || []),
+        ...(targetBibleCatalogEntries || []),
+        ...(taCatalogEntries || []),
+        ...(twCatalogEntries || []),
+        ...(twlCatalogEntries || []),
+      ]);
     }
-  }, [ catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith])
+  }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
@@ -346,10 +353,12 @@ export default function RcTranslationNotes() {
       }
     };
 
-    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
+    setHtmlSections((prevState) => {
+      return { ...prevState, css: { web: webCss, print: '' } };
+    });
     setCanChangeColumns(false);
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage]);
+  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -368,9 +377,6 @@ export default function RcTranslationNotes() {
             rcLink,
             anchor: `appendex--${resource}--${file.replace(/\//g, '--')}`,
           };
-          if (referenceWithLink) {
-            data[resource][rcLink].backRefs.push(referenceWithLink);
-          }
           const fileParts = file.split('/');
           switch (resource) {
             case 'ta':
@@ -391,6 +397,9 @@ export default function RcTranslationNotes() {
               break;
           }
         }
+        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+          data[resource][rcLink].backRefs.push(referenceWithLink);
+        }
       }
       return data;
     };
@@ -400,7 +409,7 @@ export default function RcTranslationNotes() {
 <div class="section tn-book-section" id="tn-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
   <h1 class="header tn-book-section-header"><a href="#tn-${bookId}" data-nav-anchor="${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
 `;
-      let usfmJSONs = []
+      let usfmJSONs = [];
       for (let targetUsfm of targetUsfms) {
         usfmJSONs.push(usfm.toJSON(targetUsfm));
       }
@@ -419,12 +428,12 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           </div>
         </article>
 `;
-      }
-      html += `
+        html += `
       </div>
 `;
+      }
 
-  for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
+      for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
         const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
         html += `
@@ -464,15 +473,15 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           let scripture = {};
           for (let targetIdx in targetBibleCatalogEntries) {
             const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
-            if (! (chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
-              continue
+            if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
+              continue;
             }
-            if (! (verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
-              for(let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
+            if (!(verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
+              for (let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
                 if (v.includes('-') || v.includes(',')) {
-                  let verses = []
+                  let verses = [];
                   const seperateVerseSpans = v.split(',');
-                  for(let span of seperateVerseSpans) {
+                  for (let span of seperateVerseSpans) {
                     span = span.trim();
                     if (span.includes('-')) {
                       const [start, end] = span.split('-').map(Number);
@@ -527,7 +536,11 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
                 for (let targetIdx in targetBibleCatalogEntries) {
                   const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
                   const glQuoteCol = `GLQuote${targetIdx}`;
-                  let quote = row[glQuoteCol] ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter) : (row.Quote ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>` : '');
+                  let quote = row[glQuoteCol]
+                    ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter)
+                    : row.Quote
+                    ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>`
+                    : '';
                   let verseBridge = '';
                   if (refStr != row.Reference) {
                     verseBridge += `(${row.Reference})`;
@@ -586,7 +599,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 `;
               for (let row of twlTsvDataWithGLQuotes[chapterStr][verseStr]) {
                 let glQuote = row[glQuoteCol];
-                glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + " (ORIG QUOTE)";
+                glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + ' (ORIG QUOTE)';
                 article += `
                 <li class="tn-verse-twl-list-item"><a href="${row.TWLink}">${glQuote}</a></li>
 `;
@@ -615,22 +628,21 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 </div>
 `;
       if (rcLinksData.ta && taCatalogEntries.length) {
-        const taCatalogEntry = taCatalogEntries[0]
-      // TA ARTICLES
-      html += `
+        const taCatalogEntry = taCatalogEntries[0];
+        // TA ARTICLES
+        html += `
 <div class="appendex ta section" id="appendex-ta" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
   <article class="title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
     <h1 class="cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
-    <h3 class="cover-version">${bookTitle}</h3>
   </article>
 `;
-      Object.values(rcLinksData.ta)
-        .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
-        .forEach((taArticle) => {
-          const article = `
+        Object.values(rcLinksData.ta)
+          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+          .forEach((taArticle) => {
+            const article = `
   <article id="${taArticle.anchor}" data-toc-title="${encodeHTML(taArticle.title)}">
     <h2 class="header article-header">
       <a href="#${taArticle.anchor}" class="header-link">${taArticle.title}</a>
@@ -644,10 +656,10 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
     ${taArticle.backRefs.join('; ')}
   </article>
 `;
-          html += article;
-          searchForRcLinks(rcLinksData, article);
-        });
-      html += `
+            html += article;
+            searchForRcLinks(rcLinksData, article);
+          });
+        html += `
 </div>
 `;
       }
@@ -661,7 +673,6 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
     <h1 class="cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
-    <h3 class="cover-version">${bookTitle}</h3>
   </article>
 `;
         Object.values(rcLinksData.tw)
@@ -743,7 +754,8 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 
       const md = new MarkdownIt();
       try {
-        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
+        copyrightAndLicense +=
+          `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
       } catch (e) {
         console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
       }
@@ -751,7 +763,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (! htmlSections?.copyright && catalogEntry && builtWith.length) {
+    if (!htmlSections?.copyright && catalogEntry && builtWith.length) {
       generateCopyrightPage();
     }
   }, [htmlSections, catalogEntry, builtWith, authToken, setCopyright]);

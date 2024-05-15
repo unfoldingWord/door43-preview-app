@@ -1,83 +1,106 @@
 // React imports
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useMemo } from 'react';
+
+// Bible reference imports
+import BibleReference, { useBibleReference } from 'bible-reference-rcl';
+
+// Helper imports
+import { getRepoContentsContent } from '@helpers/dcsApi';
+import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
+import { getOBSImgURL } from '@helpers/obs_helpers';
 
 // Material UI imports
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material'
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material';
 
-// Bible reference component and hook
-import { useBibleReference } from 'bible-reference-rcl'
-import BibleReference from 'bible-reference-rcl'
+// Hook imports
+import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
+import useFetchCatalogEntriesBySubject from '@hooks/useFetchCatalogEntriesBySubject';
+import useFetchBookFiles from '@hooks/useFetchBookFiles';
+import useFetchZipFileData from '@hooks/useFetchZipFileData';
+import usePivotTsvFileOnReference from '@hooks/usePivotTsvFileOnReference';
+import useGenerateTranslationAcademyFileContents from '@hooks/useGenerateTranslationAcademyFileContents';
+import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslationWordsFileContents';
+import useGetOBSData from '@hooks/useGetOBSData';
 
-// DCS API helper
-import { getRepoContentsContent } from '@helpers/dcsApi'
+// Other imports
+import MarkdownIt from 'markdown-it';
 
-// Custom hooks
-import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries'
-import useFetchCatalogEntryBySubject from '@hooks/useFetchCatalogEntriesBySubject'
-import useGetOBSData from '../hooks/useGetOBSData'
-import useFetchZipFileData from '@hooks/useFetchZipFileData'
-import useGenerateTranslationAcademyFileContents from '@hooks/useGenerateTranslationAcademyFileContents'
+// Context imports
+import { AppContext } from '@components/App.context';
 
-// Markdown parser
-import MarkdownIt from 'markdown-it'
-
-// HTML helper
-import { encodeHTML } from '@helpers/html'
-
-// App context
-import { AppContext } from '@components/App.context'
-
-// OBS helper
-import { getOBSImgURL } from '../helpers/obs_helpers'
-
-// TSV parser
-import { parseTsv7Text } from '@core/lib/tsv'
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+      '*': {
+        borderBottom: '2px solid red',
+      },
+    },
+  },
+});
 
 const webCss = `
-article img {
-  display: block;
-  margin: 0 auto;
-  width: 100%;
-  max-width: 640px;
+.obs-tn-frame-block {
+  border: 1px solid black;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
-.obs-tn-entry h1 {
-  font-size: 1.4em;
+.obs-tn-frame-header {
+  margin: 0;
+}
+
+.obs-tn-frame-text {
+  font-style: italic;
+}
+
+.obs-tn-note-body h3 {
+  font-size: 1.3em;
   margin: 10px 0;
 }
 
-.obs-tn-entry h2 {
+.obs-tn-note-body h4 {
   font-size: 1.2em;
   margin: 10px 0;
 }
 
-.obs-tn-entry h3 {
+.obs-tn-note-body h5 {
   font-size: 1.1em;
   margin: 10px 0;
 }
 
-.obs-tn-entry h4 {
-  font-size: 1.0em;
+.obs-tn-note-body h6 {
+  font-size: 1em;
   margin: 10px 0;
 }
 
-@media print {
-  section.obs-tn-story-frame,
-  section.story-frame{
-    break-after: page;
-  }
+.obs-tn-note-label,
+.obs-tn-note-quote {
+  font-weight: bold;
+}
 
-  article {
-    break-after: avoid-page !important;
-  }
+.obs-tn-note-support-reference,
+.obs-tn-note-quote {
+  margin-bottom: 10px;
+}
 
-  hr {
-    break-before: avoid-page !important;
-  }
+.section {
+  break-after: page !important;
+}
 
-  .ta.appendex article {
-    break-after: page !important;
-  }  
+article {
+  break-after: auto !important;
+  break-inside: avoid-page !important;
+  orphans: 2;
+  widows: 2;
+}
+
+hr {
+  break-before: avoid-page !important;
+}
+
+.ta.appendex article {
+  break-after: page !important;
 }
 
 a.header-link {
@@ -88,39 +111,47 @@ a.header-link {
 }
 
 a.header-link:hover::after {
-  content: "#";
+  content: '#';
   padding-left: 5px;
   color: blue;
   display: inline-block;
 }
 
-.ta.appendex .article-body h1, .article-body h2, .article-body h3, .article-body h4 {
+.ta.appendex .article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4 {
   font-size: 1em;
 }
 
 .title-page {
   text-align: center;
 }
-`
+
+.obs-tn-frame-twl-bible {
+  margin-bottom: 0;
+}
+
+.obs-tn-frame-twl-list {
+  margin: 0;
+}
+
+.obs-tn-frame-twl-list-item a {
+  text-decoration: none;
+}
+`;
+
+const requiredSubjects = ['Translation Academy', 'Translation Words', 'TSV OBS Translation Words Links'];
 
 export default function RcObsTranslationNotes() {
   const {
-    state: {
-      urlInfo,
-      catalogEntry,
-      authToken,
-    },
-    actions: {
-      setErrorMessage,
-      setHtmlSections,
-      setNavAnchor,
-      setStatusMessage,
-    },
-  } = useContext(AppContext)
+    state: { urlInfo, catalogEntry, bookId, htmlSections, navAnchor, authToken, builtWith },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+  } = useContext(AppContext);
 
-  const [imageResolution, setImageResolution] = useState('360px');
-
-  const [tsvText, setTsvText] = useState()
+  const [html, setHtml] = useState();
+  const [copyright, setCopyright] = useState();
+  const [imageResolution, setImageResolution] = useState('none');
 
   const renderFlags = {
     showWordAtts: false,
@@ -133,357 +164,373 @@ export default function RcObsTranslationNotes() {
     showCharacterMarkup: false,
     showChapterLabels: true,
     showVersesLabels: true,
-  }
+  };
 
   const onBibleReferenceChange = (b, c, v) => {
-    setNavAnchor(`${b}-${c}-${v}`)
-  }
+    if (bookId && b != bookId) {
+      window.location.hash = b;
+      window.location.reload();
+    } else {
+      const hash = `${b}-${c}-${v}`;
+      if (!navAnchor.startsWith(hash)) {
+        setNavAnchor(hash);
+      }
+    }
+  };
 
-  const { state: bibleReferenceState, actions: bibleReferenceActions } =
-    useBibleReference({
-      initialBook: "obs",
-      initialChapter: urlInfo.hashParts[1] || "1",
-      initialVerse: urlInfo.hashParts[2] || "1",
-      onChange: onBibleReferenceChange,
-      addOBS: true,
-    })
+  const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
+    initialBook: 'obs',
+    initialChapter: urlInfo.hashParts[1] || '1',
+    initialVerse: urlInfo.hashParts[2] || '1',
+    addOBS: true,
+    onChange: onBibleReferenceChange,
+  });
 
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
+    requiredSubjects,
     setErrorMessage,
+    bookId,
     authToken,
-  })
+  });
 
-  const obsCatalogEntry = useFetchCatalogEntryBySubject({
-    catalogEntries: relationCatalogEntries,
-    subject: "Open Bible Stories",
+  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+
+  const tnTsvBookFiles = useFetchBookFiles({
+    catalogEntries,
+    bookId: 'obs',
     setErrorMessage,
-  })
+  });
+
+  const tnTsvData = usePivotTsvFileOnReference({
+    tsvBookFile: tnTsvBookFiles?.[0],
+  });
+
+  const obsCatalogEntries = useFetchCatalogEntriesBySubject({
+    catalogEntries: relationCatalogEntries,
+    subject: 'Open Bible Stories',
+    bookId: 'obs',
+    firstOnly: true,
+    setErrorMessage,
+  });
 
   const obsZipFileData = useFetchZipFileData({
+    catalogEntry: obsCatalogEntries?.[0],
     authToken,
-    catalogEntry: obsCatalogEntry,
-    setErrorMessage,
-  })
+  });
 
-  const obsData = useGetOBSData({
-    catalogEntry: obsCatalogEntry,
-    zipFileData: obsZipFileData,
-    setErrorMessage,
-  })
+  const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData, setErrorMessage });
 
-  const taCatalogEntry = useFetchCatalogEntryBySubject({
+  const taCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
-    subject: "Translation Academy",
+    subject: 'Translation Academy',
+    firstOnly: true,
     setErrorMessage,
-  })
+  });
 
   const taZipFileData = useFetchZipFileData({
     authToken,
-    catalogEntry: taCatalogEntry,
-    setErrorMessage,
-  })
+    catalogEntry: taCatalogEntries?.[0],
+  });
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
-    catalogEntry: taCatalogEntry,
+    catalogEntry: taCatalogEntries[0],
     zipFileData: taZipFileData,
     setErrorMessage,
-  })
+  });
+
+  const twCatalogEntries = useFetchCatalogEntriesBySubject({
+    catalogEntries: relationCatalogEntries,
+    subject: 'Translation Words',
+    firstOnly: true,
+    setErrorMessage,
+  });
+
+  const twZipFileData = useFetchZipFileData({
+    authToken,
+    catalogEntry: twCatalogEntries?.[0],
+  });
+
+  const twFileContents = useGenerateTranslationWordsFileContents({
+    catalogEntry: twCatalogEntries?.[0],
+    zipFileData: twZipFileData,
+    setErrorMessage,
+  });
+
+  const twlCatalogEntries = useFetchCatalogEntriesBySubject({
+    catalogEntries: relationCatalogEntries,
+    subject: 'TSV OBS Translation Words Links',
+    firstOnly: true,
+    setErrorMessage,
+  });
+
+  const twlTSVBookFiles = useFetchBookFiles({
+    catalogEntries: twlCatalogEntries,
+    bookId,
+    setErrorMessage,
+  });
+
+  const twlTsvData = usePivotTsvFileOnReference({
+    tsvBookFile: twlTSVBookFiles?.[0],
+  });
 
   useEffect(() => {
-    bibleReferenceActions.applyBooksFilter("obs")
-    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
-  }, [])
-
-  useEffect(() => {
-    const fetchTsvFileFromDCS = async () => {
-      let filePath = ""
-      catalogEntry.ingredients.forEach(ingredient => {
-        if (ingredient.identifier == "obs" || ingredient.identifier == "obs-tn") {
-          filePath = ingredient.path.replace(/^\.\//, "")
-        }
-      })
-      if (! filePath) {
-        setErrorMessage(`Project \`obs\` is not in repo's project list.`)
+    if (navAnchor && navAnchor.split('-').length) {
+      const parts = navAnchor.split('-');
+      if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
+        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
       }
-
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken).
-      then(tsv => setTsvText(tsv)).
-      catch(e => {
-        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e)
-        setErrorMessage(`Unable to get content for tn_OBS.tsv from DCS`)
-      })
     }
+  }, [navAnchor]);
 
+  useEffect(() => {
     if (catalogEntry) {
-      setStatusMessage(<>Preparing preview for {catalogEntry.title}.<br/>Please wait...</>)
-      fetchTsvFileFromDCS()
+      setBuiltWith([catalogEntry, ...(taCatalogEntries || []), ...(twCatalogEntries || []), ...(twlCatalogEntries || [])]);
     }
-  }, [catalogEntry, setErrorMessage])
+  }, [catalogEntry, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
 
   useEffect(() => {
+    if (!catalogEntry) {
+      setErrorMessage('No catalog entry for this resource found.');
+      return;
+    }
+    setStatusMessage(
+      <>
+        Preparing preview for {catalogEntry.title}.
+        <br />
+        Please wait...
+      </>
+    );
+    bibleReferenceActions.applyBooksFilter(['obs']);
+    setSupportedBooks('obs');
+    setBookId('obs');
+    setHtmlSections((prevState) => {
+      return { ...prevState, css: { web: webCss, print: '' } };
+    });
+    setCanChangeColumns(false);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+
+  useEffect(() => {
+    const searchForRcLinks = (data, article, referenceWithLink = '') => {
+      const rcLinkRegex = /rc:\/\/[^/]+\/([^/]+)\/[^/]+\/([A-Za-z0-9/_-]+)/g;
+      let match;
+      while ((match = rcLinkRegex.exec(article)) !== null) {
+        const [rcLink, resource, file] = match;
+        if (!data[resource]) {
+          data[resource] = {};
+        }
+        if (!data[resource][rcLink]) {
+          data[resource][rcLink] = {
+            backRefs: [],
+            title: file,
+            body: `${resource.toUpperCase()} ARTICLE NOT FOUND`,
+            rcLink,
+            anchor: `appendex--${resource}--${file.replace(/\//g, '--')}`,
+          };
+          const fileParts = file.split('/');
+          switch (resource) {
+            case 'ta':
+              {
+                const manualId = fileParts[0];
+                const articleId = fileParts.slice(1).join('/');
+                data[resource][rcLink].title = taFileContents?.[manualId]?.articles?.[articleId]?.title || `TA ARTICLE FOR ${manualId} :: ${articleId} NOT FOUND!`;
+                data[resource][rcLink].body = taFileContents?.[manualId]?.articles?.[articleId]?.body || '';
+              }
+              break;
+            case 'tw':
+              {
+                const category = fileParts[1];
+                const articleId = fileParts.slice(2).join('/');
+                data[resource][rcLink].title = twFileContents?.[category]?.articles?.[articleId]?.title || `TW ARTICLE FOR ${category} :: ${articleId} NOT FOUND!`;
+                data[resource][rcLink].body = twFileContents?.[category]?.articles[articleId]?.body || '';
+              }
+              break;
+          }
+        }
+        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+          data[resource][rcLink].backRefs.push(referenceWithLink);
+        }
+      }
+      return data;
+    };
+
     const generateHtml = async () => {
-      const tsv7Data = await parseTsv7Text(tsvText);
-
       let html = `
-<section class="obs-tn-story" id="obs-tn" data-toc-title="${encodeHTML(catalogEntry.title)}">
-  <h1 style="text-align: center">${catalogEntry.title}</h1>
-`
-      const md = new MarkdownIt()
-      const supportReferences = {}
-      let noteCount = 0
+<div class="section obs-tn-book-section" id="obs-tn-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title}">
+  <h1 class="header obs-tn-book-section-header"><a href="#tn-${bookId}" data-nav-anchor="${bookId}" class="header-link">${catalogEntry.title}</a></h1>
+`;
+      const rcLinksData = {};
 
-      for(let storyIdx = 0; storyIdx < 51; storyIdx++) {
-        storyNum = storyIdx+1
-
+      if (tnTsvData?.['front']?.['intro']) {
         html += `
-  <section class="obs-tn-story" id="obs-${storyNum}" data-toc-title="${encodeHTML(obsData.stories[storyIdx].title)}">
-    <h2 class="obs-tn-story-header"><a href="#obs-${storyNum}">${obsData.stories[storyIdx].title}</h2>
-`
-
-        for(let frameIdx in obsData.stories[storyIdx].frames) {
-          const frameNum = frameIdx+1
-          const frame = obsData.stories[storyIdx].frames[frameIdx]
-          const link = `obs-${storyNum}-${frameNum}`
+  <div class="section obs-tn-front-intro-section" data-toc-title="Introduciton">
+`;
+        for (let row of tnTsvData['front']['intro']) {
           html += `
-    <section class="obs-tn-story-frame-section" id="${link}">
-      <article class="obs-tn-frame-obs-text" id="obs-${storyNum}-${frameNum}-obs-text">
-          <img src="${getOBSImgURL(frame.imgURL, imageResolution)}" alt="${frame.image}" />
-`
+    <article class="obs-tn-front-intro-note">
+      <span class="header-title">${catalogEntry.title} :: Introduction</span>
+      <div class="obs-tn-note-body">
+${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
+      </div>
+    </article>
+`;
         }
+        html += `
+  </div>
+`;
+      }
 
-
-
-        if (!row || !row.ID || !row.Note) {
-          continue
-        }
-        noteCount++
-        let storyStr = row.Reference.split(":")[0]
-        let frameStr = row.Reference.split(":")[1]
-        let firstFrame = frameStr.split(",")[0].split("-")[0].split("–")[0]
-        
-        let storyIdx = -1
-        let frameIdx = -1
-        try {
-          storyIdx = parseInt(storyStr, 10) - 1;
-          if (storyIdx >= 0) {
-            storyStr = storyStr.padStart(2, "0")
-          }
-        } catch (e) {
-          console.log(e)
-        }
-        try {
-          frameIdx = parseInt(firstFrame, 10) - 1;
-          if (frameIdx >= 0) {
-            firstFrame = firstFrame.padStart(2, "0")
-          }
-        } catch(e) {
-          console.log(e)
-        }
-
-        if (! (storyStr in articlesByStoryFrame)) {
-          articlesByStoryFrame[storyStr] = {
-            title: obsData?.stories?.[storyIdx].title || storyStr,
-            frames: {}
-          }
-        }
-        if (! (firstFrame in articlesByStoryFrame[storyStr].frames)) {
-          articlesByStoryFrame[storyStr].frames[firstFrame] = {
-            title: `OBS ${storyStr}:${firstFrame}`,
-            topArticle: "",
-            articles: [],
-          }
-
-          if (obsData.stores?.storyIdx?.frames?.[frameIdx]?.content) {
-            if (storyIdx >= 0 && obsData.stories.length > storyIdx && frameIdx >= 0 && obsData.stories[storyIdx].frames.length > frameIdx) {
-              let topArticle = `
-        <article class="obs-tn-story" id="obs-${storyStr}-${frameStr}-story">
-          <h2 class="obs-tn-story-frame-header">
-            <a href="#obs-${storyStr}-${frameStr}" class="header-link">OBS ${storyStr}:${firstFrame}</a>  
-          </h2>
-          <div class="obs-tn-story-frame">
-  `
-              if (! imageResolution || imageResolution != "none") {
-                topArticle += `
-            <img src="${await getOBSImgURL({storyNum: storyIdx+1, frameNum: frameIdx+1, imgURL: obsData.stories[storyIdx].frames[frameIdx].imgURL, resolution: imageResolution})}" />
-  `
-              }
-              topArticle += `
-            <p>
-              ${obsData.stories[storyIdx].frames[frameIdx].content}
-            </p>
-          </div>
-          <hr style="width: 75%"/>
+      for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
+        const storyStr = String(storyIdx + 1);
+        html += `
+  <div id="obs-tn-${bookId}-${storyStr}" data-nav-id="${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+    <h2 class="obs-tn-chapter-header"><a href="#tn-${bookId}-${storyStr}" data-nav-anchor="${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+`;
+        if (tnTsvData?.[storyStr]?.['intro']) {
+          html += `
+      <div class="section obs-tn-chapter-intro-section">
+`;
+          for (let row of tnTsvData[storyStr]['intro']) {
+            const link = `${bookId}-${storyStr}-intro-${row.ID}`;
+            const article = `
+        <article id="obs-tn-${link}" data-nav-id"${link}">
+          <span class="header-title">${catalogEntry.title} :: Introduction</span>
+          ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, storyStr)}
         </article>
-  `
-              articlesByStoryFrame[storyStr].frames[firstFrame].topArticle = topArticle
+`;
+            searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
+            html += article;
+          }
+          html += `
+      </div>
+`;
         }
-        let article = `
-        <article class="obs-tn-entry" id="${link}">
-          <h3 class="obs-tn-entry-header">
-            <a class="header-link" href="#${link}">
-              Note #${noteCount}:
+
+        for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
+          const frameStr = String(frameIdx + 1);
+          const frameLink = `${bookId}-${storyStr}-${frameStr}`;
+          html += `
+      <div id="obs-tn-${frameLink}" data-nav-id="${frameLink}" class="section obs-tn-chapter-frame-section">
+        <h3 class="obs-tn-frame-header"><a href="#tn-${frameLink}" data-nav-anchor="${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
+`;
+        if (imageResolution != 'none') {
+          html += `
+        <img src="${await getOBSImgURL({ storyNum: storyStr, frameNum: frameStr, resolution: imageResolution })}" alt="Frame ${storyStr}-${frameStr}">
+`;
+      }
+
+          html += `
+        <div class="obs-tn-frame-text">
+          ${obsData.stories[storyIdx].frames[frameIdx].content}
+        </div>
+`;
+          if (tnTsvData?.[storyStr]?.[frameStr]) {
+            for (let rowIdx in tnTsvData[storyStr][frameStr]) {
+              const row = tnTsvData[storyStr][frameStr][rowIdx];
+              const noteLink = `${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              let article = `
+        <article id="obs-tn-${noteLink}" data-nav-id="${noteLink}" class="obs-tn-note-article">
+`;
+
+              if (!row.Quote) {
+                article += `
+          <h4 class="obs-tn-note-header">
+            <a href="#tn-${noteLink}" data-nav-anchor="${noteLink}" class="header-link">
+            Note:
             </a>
-          </h3>
-  `
-          if ((storyStr != "front" || frameStr != "intro" || frameStr != "0") && (row.GLQuote || row.Quote)) {
-            html += `
-          <h4>Quote: ${frameStr != firstFrame ? `(${storyStr}:${frameStr}) ` : ""}${row.GLQuote || row.Quote}</h4>
-  `
-          }
-          if (row.SupportReference) {
-            if (! (row.SupportReference in supportReferences)) {
-                const srParts = row.SupportReference.split('/')
-                const manualId = srParts[srParts.length - 2]
-                const articleId = srParts[srParts.length - 1]
-                supportReferences[row.SupportReference] = {
-                  backRefs: [],
-                  title: articleId,
-                  body: "TA ARTICLE NOT FOUND",
-                  link: `note--${manualId}--${articleId}`
-                }
-                if (manualId in taFileContents && articleId in taFileContents[manualId].articles) {
-                  supportReferences[row.SupportReference] = {...supportReferences[row.SupportReference], ...taFileContents[manualId].articles[articleId]}
-                }
-            }
-            supportReferences[row.SupportReference].backRefs.push(`<a href="#${link}">${row.Reference}</a>`)
-            html += `
-          <div class="obs-tn-entry-support-reference">
-            <span style="font-weight: bold">Topic:</span>&nbsp; <a href="#${supportReferences[row.SupportReference].link}">${supportReferences[row.SupportReference].title}</a>
+          </h4>
+`;
+              } else {
+                article += `
+          <h4 class="obs-tn-note-header">
+            <a href="#${noteLink}" class="header-link">
+              ${row.Quote}
+            </a>
+          </h4>
+`;
+              }
+
+              article += `
+          <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
+          <div class="obs-tn-note-body">
+            ${convertNoteFromMD2HTML(row.Note, 'obs-tn', bookId, storyStr)}
           </div>
-  `
-          }
-          let note = md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))
-          note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#obs-${storyStr}-$1"`)
-          note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#obs-$1-$2"`)
-          note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#obs-${storyStr}-$1"`)
-          note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#obs-$1-$2"`)
-          note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>')
-          note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"')
-  
-          note = note.replace()
-          html += `
-          <span class="header-title">OBS :: ${obsData.stories[storyIdx].title} :: ${row.Reference}</span>
-          <div class="obs-tn-entry-body">
-            ${note}
+`;
+              if (row.SupportReference) {
+                article += `
+          <div class="obs-tn-note-support-reference">
+            <span class="obs-tn-note-label">Support Reference:&nbsp;</span>
+              [[${row.SupportReference}]]
           </div>
+`;
+              }
+              article += `
           <hr style="width: 75%"/>
         </article>
-  `        
-        articlesByStoryFrame[storyStr].frames[firstFrame].articles.push(article)
-      }
-
-      let html = `
-<section data-toc-title="${encodeHTML(catalogEntry.title)}">
-`
-      for (let storyStr in sort(Object.keys(articlesByStoryFrame))) {
-        html += `
-  <section class="obs-tn-story" id="obs-${storyStr}" data-toc-title="${encodeHTML(articlesByStoryFrame[storyStr].title)}">
-    <h2 class="obs-tn-story-header"><a href="#obs-${storyStr}">${articlesByStoryFrame[storyStr].title}</h2>
-    <a href="#obs-${storyStr}-front" class="header-link"></a>
-`
-        if (prevStory && storyStr != prevStory) {
-          html += `
-    </section>
-  </section>
-`
-        }
-        if (storyStr != prevStory || firstFrame != prevFrame) {
-          if (storyStr == prevStory) {
+`;
+              html += article;
+              searchForRcLinks(rcLinksData, article, `<a href="#${noteLink}">${row.Reference}</a>`);
+            }
+          } else {
             html += `
-    </section>
-`
+        <article class="obs-tn-frame-no-content">
+          (There are no notes for this frame)
+        </article>
+`;
           }
-          if(storyStr != prevStory) {
-            html += `
-    <section class="obs-tn-story-section" id="obs-${storyStr}" data-toc-title="${encodeHTML(obsData.stories[storyIdx].title)}">
-      <h2 class="obs-tn-story-header">${obsData.stories[storyIdx].title}</h2>
-      <span class="header-title">OBS :: ${obsData.stories[storyIdx].title}</span>
-    </section>
-`
+
+          // TW LINKS
+          if (twlTsvData?.[storyStr]?.[frameStr]) {
+            const twlLink = `twl-${storyStr}-${frameStr}`;
+            let article = `
+        <article id="${twlLink}" class="obs-tn-frame-twls">
+          <h4 class="obs-tn-frame-twl-header">${twCatalogEntries?.[0].title}</h4>
+          <ul class="obs-tn-frame-twl-list">
+`;
+            for (let row of twlTsvData[storyStr][frameStr]) {
+              article += `
+            <li class="obs-tn-frame-twl-list-item"><a href="${row.TWLink}">${row.OrigWords}</a></li>
+`;
+            }
+            article += `
+          </ul>
+        </article>
+`;
+            html += article;
+            searchForRcLinks(rcLinksData, article, `<a href="#${frameLink}">${storyStr}:${frameStr}</a>`);
           }
           html += `
-    <section class="obs-tn-story-frame-section" id="obs-${storyStr}-${firstFrame}">
-`
-            html += article
-          }
+        <hr style="width: 100%"/>
+      </div>
+`;
         }
-
-        const link = `obs-${storyStr}-${frameStr}-${row.ID}`
         html += `
-      <article class="obs-tn-entry" id="${link}">
-        <h3 class="obs-tn-entry-header">
-          <a class="header-link" href="#${link}">
-            Note #${noteCount}:
-          </a>
-        </h3>
-
-`
-        if ((storyStr != "front" || frameStr != "intro" || frameStr != "0") && (row.GLQuote || row.Quote)) {
-          html += `
-        <h4>Quote: ${frameStr != firstFrame ? `(${storyStr}:${frameStr}) ` : ""}${row.GLQuote || row.Quote}</h4>
-`
-        }
-        if (row.SupportReference) {
-          if (! (row.SupportReference in supportReferences)) {
-              const srParts = row.SupportReference.split('/')
-              const manualId = srParts[srParts.length - 2]
-              const articleId = srParts[srParts.length - 1]
-              supportReferences[row.SupportReference] = {
-                backRefs: [],
-                title: articleId,
-                body: "TA ARTICLE NOT FOUND",
-                link: `note--${manualId}--${articleId}`
-              }
-              if (manualId in taFileContents && articleId in taFileContents[manualId].articles) {
-                supportReferences[row.SupportReference] = {...supportReferences[row.SupportReference], ...taFileContents[manualId].articles[articleId]}
-              }
-          }
-          supportReferences[row.SupportReference].backRefs.push(`<a href="#${link}">${row.Reference}</a>`)
-          html += `
-        <div class="obs-tn-entry-support-reference">
-          <span style="font-weight: bold">Topic:</span>&nbsp; <a href="#${supportReferences[row.SupportReference].link}">${supportReferences[row.SupportReference].title}</a>
-        </div>
-`
-        }
-        let note = md.render(row.Note.replaceAll("\\n", "\n").replaceAll("<br>", "\n"))
-        note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#obs-${storyStr}-$1"`)
-        note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#obs-$1-$2"`)
-        note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#obs-${storyStr}-$1"`)
-        note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#obs-$1-$2"`)
-        note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>')
-        note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"')
-
-        note = note.replace()
-        html += `
-        <span class="header-title">OBS :: ${obsData.stories[storyIdx].title} :: ${row.Reference}</span>
-        <div class="obs-tn-entry-body">
-          ${note}
-        </div>
-        <hr style="width: 75%"/>
-      </article>
-`
-        prevStory = storyStr
-        prevFrame = firstFrame
+    </div>
+`;
       }
-
       html += `
-    </section>
-  </section>
-</section>
-<section class="appendex ta" id="notes-ta" data-toc-title="${encodeHTML(taCatalogEntry.title)}">
+  </div>
+`;
+      if (rcLinksData.ta && taCatalogEntries.length) {
+        const taCatalogEntry = taCatalogEntries[0];
+        // TA ARTICLES
+        html += `
+<div class="appendex ta section" id="appendex-ta" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
   <article class="title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
-    <h1 class="cover-header section-header">${taCatalogEntry.title}</h1>
+    <h1 class="cover-header section-header">${taCatalogEntry.title} - OBS</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
-  </article>  
-`
-      Object.values(supportReferences).sort((a, b) => a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0).forEach(taArticle => {
-        html += `
-  <article id="${taArticle.link}" data-toc-title="${encodeHTML(taArticle.title)}">
+  </article>
+`;
+        Object.values(rcLinksData.ta)
+          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+          .forEach((taArticle) => {
+            const article = `
+  <article id="${taArticle.anchor}" data-toc-title="${encodeHTML(taArticle.title)}">
     <h2 class="header article-header">
-      <a href="#${taArticle.link}" class="header-link">${taArticle.title}</a>
+      <a href="#${taArticle.anchor}" class="header-link">${taArticle.title}</a>
     </h2>
     <span class="header-title">${taCatalogEntry.title} :: ${taArticle.title}</span>
     <div class="article-body">
@@ -492,42 +539,140 @@ export default function RcObsTranslationNotes() {
     <div class="back-refs">
     <h3>OBS References:</h3>
     ${taArticle.backRefs.join('; ')}
-    <hr style="width: 75%" />
   </article>
-`
-      })
-      html += `
-</section>
-`
-      setHtmlSections({cover: "", toc: "", body: html})
-    }
+`;
+            html += article;
+            searchForRcLinks(rcLinksData, article);
+          });
+        html += `
+</div>
+`;
+      }
+      if (rcLinksData.tw && twCatalogEntries.length) {
+        const twCatalogEntry = twCatalogEntries[0];
+        // TW ARTICLES
+        html += `
+<div class="appendex tw section" id="appendex-tw" data-toc-title="Appendex: ${encodeHTML(twCatalogEntry.title)}">
+  <article class="title-page">
+    <span class="header-title"></span>
+    <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
+    <h1 class="cover-header section-header">${twCatalogEntry.title} - OBS</h1>
+    <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
+  </article>
+`;
+        Object.values(rcLinksData.tw)
+          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+          .forEach((twArticle) => {
+            const article = `
+  <article id="${twArticle.anchor}" data-toc-title="${encodeHTML(twArticle.title)}">
+    <h2 class="header article-header">
+      <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
+    </h2>
+    <span class="header-title">${twCatalogEntry.title} :: ${twArticle.title}</span>
+    <div class="article-body">
+      ${twArticle.body}
+    </div>
+    <div class="back-refs">
+    <h3>OBS References:</h3>
+    ${twArticle.backRefs.join('; ')}
+  </article>
+`;
+            html += article;
+            searchForRcLinks(rcLinksData, article);
+          });
+        html += `
+</div>
+`;
+      }
 
-    if (tsvText && obsData && taFileContents) {
-      generateHtml()
+      for (let data of Object.values(rcLinksData.ta || {})) {
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        html = html.replace(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+      }
+      for (let data of Object.values(rcLinksData.tw || {})) {
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        html = html.replace(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+      }
+      setHtml(html);
+    };
+
+    if (tnTsvData && obsData && twlTsvData && taFileContents && twFileContents) {
+      generateHtml();
     }
-  }, [tsvText, obsData, taFileContents, imageResolution, setHtmlSections])
+  }, [
+    catalogEntry,
+    html,
+    taCatalogEntries,
+    bookId,
+    tnTsvData,
+    obsData,
+    taFileContents,
+    twCatalogEntries,
+    twFileContents,
+    twlTsvData,
+    imageResolution,
+    setHtmlSections,
+    setErrorMessage,
+    setNavAnchor,
+  ]);
+
+  useEffect(() => {
+    const generateCopyrightPage = async () => {
+      let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
+      for (let entry of builtWith) {
+        const date = new Date(entry.released);
+        const formattedDate = date.toISOString().split('T')[0];
+        copyrightAndLicense += `
+    <div style="padding-bottom: 10px">
+      <div style="font-weight: bold">${entry.title}</div>
+      <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
+      <div><span style="font-weight: bold">Version:</span> ${entry.branch_or_tag_name}</div>
+      <div><span style="font-weight: bold">Published by:</span> ${entry.repo.owner.full_name || entry.repo.owner}</div>
+    </div>
+`;
+      }
+
+      const md = new MarkdownIt();
+      try {
+        copyrightAndLicense +=
+          `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
+      } catch (e) {
+        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
+      }
+
+      setCopyright(copyrightAndLicense);
+    };
+
+    if (!htmlSections?.copyright && catalogEntry && builtWith.length) {
+      generateCopyrightPage();
+    }
+  }, [htmlSections, catalogEntry, builtWith, authToken, setCopyright]);
+
+  useEffect(() => {
+    if (html && copyright) {
+      setHtmlSections((prevState) => ({
+        ...prevState,
+        copyright,
+        body: html,
+      }));
+      setStatusMessage('');
+    }
+  }, [html, copyright, catalogEntry, setHtmlSections, setStatusMessage]);
 
   return (
-    <>
-      <BibleReference
-        status={bibleReferenceState}
-        actions={bibleReferenceActions}
-        style={{minWidth: "auto"}}
-      />
-      <FormControl>
-        <InputLabel id="image-resolution-label">
-          Images
-        </InputLabel>
-        <Select
-          labelId="image-resolution-label"
-          label="Images"
-          value={imageResolution}
-          onChange={(event) => setImageResolution(event.target.value)}>
-          <MenuItem value="none">Hide Images</MenuItem>
-          <MenuItem value="360px">640x360px</MenuItem>
-          <MenuItem value="2160px">3840x2160px</MenuItem>
-        </Select>
-      </FormControl>
-    </>
-  )
+  <ThemeProvider theme={theme}>
+    <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
+    <FormControl>
+      <InputLabel id="image-resolution-label">Images</InputLabel>
+      <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
+        <MenuItem value="none">Hide Images</MenuItem>
+        <MenuItem value="360px">640x360px</MenuItem>
+        <MenuItem value="2160px">3840x2160px</MenuItem>
+      </Select>
+    </FormControl>
+  </ThemeProvider>)
 }

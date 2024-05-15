@@ -224,7 +224,7 @@ export default function Bible() {
         setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`);
       }
 
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken)
+      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
         .then((_usfmText) => {
           const usfmJSON = usfm.toJSON(_usfmText);
           for (let i = 0; i < usfmJSON?.headers?.length; ++i) {

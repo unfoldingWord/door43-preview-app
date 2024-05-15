@@ -9,8 +9,8 @@ import { createTheme, ThemeProvider } from '@mui/material';
 import { AppContext } from '@components/App.context';
 
 // Custom hooks imports
-import useGetOBSData from '../hooks/useGetOBSData';
-import useGenerateOpenBibleStoriesHtml from '../hooks/useGenerateOpenBibleStoriesHtml';
+import useGetOBSData from '@hooks/useGetOBSData';
+import useGenerateOpenBibleStoriesHtml from '@hooks/useGenerateOpenBibleStoriesHtml';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
 
 // Other imports
@@ -60,7 +60,7 @@ const theme = createTheme({
 export default function OpenBibleStories() {
   const {
     state: { catalogEntry, urlInfo, navAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
@@ -84,15 +84,25 @@ export default function OpenBibleStories() {
   const obsHtmlSections = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
 
   useEffect(() => {
+    if (!catalogEntry) {
+      setErrorMessage('No catalog entry for this resource found.');
+      return;
+    }
     setStatusMessage(
       <>
-        Preparing OBS Preview.
+        Preparing preview for {catalogEntry.title}.
         <br />
         Please wait...
       </>
     );
     bibleReferenceActions.applyBooksFilter(['obs']);
-  }, [setStatusMessage]);
+    setSupportedBooks('obs');
+    setBookId('obs');
+    setHtmlSections((prevState) => {
+      return { ...prevState, css: { web: webCss, print: printCss } };
+    });
+    setCanChangeColumns(false);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -115,7 +125,6 @@ export default function OpenBibleStories() {
       setHtmlSections((prevState) => {
         return { ...prevState, ...obsHtmlSections };
       });
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
       setStatusMessage('');
     }
   }, [obsHtmlSections, setHtmlSections, setStatusMessage]);
