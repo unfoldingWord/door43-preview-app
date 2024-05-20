@@ -1,5 +1,5 @@
 import MarkdownIt from "markdown-it";
-import { getRepoContentsContent } from '@helpers/dcsAPI';
+import { getRepoContentsContent } from '@helpers/dcsApi';
 import { APP_VERSION } from '@common/constants';
 
 export function encodeHTML(s) {

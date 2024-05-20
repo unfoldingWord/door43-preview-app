@@ -356,7 +356,6 @@ ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
   </div>
   <div class="section" id="copyright-page">
     ${copyright}
-    ${getDoor43PrevieAppVersionFooterHTML()}
   </div>
   <div class="section toc-page">
     ${toc}
