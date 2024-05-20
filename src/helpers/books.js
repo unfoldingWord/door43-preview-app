@@ -22,7 +22,7 @@ export const getSupportedBooks = (catalogEntry, fileList = null) => {
 
 export const downloadCachedBook = async (url) => {
   try {
-    const response = await fetch(url, { 
+    const response = await fetch(url, {
       cache: 'reload',
     });
     if (response.ok) {

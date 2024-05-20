@@ -1,5 +1,5 @@
 // React imports
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 
 // Material UI imports

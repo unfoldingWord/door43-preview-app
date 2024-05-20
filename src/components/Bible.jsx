@@ -8,7 +8,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import usfm from 'usfm-js';
 
 // Custom hooks
-import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender';
+import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
 
 // Bible reference component
 import BibleReference from 'bible-reference-rcl';
@@ -24,6 +24,7 @@ import { AppContext } from '@components/App.context';
 // Bible reference hook and data
 import { useBibleReference } from 'bible-reference-rcl';
 import { BibleBookData } from '@common/books';
+import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 const theme = createTheme({
   overrides: {
@@ -59,52 +60,14 @@ h1 {
 }
 `;
 
-const printCss = `
-@page {
-  @footnote { 
-    float: bottom;
-    border-top: solid black 1px;
-    padding-top: 1em;
-    margin-top: 1em;
- }
- counter-reset: footnote;
-}
-
-span.footnote {
-  float: footnote;
-  position: note(footnotes);
-}
-
-::footnote-call { 
-  /* content: counter(footnote, lower-alpha); */
-  font-weight: 700;
-  font-size: 1em;
-  line-height: 0; 
-}
-
-::footnote-marker {
-  /* content: counter(footnote, lower-alpha) ". "; */
-  font-weight: 700;
-  line-height: 0; 
-  font-style: italic !important;
-}
-
-.pagedjs_footnote_area * {
-  background-color: white !important;
-}
-
-a.footnote {
-  font-style: italic !important;
-}
-`;
-
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, htmlSections },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections },
     actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
+  const [copyright, setCopyright] = useState('');
 
   const renderFlags = {
     showWordAtts: false,
@@ -205,7 +168,7 @@ export default function Bible() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry]);
+  }, [urlInfo, catalogEntry, authToken, bookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
@@ -244,7 +207,22 @@ export default function Bible() {
     if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
       fetchUsfmFileFromDCS();
     }
-  }, [htmlSections, supportedBooks, catalogEntry, bookId, setErrorMessage]);
+  }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, setBookTitle, setErrorMessage]);
+
+  useEffect(() => {
+    const generateCopyrightPage = async () => {
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
+        catalogEntry,
+        builtWith,
+        authToken,
+      );
+      setCopyright(copyrightAndLicense);
+    };
+
+    if (catalogEntry && builtWith.length) {
+      generateCopyrightPage();
+    }
+  }, [catalogEntry, builtWith, authToken, setCopyright]);
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
@@ -254,10 +232,10 @@ export default function Bible() {
       );
       _html = _html.replaceAll(
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
-        `<span id="${bookId}-$1" data-toc-title="${bookTitle} $1" data-nav-id="${bookId}-$1"$2><a href="#${bookId}-$1-1" data-nav-anchor="${bookId}-$1-1" class="header-link">$3</a></span>`
+        `<span id="bible-${bookId}-$1" data-toc-title="${bookTitle} $1" data-nav-id="${bookId}-$1"$2><a href="#${bookId}-$1-1" data-nav-anchor="${bookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
-      
+
       // const footnotes = _html.match(/<span class="footnote">/g);
       // if (footnotes) {
       //   footnotes.forEach((footnote, index) => {
@@ -266,18 +244,27 @@ export default function Bible() {
       //     _html = _html.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
       //   });
       // }
-      
-      _html = `<section class="bible-book" id="bible-${bookId}" data-nav-anchor="${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
-      
-      setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
+
+      _html = `
+        <div class="section bible-book" id="bible-${bookId}" data-nav-anchor="${bookId}" data-toc-title="${bookTitle}">
+          ${_html}
+        </div>
+`;
+
+      setHtmlSections((prevState) => {return {
+        ...prevState,
+        cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
+        copyright,
+        body: _html
+      }});
       setStatusMessage('');
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
     };
 
-    if (htmlReady && renderedData) {
+    if (htmlReady && renderedData && copyright) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
-  }, [bookId, htmlReady, renderedData, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   return (
     <ThemeProvider theme={theme}>

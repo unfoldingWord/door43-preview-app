@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { convertOBSDataToHTML } from '../helpers/obs_helpers';
+import { convertOBSDataToHTML } from '@helpers/obs_helpers';
 
 export default function useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution = '360px-compressed' }) {
   const [htmlSections, setHtmlSections] = useState();

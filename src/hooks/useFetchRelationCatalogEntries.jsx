@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getRelationCatalogEntries } from '../helpers/dcsCatalog';
+import { getRelationCatalogEntries } from '@helpers/dcsCatalog';
 
 export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects, setErrorMessage, authToken }) {
   const [relationCatalogEntries, setRelationCatalogEntries] = useState();

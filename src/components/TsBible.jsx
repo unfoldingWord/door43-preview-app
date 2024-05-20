@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material';
 
 // Custom hooks
-import useUsfmPreviewRenderer from '../hooks/useUsfmPreviewRender';
+import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
 
 // Bible reference imports
@@ -21,6 +21,7 @@ import { AppContext } from '@components/App.context';
 
 // Data
 import { BibleBookData } from '@common/books';
+import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 const theme = createTheme({
   overrides: {
@@ -58,7 +59,7 @@ h1 {
 
 const printCss = `
 @page {
-  @footnote { 
+  @footnote {
     float: bottom;
     border-top: solid black 1px;
     padding-top: 1em;
@@ -70,17 +71,17 @@ span.footnote {
   float: footnote;
   position: note(footnotes);
 }
-  
-::footnote-call { 
+
+::footnote-call {
   font-weight: 700;
   font-size: 1em;
-  line-height: 0; 
+  line-height: 0;
 }
-  
+
 ::footnote-marker {
   content: counter(footnote, lower-alpha) ". ";
   font-weight: 700;
-  line-height: 0; 
+  line-height: 0;
   font-style: italic !important;
 }
 
@@ -95,11 +96,12 @@ a.footnote {
 
 export default function TsBible() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, navAnchor, authToken },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, navAnchor, builtWith, authToken },
     actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
+  const [copyright, setCopyright] = useState('');
 
   const renderFlags = {
     showWordAtts: false,
@@ -220,6 +222,21 @@ export default function TsBible() {
   }, [catalogEntry, bookId, supportedBooks, zipFileData, setErrorMessage]);
 
   useEffect(() => {
+    const generateCopyrightPage = async () => {
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
+        catalogEntry,
+        builtWith,
+        authToken,
+      );
+      setCopyright(copyrightAndLicense);
+    };
+
+    if (catalogEntry && builtWith.length) {
+      generateCopyrightPage();
+    }
+  }, [catalogEntry, builtWith, authToken, setCopyright]);
+
+  useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
@@ -230,16 +247,23 @@ export default function TsBible() {
         `<span id="bible-${bookId}-$1" data-nav-id="${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#bible-${bookId}-$1-1" data-nav-anchor="${bookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
-      _html = `<section class="bible-book" id="bible-${bookId}" data-nav-id"${bookId}" data-toc-title="${bookTitle}">${_html}</section>`;
-      setHtmlSections({ cover: `<h3 class="cover-book-title">${bookTitle}</h3>`, toc: '', body: _html });
+      _html = `<div class="section bible-book" id="bible-${bookId}" data-nav-id="${bookId}" data-toc-title="${bookTitle}">${_html}</div>`;
+      setHtmlSections((prevState) => {
+        return {
+          ...prevState,
+          cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
+          copyright,
+          body: _html,
+        }
+      });
       setStatusMessage('');
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
     };
 
-    if (htmlReady && renderedData) {
+    if (htmlReady && renderedData && copyright) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
-  }, [bookId, htmlReady, renderedData, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   return (
     <ThemeProvider theme={theme}>

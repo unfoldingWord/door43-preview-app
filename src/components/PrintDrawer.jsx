@@ -90,7 +90,7 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
         <Divider />
         <Box>
           <Grid container sx={{ display: 'flex', flexDirection: 'column' }}>
-            {true && (
+            {false /* TODO: We need to use this */ && (
               <Grid sx={{ margin: '4%' }}>
                 <form
                   style={{

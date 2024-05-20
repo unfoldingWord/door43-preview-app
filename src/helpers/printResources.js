@@ -46,7 +46,7 @@ export const printResources = {
         margin-right: 30mm;
         margin-left: 20mm;
     }
-    
+
     #paras {
         columns: %nColumns%
     }
@@ -58,12 +58,12 @@ export const printResources = {
     h1 {
       break-before: page;
       column-span: all;
-    }        
+    }
 
     .new-page {
       break-after: page;
       column-span: all;
-    }        
+    }
   `,
   pageSizes: {
     // Landscape Sizes

@@ -1,4 +1,4 @@
-import React from 'react';
+import PropTypes from 'prop-types';
 
 export default function LoadingBar({message=""}) {
   return (
@@ -38,3 +38,7 @@ export default function LoadingBar({message=""}) {
     </>
   );
 }
+
+LoadingBar.propTypes = {
+  message: PropTypes.string,
+};

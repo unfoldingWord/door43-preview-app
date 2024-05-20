@@ -2,7 +2,7 @@ import * as base64 from './base64';
 
 export const getCatalogEntry = async (apiUrl, owner, repo, ref, authToken = '') => {
   const catalogEntryUrl = `${apiUrl}/catalog/entry/${owner}/${repo}/${ref}`;
-  return fetch(catalogEntryUrl, { 
+  return fetch(catalogEntryUrl, {
     cache: 'default',
     headers: {
       Authorization: `Bearer ${authToken}`
@@ -16,7 +16,7 @@ export const getCatalogEntry = async (apiUrl, owner, repo, ref, authToken = '') 
 
 export const getRepo = async (apiUrl, owner, repo, authToken = '') => {
   const repoUrl = `${apiUrl}/repos/${owner}/${repo}`;
-  return fetch(repoUrl, { 
+  return fetch(repoUrl, {
     cache: 'default',
     headers: {
       Authorization: `Bearer ${authToken}`
@@ -32,7 +32,7 @@ export const getRepo = async (apiUrl, owner, repo, authToken = '') => {
 
 export const getOwner = async (apiUrl, owner, authToken = '') => {
   const usersUrl = `${apiUrl}/users/${owner}`;
-  return fetch(usersUrl, { 
+  return fetch(usersUrl, {
     cache: 'default',
     headers: {
       Authorization: `Bearer ${authToken}`
@@ -49,7 +49,7 @@ export const getOwner = async (apiUrl, owner, authToken = '') => {
 export const getRepoContentsContent = async (repoApiUrl, filePath, ref, authToken = '', recursive = true) => {
   const repoContentsUrl = `${repoApiUrl}/contents/${filePath}?ref=${ref}&recursive=${recursive}`;
   return fetch(repoContentsUrl,
-    { 
+    {
       cache: 'default',
       headers: {
         Authorization: `Bearer ${authToken}`
@@ -66,8 +66,8 @@ export const getRepoContentsContent = async (repoApiUrl, filePath, ref, authToke
 
 export const getRepoGitTrees = async (repoApiUrl, ref, authToken = '', recursive = true) => {
   const repoGitTreesUrl = `${repoApiUrl}/git/trees/${ref}?recursive=${recursive}`;
-  return fetch(repoGitTreesUrl, 
-  { 
+  return fetch(repoGitTreesUrl,
+  {
     cache: 'default',
     headers: {
       Authorization: `Bearer ${authToken}`

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { getOBSData } from '../helpers/obs_helpers';
+import { getOBSData } from '@helpers/obs_helpers';
 
 export default function useGetOBSData({ catalogEntry, zipFileData, setErrorMessage }) {
   const [obsData, setObsData] = useState();

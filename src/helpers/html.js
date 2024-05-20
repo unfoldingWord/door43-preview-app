@@ -1,4 +1,6 @@
 import MarkdownIt from "markdown-it";
+import { getRepoContentsContent } from '@helpers/dcsAPI';
+import { APP_VERSION } from '@common/constants';
 
 export function encodeHTML(s) {
   if( ! s) {
@@ -23,4 +25,42 @@ export function convertNoteFromMD2HTML(note, prefix, bookId, chapterStr) {
   note = note.replace(/\s*\(See: \[\[[^\]]+\]\]\)/, '');
 
   return note;
+}
+
+export async function generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken = '') {
+  let copyrightAndLicense = `<h1>Copyrights and Licenceing</h1>`;
+
+  const md = new MarkdownIt();
+  try {
+    copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
+  } catch (e) {
+    console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
+  }
+
+  for (let entry of builtWith) {
+    const date = new Date(entry.released);
+    const formattedDate = date.toISOString().split('T')[0];
+    copyrightAndLicense += `
+<div style="padding-bottom: 10px">
+  <div style="font-weight: bold">${entry.title}</div>
+  <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
+  <div><span style="font-weight: bold">Version:</span> ${entry.branch_or_tag_name}</div>
+  <div><span style="font-weight: bold">Published by:</span> ${entry.repo.owner.full_name || entry.repo.owner}</div>
+</div>
+`;
+  }
+
+  return copyrightAndLicense;
+}
+
+export function getDoor43PrevieAppVersionFooterHTML() {
+  const date = new Date();
+  const formattedDate = date.toISOString().split('T')[0];
+  return `
+<span class="footnote no-marker" style="font-size: 0.8em; display: flex; justify-content: space-between;">
+  <div><span style="font-weight: bold">Generated with:</span> <a href="${window.location.href}" target="_blank">Door43 Preview App</a></div>
+  <div><span style="font-weight: bold">Version:</span> ${APP_VERSION}</div>
+  <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
+</span>
+`;
 }

@@ -76,8 +76,8 @@ export async function getOBSData(catalogEntry, zipFileData) {
       obsData.back = md.render(await zipFileData.file(backFilePath).async('text'));
     } else {
       backFilePath = `${obsRootPath}/back/intro.md`;
-      if (frontFilePath in zipFileData.files) {
-        obsData.front = md.render(await zipFileData.file(backFilePath).async('text'));
+      if (backFilePath in zipFileData.files) {
+        obsData.back = md.render(await zipFileData.file(backFilePath).async('text'));
       }
     }
   }
@@ -183,20 +183,12 @@ export async function getOBSData(catalogEntry, zipFileData) {
 
 export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resolution = '360px-compressed') {
   let html = `
-<section id="obs" data-toc-title="${encodeHTML(obsData.title)}">
+<div class="section" id="obs" data-toc-title="${encodeHTML(obsData.title)}">
 `;
-
-  let copyright = '';
-  if (obsData.front) {
-    copyright = `
-<article class="obs-front" id="obs-front" data-toc-title="Front">
-    ${obsData.front}
-</article>`;
-  }
 
   for (const story of obsData.stories) {
     html += `
-<section id="obs-${story.storyNum}" class="story" data-toc-title="${encodeHTML(story.title)}">
+<div class="section story" id="obs-${story.storyNum}"  data-toc-title="${encodeHTML(story.title)}">
   <h1 class="obs-story-title title">${story.title}</h1>
 `;
     let frames = story.frames;
@@ -211,7 +203,7 @@ export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resol
     for (const frame of frames) {
       const link = `obs-${story.storyNum}-${frame.frameNum}`;
       html += `
-<article class="obs-story-frame" id="${link}">
+<div class="article obs-story-frame" id="${link}">
 `;
       if (resolution != 'none') {
         html += `
@@ -222,32 +214,32 @@ export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resol
       }
       html += `
     <div class="obs-frame-content">${frame.content}</div>
-</article>
+</div>
 `;
     }
     if (story.bibleRef) {
       html += `
-<article class="obs-story-bible-ref" id="obs-story-bible-ref-${story.storyNum}">
+<div class="article obs-story-bible-ref" id="obs-story-bible-ref-${story.storyNum}">
   <em>${story.bibleRef}</em>
-</article>
+</div>
 `;
     }
-    html += `</section>`;
+    html += `</div>`;
   }
 
   if (obsData.back) {
     html += `
-<section class="obs-back-section" data-toc-title="Back Matter">
-    <article class="obs-back-article" id="obs-back-article">
+<div class="section obs-back-section" data-toc-title="Back Matter">
+    <div class="article obs-back-article" id="obs-back-article">
         ${obsData.back}
-    </article>
-</section>
+    </div>
+</div>
 `;
   }
 
   html += `
-</section>
+</div>
 `;
 
-  return { copyright, body: html };
+  return html;
 }

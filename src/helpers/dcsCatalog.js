@@ -9,7 +9,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   for (let owner of owners) {
     for (let r of repos) {
-      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, { 
+      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, {
         cache: 'default',
         headers: {
           Authorization: `Bearer ${authToken}`
@@ -25,7 +25,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   if (stage != 'latest') {
     for (let owner of owners) {
       for (let r of repos) {
-        let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, { 
+        let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, {
           cache: 'default',
           headers: {
             Authorization: `Bearer ${authToken}`
@@ -34,7 +34,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
         if (resp && resp.status == '200') {
           const repoObj = resp.json();
           if (repoObj?.catalog?.prod) {
-            resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, { 
+            resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
               cache: 'default',
               headers: {
                 Authorization: `Bearer ${authToken}`
@@ -50,7 +50,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   // Now we just get the latest catalog entry for the repo if it exists
   for (let owner of owners) {
-    let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`, { 
+    let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`, {
       cache: 'default',
       headers: {
         Authorization: `Bearer ${authToken}`
@@ -59,7 +59,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
     if (resp) {
       const repoObj = resp.json();
       if (repoObj?.catalog?.latest) {
-        resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, { 
+        resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
           cache: 'default',
           headers: {
             Authorization: `Bearer ${authToken}`

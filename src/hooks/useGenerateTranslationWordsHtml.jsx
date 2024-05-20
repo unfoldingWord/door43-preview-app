@@ -21,7 +21,7 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
         }
         if (body) {
           html += `
-<article id="tw-${link}" data-nav-id="${link}" class="${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" data-toc-title="${encodeHTML(toctitle)}">
+<div class="article ${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" id="tw-${link}" data-nav-id="${link}"  data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
@@ -35,7 +35,7 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
   <div class="article-body">
     ${body}
   </div>
-</article>
+</div>
 `;
           if (index < total - 1) {
             html += `
@@ -50,7 +50,7 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
             })
             .join('');
           html += `
-<section id="tw-${link}" data-nav-id="${link}" class="${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" data-toc-title="${encodeHTML(
+<div class="section ${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" id="tw-${link}" data-nav-id="${link}"  data-toc-title="${encodeHTML(
             toctitle
           )}">
   <h${depth} class="header section-header">
@@ -58,7 +58,7 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}
-</section>
+</div>
 `;
         }
         return html;

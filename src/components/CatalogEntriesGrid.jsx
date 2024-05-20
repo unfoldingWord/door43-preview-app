@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import { getRelativeTimeString } from '@helpers/datetime';
 import { styled } from '@mui/material/styles';

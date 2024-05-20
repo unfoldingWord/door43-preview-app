@@ -7,7 +7,7 @@ import { BibleBookData } from '@common/books';
 
 // Helper imports
 import { getSupportedBooks } from '@helpers/books';
-import { getRepoContentsContent, getRepoGitTrees } from '@helpers/dcsApi';
+import { getRepoGitTrees } from '@helpers/dcsApi';
 import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
 
 // Hook imports
@@ -22,9 +22,9 @@ import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslati
 
 // Other imports
 import usfm from 'usfm-js';
-import MarkdownIt from 'markdown-it';
 import { verseObjectsToString } from 'uw-quote-helpers';
 import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes';
+import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 // Context imports
 import { AppContext } from '@components/App.context';
@@ -78,7 +78,7 @@ const webCss = `
   break-after: page !important;
 }
 
-article {
+.article {
   break-after: auto !important;
   break-inside: avoid-page !important;
   orphans: 2;
@@ -299,14 +299,14 @@ export default function RcTranslationNotes() {
   }, [navAnchor]);
 
   useEffect(() => {
-    if (catalogEntry) {
+    if (catalogEntry && sourceBibleCatalogEntries?.length && targetBibleCatalogEntries?.length && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
       setBuiltWith([
         catalogEntry,
-        ...(sourceBibleCatalogEntries || []),
-        ...(targetBibleCatalogEntries || []),
-        ...(taCatalogEntries || []),
-        ...(twCatalogEntries || []),
-        ...(twlCatalogEntries || []),
+        ...sourceBibleCatalogEntries,
+        ...targetBibleCatalogEntries,
+        ...taCatalogEntries,
+        ...twCatalogEntries,
+        ...twlCatalogEntries,
       ]);
     }
   }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
@@ -421,12 +421,12 @@ export default function RcTranslationNotes() {
 `;
         for (let row of tnTsvDataWithGLQuotes['front']['intro'])
           html += `
-        <article class="tn-front-intro-note">
+        <div class="article tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
 ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           </div>
-        </article>
+        </div>
 `;
         html += `
       </div>
@@ -447,10 +447,10 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
             const link = `${bookId}-${chapterStr}-intro-${row.ID}`;
             const article = `
-          <article id="tn-${link}" data-nav-id"${link}">
+          <div class="article" id="tn-${link}" data-nav-id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
             ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, chapterStr)}
-          </article>
+          </div>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
             html += article;
@@ -501,7 +501,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
             const scriptureLink = `${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
-          <article class="tn-scripture-block" id="tn-${scriptureLink}" data-nav-id="${scriptureLink}">
+          <div class="article tn-scripture-block" id="tn-${scriptureLink}" data-nav-id="${scriptureLink}">
             <h4 class="tn-scripture-header">
               <a href="#tn-${scriptureLink}" data-nav-anchor="${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
@@ -510,7 +510,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
             <div class="tn-scripture-text">
               ${scripture[targetIdx]}${usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : ''}
             </div>
-          </article>
+          </div>
 `;
           }
           if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
@@ -522,7 +522,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
                 verseBridge += `(${row.Reference})`;
               }
               let article = `
-              <article id="tn-${noteLink}" data-nav-id="${noteLink}" class="tn-note-article">
+              <div class="article tn-note-article" id="tn-${noteLink}" data-nav-id="${noteLink}">
 `;
               if (!row.Quote) {
                 article += `
@@ -570,16 +570,16 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
               }
               article += `
         <hr style="width: 75%"/>
-      </article>
+      </div>
 `;
               html += article;
               searchForRcLinks(rcLinksData, article, `<a href="#${noteLink}">${row.Reference}</a>`);
             }
           } else {
             html += `
-          <article class="tn-verse-no-content">
+          <div class="article tn-verse-no-content">
             (There are no notes for this verse)
-          </article>
+          </div>
 `;
           }
 
@@ -587,7 +587,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
             const twlLink = `twl-${chapterStr}-${verseStr}`;
             let article = `
-          <article id="${twlLink}" class="tn-verse-twls">
+          <div class="article tn-verse-twls" id="${twlLink}">
             <h4 class="tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
 `;
             for (let targetidx in targetBibleCatalogEntries) {
@@ -609,7 +609,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 `;
             }
             article += `
-          </article>
+          </div>
 `;
             html += article;
             searchForRcLinks(rcLinksData, article, `<a href="#${verseLink}">${chapterStr}:${verseStr}</a>`);
@@ -632,18 +632,18 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
         // TA ARTICLES
         html += `
 <div class="appendex ta section" id="appendex-ta" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
-  <article class="title-page">
+  <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
     <h1 class="cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
-  </article>
+  </div>
 `;
         Object.values(rcLinksData.ta)
           .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
           .forEach((taArticle) => {
             const article = `
-  <article id="${taArticle.anchor}" data-toc-title="${encodeHTML(taArticle.title)}">
+  <div class="article" id="${taArticle.anchor}" data-toc-title="${encodeHTML(taArticle.title)}">
     <h2 class="header article-header">
       <a href="#${taArticle.anchor}" class="header-link">${taArticle.title}</a>
     </h2>
@@ -652,9 +652,10 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
       ${taArticle.body}
     </div>
     <div class="back-refs">
-    <h3>${bookTitle} References:</h3>
-    ${taArticle.backRefs.join('; ')}
-  </article>
+      <h3>${bookTitle} References:</h3>
+      ${taArticle.backRefs.join('; ')}
+    </div>
+  </div>
 `;
             html += article;
             searchForRcLinks(rcLinksData, article);
@@ -668,18 +669,18 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
         // TW ARTICLES
         html += `
 <div class="appendex tw section" id="appendex-tw" data-toc-title="Appendex: ${encodeHTML(twCatalogEntry.title)}">
-  <article class="title-page">
+  <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
     <h1 class="cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
-  </article>
+  </div>
 `;
         Object.values(rcLinksData.tw)
           .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
           .forEach((twArticle) => {
             const article = `
-  <article id="${twArticle.anchor}" data-toc-title="${encodeHTML(twArticle.title)}">
+  <div class="article" id="${twArticle.anchor}" data-toc-title="${encodeHTML(twArticle.title)}">
     <h2 class="header article-header">
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
     </h2>
@@ -688,9 +689,10 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
       ${twArticle.body}
     </div>
     <div class="back-refs">
-    <h3>${bookTitle} References:</h3>
-    ${twArticle.backRefs.join('; ')}
-  </article>
+      <h3>${bookTitle} References:</h3>
+      ${twArticle.backRefs.join('; ')}
+    </div>
+  </div>
 `;
             html += article;
             searchForRcLinks(rcLinksData, article);
@@ -738,35 +740,18 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
-      for (let entry of builtWith) {
-        const date = new Date(entry.released);
-        const formattedDate = date.toISOString().split('T')[0];
-        copyrightAndLicense += `
-    <div style="padding-bottom: 10px">
-      <div style="font-weight: bold">${entry.title}</div>
-      <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
-      <div><span style="font-weight: bold">Version:</span> ${entry.branch_or_tag_name}</div>
-      <div><span style="font-weight: bold">Published by:</span> ${entry.repo.owner.full_name || entry.repo.owner}</div>
-    </div>
-`;
-      }
-
-      const md = new MarkdownIt();
-      try {
-        copyrightAndLicense +=
-          `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
-      } catch (e) {
-        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
-      }
-
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
+        catalogEntry,
+        builtWith,
+        authToken,
+      );
       setCopyright(copyrightAndLicense);
     };
 
-    if (!htmlSections?.copyright && catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length) {
       generateCopyrightPage();
     }
-  }, [htmlSections, catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {

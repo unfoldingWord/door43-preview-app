@@ -18,7 +18,7 @@ import { useBibleReference } from 'bible-reference-rcl';
 import BibleReference from 'bible-reference-rcl';
 
 const webCss = `
-article img {
+.article img {
   display: block;
   margin: 0 auto;
   width: 100%;
@@ -36,14 +36,14 @@ const printCss = `
   padding-top: 300px;
 }
 
-article {
-  break-before: auto;
-  break-after: auto;
+.article {
+  break-before: auto !important;
+  break-after: auto !important;
 }
 
-section {
-  break-before: page;
-  break-after: page;
+.section {
+  break-before: page !important;
+  break-after: page !important;
 }
 `;
 
@@ -64,6 +64,7 @@ export default function OpenBibleStories() {
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
+  const [copyright, setCopyright] = useState('');
 
   const onBibleReferenceChange = (b, c, v) => {
     setNavAnchor(`${b}-${c}-${v}`);
@@ -81,7 +82,7 @@ export default function OpenBibleStories() {
 
   const obsData = useGetOBSData({ catalogEntry, zipFileData, setErrorMessage });
 
-  const obsHtmlSections = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
+  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
 
   useEffect(() => {
     if (!catalogEntry) {
@@ -120,14 +121,29 @@ export default function OpenBibleStories() {
   }, [navAnchor]);
 
   useEffect(() => {
+    const generateCopyrightPage = async () => {
+      const copyrightAndLicense = `
+<div class="obs-front-matter">
+  ${obsData.front}
+</div>
+`;
+      setCopyright(copyrightAndLicense);
+    };
+
+    if (catalogEntry && obsData) {
+      generateCopyrightPage();
+    }
+  }, [catalogEntry, obsData, authToken, setCopyright]);
+
+  useEffect(() => {
     // Handle Print Preview & Status & Navigation
-    if (obsHtmlSections) {
+    if (html && copyright) {
       setHtmlSections((prevState) => {
-        return { ...prevState, ...obsHtmlSections };
+        return { ...prevState, copyright, body: html };
       });
       setStatusMessage('');
     }
-  }, [obsHtmlSections, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, setHtmlSections, setStatusMessage]);
 
   return (
     <ThemeProvider theme={theme}>

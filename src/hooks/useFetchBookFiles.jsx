@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { getRepoContentsContent } from '../helpers/dcsApi';
+import { getRepoContentsContent } from '@helpers/dcsApi';
 import { AppContext } from '@components/App.context';
 
 export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMessage }) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import * as Paged from 'pagedjs';
 import { AppContext } from '@components/App.context';
+import { getDoor43PrevieAppVersionFooterHTML } from '@helpers/html';
 
 function generateCover(catalogEntry, extra) {
   const abbreviationToLogoMap = {
@@ -194,7 +195,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   position: running(titleRunning);
 }
 
-.pagedjs_pages section.bible-book {
+.pagedjs_pages .section.bible-book {
   columns: $ {
     printOptions?.columns || 1
   }
@@ -206,13 +207,13 @@ h1 {
   break-before: avoid-page;
 }
 
-section,
-article {
+.section,
+.article {
   break-after: page !important;
 }
 
-section.toc-page,
-section.copyright-page {
+.section.toc-page,
+.section.copyright-page {
   break-before: page;
 }
 
@@ -299,21 +300,67 @@ h1 {
   font-size: 1.6em;
 }
 
+@page {
+  @footnote {
+    float: bottom;
+    border-top: solid black 1px;
+    padding-top: 1em;
+    margin-top: 1em;
+ }
+ counter-reset: footnote;
+}
+
+span.footnote {
+  float: footnote;
+  position: note(footnotes);
+}
+
+::footnote-call {
+  /* content: counter(footnote, lower-alpha); */
+  font-weight: 700;
+  font-size: 1em;
+  line-height: 0;
+}
+
+::footnote-marker {
+  /* content: counter(footnote, lower-alpha) ". "; */
+  font-weight: 700;
+  line-height: 0;
+  font-style: italic !important;
+}
+
+.no-marker::footnote-marker {
+  content: none !important;
+}
+
+.no-marker::footnote-call {
+  content: none !important;
+}
+
+.pagedjs_footnote_area * {
+  background-color: white !important;
+}
+
+a.footnote {
+  font-style: italic !important;
+}
+
 ${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
 ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
 `;
       const htmlStr = `
 <div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
-  <section class="cover-page">
+  <div class="section cover-page">
     ${cover}
-  </section>
-  <section id="copyright-page">
+  </div>
+  <div class="section" id="copyright-page">
     ${copyright}
-  </section>
-  <section class="toc-page">
+    ${getDoor43PrevieAppVersionFooterHTML()}
+  </div>
+  <div class="section toc-page">
     ${toc}
-  </section>
+  </div>
   ${doc.documentElement.innerHTML}
 </div>
 `;
@@ -386,7 +433,7 @@ ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
         styleTags.forEach((tag) => tag.remove());
       };
     }
-  }, [cssToRender, ref, htmlToRender, printOptions]);
+  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewStatus, setPrintPreviewPercentDone]);
 
   return <div id="print-preview" style={{ ...style, display: view != 'print' ? 'none' : 'block' }} ref={ref} />;
 });

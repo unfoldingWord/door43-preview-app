@@ -130,7 +130,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchRepos = async () => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, { 
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {
         cache: 'default',
         headers: {
           Authorization: `Bearer ${authToken}`
@@ -214,7 +214,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
   useEffect(() => {
     const fetchCatalogEntry = async (ref) => {
       setIsFetching(true);
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, { 
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {
         cache: 'default',
         headers: {
           Authorization: `Bearer ${authToken}`

@@ -46,10 +46,10 @@ for entry in entries:
       #   continue
 
       print(root+url)
-  
+
       try:
         driver.get(temp_url)
-        
+
         # Open the page
         driver.get(root+url)
 
@@ -58,7 +58,7 @@ for entry in entries:
 
         # Wait for the button to not be disabled or for the div with text "Error" to appear
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[value=print]")) or EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Error')]")))
-        
+
         print("SUCCESS: "+url)
         # Add a delay to ensure the page has fully loaded (adjust as needed)
         # time.sleep(5)

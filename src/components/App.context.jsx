@@ -314,7 +314,7 @@ export function AppContextProvider({ children }) {
     }
     if (cachedBook.preview_version !== APP_VERSION ) {
       console.log(`The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`);
-      setRenderMessage(`You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated to use v${APP_VERSION}...`);
+      setRenderMessage(`You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated with v${APP_VERSION}...`);
       return;
     }
     if (Object.keys(cachedBook.builtWith).length !== builtWith.length) {
@@ -328,7 +328,7 @@ export function AppContextProvider({ children }) {
         setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`)
         return;
       }
-    }    
+    }
     console.log("All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.")
     setHtmlSections(cachedBook.htmlSections);
   }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);

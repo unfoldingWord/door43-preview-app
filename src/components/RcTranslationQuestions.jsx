@@ -16,13 +16,13 @@ import useFetchBookFiles from '@hooks/useFetchBookFiles';
 
 // Helper imports
 import { getSupportedBooks } from '@helpers/books';
-import { getRepoContentsContent, getRepoGitTrees } from '@helpers/dcsApi';
+import { getRepoGitTrees } from '@helpers/dcsApi';
 import { verseObjectsToString } from 'uw-quote-helpers';
 import { convertNoteFromMD2HTML } from '@helpers/html';
+import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 // Library imports
 import usfm from 'usfm-js';
-import MarkdownIt from 'markdown-it';
 
 const webCss = `
 .tq-question {
@@ -44,15 +44,15 @@ const webCss = `
   margin: 10px 0;
 }
 
-article.tq-scripture,
-article.tq-entry,
-section.tq-verse {
+.article.tq-scripture,
+.article.tq-entry,
+.section.tq-verse {
   break-before: auto !important;
   break-inside: avoid !important;
   break-after: auto !important
 }
 
-section.book-chapter {
+.section.book-chapter {
   break-after: page !important;
 }
 
@@ -148,7 +148,7 @@ a.header-link:hover::after {
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
     actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -212,8 +212,8 @@ export default function RcTranslationQuestions() {
   });
 
   useEffect(() => {
-    if (catalogEntry) {
-      setBuiltWith([catalogEntry, ...(targetBibleCatalogEntries || [])])
+    if (catalogEntry && targetBibleCatalogEntries?.length) {
+      setBuiltWith([catalogEntry, ...targetBibleCatalogEntries])
     }
   }, [ catalogEntry, targetBibleCatalogEntries, setBuiltWith])
 
@@ -457,36 +457,18 @@ export default function RcTranslationQuestions() {
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const entries = [catalogEntry, ...targetBibleCatalogEntries];
-
-      let copyrightAndLicense = `<h1>Copyright s and Licenceing</h1>`;
-      for (let entry of entries) {
-        const date = new Date(entry.released);
-        const formattedDate = date.toISOString().split('T')[0];
-        copyrightAndLicense += `
-    <div style="padding-bottom: 10px">
-      <div style="font-weight: bold">${entry.title}</div>
-      <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
-      <div><span style="font-weight: bold">Version:</span> ${entry.branch_or_tag_name}</div>
-      <div><span style="font-weight: bold">Published by:</span> ${entry.repo.owner.full_name || entry.repo.owner}</div>
-    </div>
-`;
-      }
-
-      const md = new MarkdownIt();
-      try {
-        copyrightAndLicense += `<div class="license">` + md.render(await getRepoContentsContent(catalogEntry.repo.url, 'LICENSE.md', catalogEntry.commit_sha, authToken)) + `</div>`;
-      } catch (e) {
-        console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, "LICENSE.md", ${catalogEntry.commit_sha}): `, e);
-      }
-
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
+        catalogEntry,
+        builtWith,
+        authToken,
+      )
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && targetBibleCatalogEntries.length) {
+    if (catalogEntry && builtWith.length) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, targetBibleCatalogEntries, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, setCopyright]);
 
 
   useEffect(() => {
