@@ -121,6 +121,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
     padding-top: 2mm;
     font-size: 8pt;
   }
+  counter-reset: footnote;
 
   @bottom-center {
     content: counter(page);
@@ -300,51 +301,6 @@ h1 {
   font-size: 1.6em;
 }
 
-@page {
-  @footnote {
-    float: bottom;
-    border-top: solid black 1px;
-    padding-top: 1em;
-    margin-top: 1em;
- }
- counter-reset: footnote;
-}
-
-span.footnote {
-  float: footnote;
-  position: note(footnotes);
-}
-
-::footnote-call {
-  /* content: counter(footnote, lower-alpha); */
-  font-weight: 700;
-  font-size: 1em;
-  line-height: 0;
-}
-
-::footnote-marker {
-  /* content: counter(footnote, lower-alpha) ". "; */
-  font-weight: 700;
-  line-height: 0;
-  font-style: italic !important;
-}
-
-.no-marker::footnote-marker {
-  content: none !important;
-}
-
-.no-marker::footnote-call {
-  content: none !important;
-}
-
-.pagedjs_footnote_area * {
-  background-color: white !important;
-}
-
-a.footnote {
-  font-style: italic !important;
-}
-
 ${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
 ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
@@ -356,6 +312,7 @@ ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
   </div>
   <div class="section" id="copyright-page">
     ${copyright}
+    ${getDoor43PrevieAppVersionFooterHTML()}
   </div>
   <div class="section toc-page">
     ${toc}
