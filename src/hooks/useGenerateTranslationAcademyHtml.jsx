@@ -29,7 +29,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
     title != manual.title
       ? `
   <h${depth} class="header article-header">
-    <a href="#ta-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
+    <a href="#${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
   </h${depth}>
 `
       : ``
@@ -53,7 +53,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
             toctitle
           )}">
   <h${depth} class="header section-header">
-    <a href="#ta-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
+    <a href="#${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}

@@ -57,10 +57,10 @@ export function getDoor43PrevieAppVersionFooterHTML() {
   const date = new Date();
   const formattedDate = date.toISOString().split('T')[0];
   return `
-<span class="footnote no-marker" style="font-size: 0.8em; display: flex; justify-content: space-between;">
+<div id="app-version-info" style="font-size: 0.8em; display: flex; justify-content: space-between; border-top: 1px solid black; margin-top: 10px;">
   <div><span style="font-weight: bold">Generated with:</span> <a href="${window.location.href}" target="_blank">Door43 Preview App</a></div>
   <div><span style="font-weight: bold">Version:</span> ${APP_VERSION}</div>
   <div><span style="font-weight: bold">Date:</span> ${formattedDate}</div>
-</span>
+</div>
 `;
 }

@@ -103,7 +103,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   <h1 class="toc-header">Table of Contents</h1>
   <div id="toc-contents">
     <ul class="toc-section top-toc-section">
-      ${generateToc(doc.firstChild)}
+      ${generateToc(doc.getElementsByTagName('body')?.[0])}
     </ul>
   </div>
 `;
@@ -121,7 +121,6 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
     padding-top: 2mm;
     font-size: 8pt;
   }
-  counter-reset: footnote;
 
   @bottom-center {
     content: counter(page);
@@ -136,37 +135,37 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
 
 @page :blank {
   @bottom-center {
-    content: none
+    content: none;
   }
 
   @top-center {
-    content: none
+    content: none;
   }
 
   @top-left {
-    content: none
+    content: none;
   }
 
   @top-right {
-    content: none
+    content: none;
   }
 }
 
 @page :cover-page {
   @bottom-center {
-    content: none
+    content: none;
   }
 
   @top-center {
-    content: none
+    content: none;
   }
 
   @top-left {
-    content: none
+    content: none;
   }
 
   @top-right {
-    content: none
+    content: none;
   }
 }
 
@@ -192,16 +191,39 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   }
 }
 
+span.footnote {
+  float: footnote;
+  position: note(footnotes);
+}
+
+::footnote-call {
+  /* content: counter(footnote, lower-alpha); */
+  font-weight: 700;
+  font-size: 1em;
+  line-height: 0;
+}
+
+::footnote-marker {
+  /* content: counter(footnote, lower-alpha) ". "; */
+  font-weight: 700;
+  line-height: 0;
+  font-style: italic !important;
+}
+
+.pagedjs_footnote_area * {
+  background-color: white !important;
+}
+
+a.footnote {
+  font-style: italic !important;
+}
+
 .header-title {
   position: running(titleRunning);
 }
 
 .pagedjs_pages .section.bible-book {
-  columns: $ {
-    printOptions?.columns || 1
-  }
-
-  ;
+  columns: ${printOptions?.columns || 1}
 }
 
 h1 {
@@ -301,9 +323,14 @@ h1 {
   font-size: 1.6em;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
 ${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
-${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
+${htmlSections?.css?.print || cachedHtmlSections?.css?.print || ''}
 `;
       const htmlStr = `
 <div id="pagedjs-print" style="direction: ${catalogEntry.language_direction}" data-direction="${catalogEntry.language_direction}">
@@ -317,7 +344,7 @@ ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
   <div class="section toc-page">
     ${toc}
   </div>
-  ${doc.documentElement.innerHTML}
+  ${doc.getElementsByTagName('body')?.[0]?.innerHTML}
 </div>
 `;
       setHtmlToRender(htmlStr);
@@ -389,7 +416,7 @@ ${htmlSections.css.print || cachedHtmlSections?.css?.print || ''}
         styleTags.forEach((tag) => tag.remove());
       };
     }
-  }, [cssToRender, ref, htmlToRender, printOptions, setPrintPreviewStatus, setPrintPreviewPercentDone]);
+  }, [cssToRender, ref, htmlToRender, printOptions]);
 
   return <div id="print-preview" style={{ ...style, display: view != 'print' ? 'none' : 'block' }} ref={ref} />;
 });

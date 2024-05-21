@@ -27,7 +27,7 @@
     "jszip": "^3.10.1",
     "lodash": "4.17.21",
     "markdown-it": "^14.0.0",
-    "pagedjs": "^0.4.3",
+    "pagedjs": "0.5.0-beta.1",
     "pako": "^2.1.0",
     "papaparse": "^5.4.1",
     "prop-types": "^15.8.1",

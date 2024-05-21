@@ -57,43 +57,6 @@ h1 {
 }
 `;
 
-const printCss = `
-@page {
-  @footnote {
-    float: bottom;
-    border-top: solid black 1px;
-    padding-top: 1em;
-    margin-top: 1em;
- }
-}
-
-span.footnote {
-  float: footnote;
-  position: note(footnotes);
-}
-
-::footnote-call {
-  font-weight: 700;
-  font-size: 1em;
-  line-height: 0;
-}
-
-::footnote-marker {
-  content: counter(footnote, lower-alpha) ". ";
-  font-weight: 700;
-  line-height: 0;
-  font-style: italic !important;
-}
-
-.pagedjs_footnote_area * {
-  background-color: white !important;
-}
-
-a.footnote {
-  font-style: italic !important;
-}
-`;
-
 export default function TsBible() {
   const {
     state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, navAnchor, builtWith, authToken },
@@ -257,7 +220,7 @@ export default function TsBible() {
         }
       });
       setStatusMessage('');
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
+      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
     };
 
     if (htmlReady && renderedData && copyright) {
