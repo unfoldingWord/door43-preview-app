@@ -208,11 +208,6 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                     <CatalogEntriesGrid catalogEntries={builtWith.length ? builtWith : [catalogEntry]} showJustThisCatalogEntry={true} linkToDCS={true} bookId={bookId} />
                   </Grid>
                 </Box>
-                <div style={{textAlign: "center"}}>
-                  <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
-                    {"Click for the resource's metadata"}
-                  </a>
-                </div>
               </div>
             </>)}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -222,6 +217,11 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                   {serverInfo?.baseUrl}
                 </a>{' '}
                 ({serverInfo?.ID})
+              </div>
+              <div style={{textAlign: "center"}}>
+                <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
+                  {"See resource's metadata"}
+                </a>
               </div>
               <div id="app-version"><a href="https://github.com/unfoldingWord/door43-preview-app/releases/latest" target="_blank" rel="noopener noreferrer" style={{textDecoration: "none"}}>App Version: v{APP_VERSION}</a></div>
             </div>
