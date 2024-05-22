@@ -146,6 +146,8 @@ a.header-link:hover::after {
 
 `;
 
+const requiredSubjects = ['Aligned Bible'];
+
 export default function RcTranslationQuestions() {
   const {
     state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
@@ -189,6 +191,7 @@ export default function RcTranslationQuestions() {
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
     authToken,
+    requiredSubjects,
   });
 
   const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({

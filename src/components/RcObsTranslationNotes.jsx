@@ -138,11 +138,11 @@ a.header-link:hover::after {
 }
 `;
 
-const requiredSubjects = ['Translation Academy', 'Translation Words', 'TSV OBS Translation Words Links'];
+const requiredSubjects = ['Open Bible Stories', 'Translation Academy', 'Translation Words', 'TSV OBS Translation Words Links'];
 
 export default function RcObsTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, htmlSections, navAnchor, authToken, builtWith },
+    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith },
     actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 

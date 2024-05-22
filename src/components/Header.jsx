@@ -219,7 +219,7 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                 ({serverInfo?.ID})
               </div>
               <div style={{textAlign: "center"}}>
-                <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
+                <a href={catalogEntry?.metadata_url} target="_blank" rel="noopener noreferrer">
                   {"See resource's metadata"}
                 </a>
               </div>
