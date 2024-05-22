@@ -218,11 +218,12 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                 </a>{' '}
                 ({serverInfo?.ID})
               </div>
+              {catalogEntry &&
               <div style={{textAlign: "center"}}>
-                <a href={catalogEntry?.metadata_url} target="_blank" rel="noopener noreferrer">
+                <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
                   {"See resource's metadata"}
                 </a>
-              </div>
+              </div>}
               <div id="app-version"><a href="https://github.com/unfoldingWord/door43-preview-app/releases/latest" target="_blank" rel="noopener noreferrer" style={{textDecoration: "none"}}>App Version: v{APP_VERSION}</a></div>
             </div>
           </AppBar>
