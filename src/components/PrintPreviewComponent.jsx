@@ -97,9 +97,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
       let copyright = htmlSections?.copyright || '';
       const body = htmlSections?.body || cachedHtmlSections?.body || '';
       const doc = new DOMParser().parseFromString(body, 'text/html');
-      let toc = htmlSections?.toc || '';
-      if (!toc) {
-        toc = `
+      let toc = htmlSections?.toc || `
   <h1 class="toc-header">Table of Contents</h1>
   <div id="toc-contents">
     <ul class="toc-section top-toc-section">
@@ -107,7 +105,6 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
     </ul>
   </div>
 `;
-      }
       const cover = generateCover(catalogEntry, htmlSections.cover);
 
       const cssStr = `
@@ -328,6 +325,19 @@ h1, h2, h3, h4, h5, h6 {
   page-break-after: avoid;
 }
 
+.header-title {
+  display: none;
+}
+
+.cover-page {
+  text-align: center;
+}
+
+.section,
+.article {
+  break-after: page !important;
+}
+
 ${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}
 
 ${htmlSections?.css?.print || cachedHtmlSections?.css?.print || ''}
@@ -388,6 +398,34 @@ ${htmlSections?.css?.print || cachedHtmlSections?.css?.print || ''}
       const previewer = new Paged.Previewer();
       previewer.registerHandlers(PrintPreviewHandler);
       setPrintPreviewStatus('rendering');
+
+      const fullHtml = `
+<html>
+  <head>
+    <title>PDF Preview2</title>
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    <style>
+${cssToRender}
+    </style>
+  </head>
+  <body>
+${htmlToRender}
+  </body>
+</html>
+`;
+// const newWindow = window.open();
+// setTimeout(() => {
+//   if (newWindow) {
+//     newWindow.document.open();
+//     newWindow.document.write(fullHtml);
+//     newWindow.document.close();
+//     setPrintPreviewStatus('ready');
+//   } else {
+//     console.error('Could not open new window');
+//   }
+// }, 2000);
+      console.log(fullHtml);
+
       previewer
         .preview(
           htmlToRender,

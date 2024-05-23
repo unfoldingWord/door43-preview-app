@@ -84,6 +84,7 @@ export default function AppWorkspace() {
     documentTitle: `${catalogEntry?.owner}--${catalogEntry?.repo.name}--${catalogEntry?.branch_or_tag_name}`,
     content: () => printPreviewRef.current,
   });
+
   const handlePrint = () => {
     if (printPreviewStatus != 'ready') {
       alert('The print preview is not done yet. Please wait...');
