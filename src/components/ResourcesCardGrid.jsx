@@ -4,7 +4,7 @@ import { useEffect, useState, useContext } from 'react';
 // Material UI imports
 import {
   Box,
-  Unstable_Grid2 as Grid,
+  Grid,
   AppBar,
   Button,
   IconButton,
@@ -211,7 +211,7 @@ export const ResourcesCardGrid = () => {
             setError('No projects found meeting this search criteria');
           } else {
             setCatalogEntries((prevState) => [...prevState, ...data]);
-            if (data.length < 100) {
+            if (data.length < DEFAULT_LIMIT) {
               setGotAllEntries(true);
             }
           }
@@ -245,6 +245,26 @@ export const ResourcesCardGrid = () => {
       setCatalogEntries([]);
     }
   };
+
+  let extraItem = null;
+
+  if (!gotAllEntries && !searchClicked && !error && catalogEntries.length > 0 && !loadMoreClicked) {
+    extraItem = (
+    <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+        <Button onClick={() => setLoadMoreClicked(true)} disabled={loadMoreClicked} style={{ textAlign: 'center', fontWeight: "bold" }}>
+          Load more...
+        </Button>
+      </div>
+    </Grid>);
+  } else if (loadMoreClicked || searchClicked) {
+    extraItem = (
+    <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', justifyContent: 'center', textAlign: 'center'}}>
+        <CircularProgress style={{textAlign: 'center', width: '100%'}} />
+      </div>
+    </Grid>);
+  }
 
   return (
     <>
@@ -431,27 +451,15 @@ export const ResourcesCardGrid = () => {
           </Tooltip>
         </Box>
       </AppBar>
-      <Box sx={{ flexGrow: 1 }}>
+      <Box sx={{ flexGrow: 1, margin: "30px" }}>
         <Grid container spacing={2}>
-          <CatalogEntriesGrid catalogEntries={catalogEntries} stage={stage} />
+          <CatalogEntriesGrid catalogEntries={catalogEntries} stage={stage} extraItem={extraItem} />
         </Grid>
       </Box>
       {error && (
         <Typography id="error" sx={{ paddingTop: '20px', textAlign: 'center', color: 'red' }}>
           {error}
         </Typography>
-      )}
-      {!gotAllEntries && !searchClicked && !error && catalogEntries.length > 0 && !loadMoreClicked && (
-        <div style={{ textAlign: 'center' }} key="load">
-          <Button onClick={() => setLoadMoreClicked(true)} disabled={loadMoreClicked}>
-            Load More...
-          </Button>
-        </div>
-      )}
-      {(loadMoreClicked || searchClicked) && (
-        <div style={{ textAlign: 'center', marginTop: '20px' }} key="spinner">
-          <CircularProgress />
-        </div>
       )}
     </>
   );

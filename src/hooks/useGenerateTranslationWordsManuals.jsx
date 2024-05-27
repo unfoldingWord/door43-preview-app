@@ -78,7 +78,7 @@ export default function useGenerateTranslationWordsManuals({ catalogEntry, zipFi
             if (rest.startsWith('obs/')) {
               id = 'obs';
             }
-            return `(https://preview.door43.org/u/${catalogEntry.owner}/${catalogEntry.language}_${id}/#${rest.replace(/\/0/g, '/').replace(/\//g, '-')})`;
+            return `(https://preview.door43.org/u/${catalogEntry.owner}/${catalogEntry.language}_${id}/#${rest.replace(/\/0/g, '/').replace(/\//g, '--')})`;
           });
           let body = md.render(text);
           body = body.replace(/href="\.\/([^/".]+)(\.md){0,1}"/g, `href="#${manualId}--$1"`);

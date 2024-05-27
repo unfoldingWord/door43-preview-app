@@ -1,6 +1,10 @@
 // React imports
 import { useState, useEffect, useContext, useMemo } from 'react';
 
+// Material UI
+import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material';
+
 // Bible reference imports
 import BibleReference, {useBibleReference} from 'bible-reference-rcl';
 
@@ -19,6 +23,16 @@ import useGetOBSData from '../hooks/useGetOBSData';
 import { convertNoteFromMD2HTML } from '@helpers/html';
 import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 import { getOBSImgURL } from '@helpers/obs_helpers';
+
+const theme = createTheme({
+  overrides: {
+    MuiInput: {
+      '*': {
+        borderBottom: '2px solid red',
+      },
+    },
+  },
+});
 
 const webCss = `
 .tq-question {
@@ -147,12 +161,12 @@ const requiredSubjects = ['Open Bible Stories'];
 export default function RcObsTranslationQuestions() {
   const {
     state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
-  const [imageResolution, getImageResolution] = useState('none');
+  const [imageResolution, setImageResolution] = useState('none');
 
   const renderFlags = {
     showWordAtts: false,
@@ -171,8 +185,15 @@ export default function RcObsTranslationQuestions() {
     if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload();
-    } else {
-      setNavAnchor(`${b}-${c}-${v}`);
+    } else if (setNavAnchor) {
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
+      }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
     }
   };
 
@@ -240,7 +261,6 @@ export default function RcObsTranslationQuestions() {
       let _bookId = 'obs';
       const title = catalogEntry.title;
       setBookId(_bookId);
-      setBookTitle(title);
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
       setStatusMessage(
@@ -252,10 +272,10 @@ export default function RcObsTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
-    if (navAnchor && navAnchor.split('-').length) {
+    if (navAnchor && ! navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -266,8 +286,8 @@ export default function RcObsTranslationQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section tq-book-section" id="tq-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tq-book-section-header"><a href="#tq-${bookId}" data-nav-anchor="${bookId}" class="header-link">${bookTitle}</a></h1>
+<div class="section tq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
 `;
       if (tqTsvData?.front?.intro) {
         html += `
@@ -278,8 +298,8 @@ export default function RcObsTranslationQuestions() {
         <div class="tq-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tq-question-body">
-            ${convertNoteFromMD2HTML(row.Question, 'tq', bookId, 'front')}
-            ${convertNoteFromMD2HTML(row.Response, 'tq', bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Question, bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Response, bookId, 'front')}
           </div>
         </div>
 `;
@@ -291,19 +311,19 @@ export default function RcObsTranslationQuestions() {
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-      <div id="tq-${bookId}-${storyStr}" data-nav-id="${bookId}-${storyStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${storyStr}">
-        <h2 class="tq-chapter-header"><a href="#tq-${bookId}-${storyStr}" data-nav-anchor="${bookId}-${storyStr}" class="header-link">${bookTitle} ${storyStr}</a></h2>
+      <div id="nav-${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+        <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tqTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section tq-chapter-intro-section">
 `;
           for (let row of tqTsvData[storyStr]['intro']) {
-            const link = `${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
             const article = `
-        <div class="article" id="tq-${link}" data-nav-id="${link}">
+        <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
         </div>
 `;
             html += article;
@@ -315,10 +335,10 @@ export default function RcObsTranslationQuestions() {
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
           html += `
-      <div id="${frameLink}" data-nav-id="${frameLink}" class="section obs-tq-chapter-frame-section">
-        <h3 class="tq-frame-header"><a href="#{frameLink}" data-nav-anchor="${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+      <div id="${frameLink}" class="section obs-tq-chapter-frame-section">
+        <h3 class="tq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -337,13 +357,13 @@ export default function RcObsTranslationQuestions() {
           if (tqTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in tqTsvData[storyStr][frameStr]) {
               const row = tqTsvData[storyStr][frameStr][rowIdx];
-              const questionLink = `${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const questionLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
               if (row.Question) {
                 let article = `
-              <div id="tq-${questionLink}" data-nav-id="${questionLink}" class="tq-question-article">
+              <div id="${questionLink}" class="tq-question-article">
                 <div class="tq-entry">
                   <h4 class="tq-entry-question">
-                    <a class="header-link" href="#tq-${questionLink}" data-nav-anchor="${questionLink}>
+                    <a class="header-link" href="#${questionLink}">
                       ${row.Question}
                     </a>
                   </h4>
@@ -353,7 +373,7 @@ export default function RcObsTranslationQuestions() {
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
                   <div class="tq-entry-response">
-                    ${convertNoteFromMD2HTML(row.Response, 'tq', bookId, storyStr)}
+                    ${convertNoteFromMD2HTML(row.Response, bookId, storyStr)}
                   </div>
 `;
                 }
@@ -400,7 +420,6 @@ export default function RcObsTranslationQuestions() {
     setHtmlSections,
     setStatusMessage,
     setErrorMessage,
-    setBookTitle,
     setNavAnchor,
   ]);
 
@@ -431,5 +450,17 @@ export default function RcObsTranslationQuestions() {
     }
   }, [html, copyright, bookTitle, setHtmlSections]);
 
-  return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
+  return (
+    <ThemeProvider theme={theme}>
+      <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
+      <FormControl>
+        <InputLabel id="image-resolution-label">Images</InputLabel>
+        <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
+          <MenuItem value="none">Hide Images</MenuItem>
+          <MenuItem value="360px">640x360px</MenuItem>
+          <MenuItem value="2160px">3840x2160px</MenuItem>
+        </Select>
+      </FormControl>
+    </ThemeProvider>
+  )
 }

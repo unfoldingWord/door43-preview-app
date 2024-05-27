@@ -201,7 +201,7 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
             {(builtWith.length || catalogEntry) && (<>
               <div style={{paddingBottom: "10px"}}>
                 <div id="built-with">
-                  <Typography style={{fontWeight: "bold"}}>Built with:</Typography>
+                  <Typography style={{fontWeight: "bold", paddingBottom: "10px"}}>Built with:</Typography>
                 </div>
                 <Box sx={{ flexGrow: 1 }}>
                   <Grid container>

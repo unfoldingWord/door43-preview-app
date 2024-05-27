@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { getRelativeTimeString } from '@helpers/datetime';
 import { styled } from '@mui/material/styles';
 import LaunchIcon from '@mui/icons-material/Launch';
-import { Box, Tooltip, Paper, Unstable_Grid2 as Grid } from '@mui/material';
+import { Box, Tooltip, Paper, Grid } from '@mui/material';
 
 const styles = {
   filterLink: {
@@ -33,9 +33,9 @@ const stageLevel = {
 
 const subjectsUsingBooks = ['Aligned Bible', 'Bible', 'Greek New Testament', 'Hebrew Old Testament', 'Translation Notes', 'TSV Translation Notes', 'Translation Questions', 'TSV Translation Questions', 'TSV Translation Words Links'];
 
-const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCatalogEntry = false, linkToDCS = false, bookId = '' }) => {
+const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCatalogEntry = false, linkToDCS = false, bookId = '', extraItem = null }) => {
   return (
-    <Grid container xs={12} spacing={1}>
+    <Grid container spacing={1} alignItems="stretch" style={{ backgroundColor: "lightgrey" }}>
       {catalogEntries.map((entry) => {
         let releasedStr = '';
         if (showJustThisCatalogEntry) {
@@ -70,9 +70,9 @@ const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCata
           }
         }
         return (
-          <Grid xs={6} lg={3} key={entry.id}>
-            <Item sx={styles[entry.language_direction]}>
-              <Box id="category-a" sx={{ fontSize: '12px', textAlign: 'center' }}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={entry.id} alignItems="stretch">
+            <Item style={{ ...styles[entry.language_direction], display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: 'white' }}>
+              <Box id="category-a" style={{ fontSize: '12px', textAlign: 'center', flex: 1 }}>
                 <a
                   key="title"
                   style={{ textDecoration: 'none', fontSize: '1.3em' }}
@@ -108,7 +108,7 @@ const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCata
                   ))}
                 </div>
               </Box>
-              <Box component="div" aria-labelledby="category-a" sx={{ pl: 2 }}>
+              <Box component="div" aria-labelledby="category-a" sx={{ pl: 2}} style={{ flex: 1 }} >
                 <div key="lang">
                   <Tooltip title="Language" style={{ display: 'block' }} arrow>
                     <a style={styles.filterLink} href={`/${entry.language}`}>
@@ -138,7 +138,10 @@ const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCata
           </Grid>
         );
       })}
+      {extraItem}
     </Grid>
+
+
   );
 };
 

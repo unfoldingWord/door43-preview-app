@@ -25,7 +25,7 @@ const findTocSection = (link, sections) => {
   }
 };
 
-export default function TaNavigation({ taManuals, anchor, setNavAnchor }) {
+export default function TaNavigation({ taManuals, navAnchor, setNavAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
 
@@ -57,8 +57,8 @@ export default function TaNavigation({ taManuals, anchor, setNavAnchor }) {
     if (taManuals && taManuals.length) {
       let manual = taManuals[0];
       let section = taManuals[0].sections[0];
-      if (anchor) {
-        section = findTocSection(anchor, taManuals);
+      if (navAnchor) {
+        section = findTocSection(navAnchor, taManuals);
       }
       if (section) {
         for (let i = 0; i < taManuals.length; i++) {
@@ -72,7 +72,7 @@ export default function TaNavigation({ taManuals, anchor, setNavAnchor }) {
       setSelectedManual(manual);
       setSelectedTocSection(taManuals[0].sections[0]);
     }
-  }, [anchor, taManuals]);
+  }, [navAnchor, taManuals]);
 
   return selectedManual && selectedTocSection ? (
     <div style={{ maxWwidth: '700px', width: '80%' }}>
@@ -114,6 +114,6 @@ export default function TaNavigation({ taManuals, anchor, setNavAnchor }) {
 
 TaNavigation.propTypes = {
   taManuals: PropTypes.array,
-  anchor: PropTypes.string,
+  navAnchor: PropTypes.string,
   setNavAnchor: PropTypes.func.isRequired,
 };

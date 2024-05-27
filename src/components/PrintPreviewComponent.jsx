@@ -85,15 +85,16 @@ const estimatePageCount = (ref, html, css, pageHeighInMMStr, pageWidthInMMStr) =
 
 export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   const {
-    state: { catalogEntry, htmlSections, printOptions, printPreviewStatus, cachedHtmlSections },
-    actions: { setPrintPreviewStatus, setPrintPreviewPercentDone },
+    state: { catalogEntry, bookTitle, htmlSections, printOptions, cachedHtmlSections },
+    actions: { setPrintPreviewStatus, setPrintPreviewPercentDone, setPagedJsReadyHtml },
   } = useContext(AppContext);
 
   const [htmlToRender, setHtmlToRender] = useState('');
   const [cssToRender, setCssToRender] = useState('');
+  const [estimatedPageCount, setEstimatedPageCount] = useState(0);
 
   useEffect(() => {
-    const preparingForPrintPreview = async () => {
+    const prepareForPrintPreview = async () => {
       let copyright = htmlSections?.copyright || '';
       const body = htmlSections?.body || cachedHtmlSections?.body || '';
       const doc = new DOMParser().parseFromString(body, 'text/html');
@@ -357,19 +358,37 @@ ${htmlSections?.css?.print || cachedHtmlSections?.css?.print || ''}
   ${doc.getElementsByTagName('body')?.[0]?.innerHTML}
 </div>
 `;
+
+      const count = estimatePageCount(ref, htmlStr, cssStr, printOptions.pageHeight, printOptions.pageWidth);
+      console.log(`Estimated page count: ${count}`);
+      setEstimatedPageCount(count);
       setHtmlToRender(htmlStr);
       setCssToRender(cssStr);
+      setPagedJsReadyHtml(`
+      <html>
+        <head>
+          <title>${catalogEntry.title} - ${catalogEntry.branch_or_tag_name}${bookTitle && bookTitle != catalogEntry.title && ` - ${bookTitle}`} (${catalogEntry.full_name})</title>
+          <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+          <style>
+      ${cssStr}
+          </style>
+        </head>
+        <body>
+      ${htmlStr}
+        </body>
+      </html>`)
     };
 
     if ((htmlSections?.body || cachedHtmlSections?.body) && Object.keys(printOptions).length) {
-      preparingForPrintPreview();
+      prepareForPrintPreview();
     }
   }, [catalogEntry, htmlSections, cachedHtmlSections, printOptions, ref]);
 
   useEffect(() => {
-    if (htmlToRender && cssToRender && ref.current) {
-      const estimatedPageCount = estimatePageCount(ref, htmlToRender, cssToRender, printOptions.pageHeight, printOptions.pageWidth);
-      console.log(`Estimated page count: ${estimatedPageCount}`);
+    const renderPrintPreview = async () => {
+
+      const styleTags = document.querySelectorAll('style[data-pagedjs-inserted-styles]');
+      styleTags.forEach((tag) => tag.remove());
 
       ref.current.innerHTML = '';
       const innerDiv = document.createElement('div');
@@ -397,34 +416,6 @@ ${htmlSections?.css?.print || cachedHtmlSections?.css?.print || ''}
 
       const previewer = new Paged.Previewer();
       previewer.registerHandlers(PrintPreviewHandler);
-      setPrintPreviewStatus('rendering');
-
-      const fullHtml = `
-<html>
-  <head>
-    <title>PDF Preview2</title>
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
-    <style>
-${cssToRender}
-    </style>
-  </head>
-  <body>
-${htmlToRender}
-  </body>
-</html>
-`;
-// const newWindow = window.open();
-// setTimeout(() => {
-//   if (newWindow) {
-//     newWindow.document.open();
-//     newWindow.document.write(fullHtml);
-//     newWindow.document.close();
-//     setPrintPreviewStatus('ready');
-//   } else {
-//     console.error('Could not open new window');
-//   }
-// }, 2000);
-      console.log(fullHtml);
 
       previewer
         .preview(
@@ -444,17 +435,15 @@ ${htmlToRender}
           setPrintPreviewStatus('aborted');
           console.log('ERROR RENDERING PRINT PREVIEW: ', e);
         });
-
-      return () => {
-        if (printPreviewStatus != 'ready') {
-          setPrintPreviewStatus('aborted');
-        }
-
-        const styleTags = document.querySelectorAll('style[data-pagedjs-inserted]');
-        styleTags.forEach((tag) => tag.remove());
-      };
     }
-  }, [cssToRender, ref, htmlToRender, printOptions]);
+
+    const rect = ref?.current?.getBoundingClientRect();
+    const isVisible = rect && rect.top < window.innerHeight && rect.bottom >= 0;
+    if (isVisible && htmlToRender && cssToRender) {
+      setPrintPreviewStatus('rendering');
+      renderPrintPreview();
+    }
+  }, [ref, htmlToRender, cssToRender, estimatedPageCount, setPrintPreviewPercentDone, setPrintPreviewStatus]);
 
   return <div id="print-preview" style={{ ...style, display: view != 'print' ? 'none' : 'block' }} ref={ref} />;
 });

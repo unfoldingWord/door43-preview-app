@@ -24,6 +24,20 @@ const webCss = `
   width: 100%;
   max-width: 640px;
 }
+
+a.header-link {
+  font-weight: inherit !important;
+  font-size: inherit !important;
+  color: #000000;
+  text-decoration: none;
+}
+
+a.header-link:hover::after {
+  content: '#';
+  padding-left: 5px;
+  color: blue;
+  display: inline-block;
+}
 `;
 
 const printCss = `
@@ -112,10 +126,10 @@ export default function OpenBibleStories() {
   }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
-    if (navAnchor && navAnchor.split('-').length >= 2) {
+    if (navAnchor && ! navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
-      if (parts[0] == 'obs' && (bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != (parts[2] || '1'))) {
-        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2] || '1');
+      if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
+        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
       }
     }
   }, [navAnchor]);

@@ -86,7 +86,7 @@ export default function Bible() {
     if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload();
-    } else if (setNavAnchor) {
+    } else if (! [b, `${b}-${c}`, `${b}-${c}-${v}`].includes(navAnchor) && setNavAnchor) {
       setNavAnchor(`${b}-${c}-${v}`);
     }
   };
@@ -114,10 +114,10 @@ export default function Bible() {
   }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
-    if (navAnchor && navAnchor.split('-').length == 3) {
+    if (navAnchor && ! navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId != parts[0] || bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != parts[2]) {
-        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1], parts[2]);
+        bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
       }
     }
   }, [navAnchor]);
@@ -228,11 +228,11 @@ export default function Bible() {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-        `<span id="bible-${bookId}-$1-$2" data-nav-id="${bookId}-$1-$2"$3><a href="#bible-${bookId}-$1-$2" data-nav-anchor="${bookId}-$1-$2" class="header-link">$4</a></span>`
+        `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
       );
       _html = _html.replaceAll(
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
-        `<span id="bible-${bookId}-$1" data-toc-title="${bookTitle} $1" data-nav-id="${bookId}-$1"$2><a href="#${bookId}-$1-1" data-nav-anchor="${bookId}-$1-1" class="header-link">$3</a></span>`
+        `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
 
@@ -246,7 +246,7 @@ export default function Bible() {
       // }
 
       _html = `
-        <div class="section bible-book" id="bible-${bookId}" data-nav-anchor="${bookId}" data-toc-title="${bookTitle}">
+        <div class="section bible-book" id="nav-${bookId}" data-toc-title="${bookTitle}">
           ${_html}
         </div>
 `;

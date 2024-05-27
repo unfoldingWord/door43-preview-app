@@ -42,6 +42,7 @@ export function AppContextProvider({ children }) {
   const [bookTitle, setBookTitle] = useState('');
   const [supportedBooks, setSupportedBooks] = useState([]);
   const [htmlSections, setHtmlSections] = useState({ css: { web: '', print: '' }, cover: '', copyright: '', toc: '', body: '' });
+  const [pagedJsReadyHtml, setPagedJsReadyHtml] = useState('');
   const [canChangeColumns, setCanChangeColumns] = useState(false);
   const [isOpenPrint, setIsOpenPrint] = useState(false);
   const [printOptions, setPrintOptions] = useState({});
@@ -129,7 +130,7 @@ export function AppContextProvider({ children }) {
           lang: urlParts[1]?.includes('_') ? urlParts[1].split('_')[0] : '',
           ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
           hash: url.hash.replace('#', ''),
-          hashParts: url.hash ? url.hash.replace('#', '').split('-') : [],
+          hashParts: url.hash ? url.hash.replace(/^#/, '').split(/--/)[0].split('-') : [], // Used for Bible Book Reference Navigation
         };
       } else if (urlParts.length === 1 && urlParts[0] != 'u') {
         info.lang = urlParts[0];
@@ -159,6 +160,7 @@ export function AppContextProvider({ children }) {
         url.hash = `#${info.hash}`;
         window.history.replaceState({}, document.title, url.toString());
       }
+
       setUrlInfo(info);
       setNavAnchor(info.hash);
       if (!info.repo) {
@@ -475,6 +477,7 @@ export function AppContextProvider({ children }) {
       supportedBooks,
       builtWith,
       renderMessage,
+      pagedJsReadyHtml,
     },
     actions: {
       onPrintClick,
@@ -494,6 +497,7 @@ export function AppContextProvider({ children }) {
       setSupportedBooks,
       setBuiltWith,
       setRenderMessage,
+      setPagedJsReadyHtml,
     },
   };
 

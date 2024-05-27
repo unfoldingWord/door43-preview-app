@@ -25,7 +25,7 @@ const findTocSection = (link, sections) => {
   }
 };
 
-export default function TwNavigation({ twManuals, anchor, setNavAnchor }) {
+export default function TwNavigation({ twManuals, navAnchor, setNavAnchor }) {
   const [selectedManual, setSelectedManual] = useState();
   const [selectedTocSection, setSelectedTocSection] = useState();
 
@@ -57,12 +57,12 @@ export default function TwNavigation({ twManuals, anchor, setNavAnchor }) {
     if (twManuals && twManuals.length) {
       let manual = twManuals[0];
       let section = twManuals[0].sections[0];
-      if (anchor) {
-        if (!anchor.includes('--')) {
-          setNavAnchor(`${anchor}--${anchor}`);
+      if (navAnchor) {
+        if (!navAnchor.includes('--')) {
+          setNavAnchor(`${navAnchor}--${navAnchor}`);
           return
         }
-        section = findTocSection(anchor, twManuals);
+        section = findTocSection(navAnchor, twManuals);
       }
       if (section) {
         for (let i = 0; i < twManuals.length; i++) {
@@ -76,7 +76,7 @@ export default function TwNavigation({ twManuals, anchor, setNavAnchor }) {
       setSelectedManual(manual);
       setSelectedTocSection(twManuals[0].sections[0]);
     }
-  }, [anchor, twManuals, setSelectedManual, setSelectedTocSection]);
+  }, [navAnchor, twManuals, setSelectedManual, setSelectedTocSection]);
 
   return selectedManual && selectedTocSection ? (
     <div style={{ maxWwidth: '700px', width: '80%' }}>
@@ -118,6 +118,6 @@ export default function TwNavigation({ twManuals, anchor, setNavAnchor }) {
 
 TwNavigation.propTypes = {
   twManuals: PropTypes.array,
-  anchor: PropTypes.string,
+  navAnchor: PropTypes.string,
   setNavAnchor: PropTypes.func.isRequired,
 };

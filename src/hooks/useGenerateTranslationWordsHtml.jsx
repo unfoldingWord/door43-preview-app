@@ -21,12 +21,12 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
         }
         if (body) {
           html += `
-<div class="article ${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" id="tw-${link}" data-nav-id="${link}"  data-toc-title="${encodeHTML(toctitle)}">
+<div class="article ${index == 0 ? 'first-article' : index + 1 == total ? 'last-article' : ''}" id="nav-${link}" data-toc-title="${encodeHTML(toctitle)}">
   ${
     title != manual.title
       ? `
   <h${depth} class="header article-header">
-    <a href="#tw-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
+    <a href="#nav-${link}" class="header-link">${title}</a>
   </h${depth}>
 `
       : ``
@@ -50,11 +50,11 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
             })
             .join('');
           html += `
-<div class="section ${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" id="tw-${link}" data-nav-id="${link}"  data-toc-title="${encodeHTML(
+<div class="section ${index == 0 ? 'first-section ' : index == total - 1 ? 'last-section ' : ''}${depth == 1 ? 'manual' : 'subsection'}" id="nav-${link}"  data-toc-title="${encodeHTML(
             toctitle
           )}">
   <h${depth} class="header section-header">
-    <a href="#tw-${link}" data-nav-anchor="${link}" class="header-link">${title}</a>
+    <a href="#nav-${link}" class="header-link">${title}</a>
   </h${depth}>
   <span class="header-title">${mySubtitles.join(' :: ')}</span>
   ${sectionsHtml}

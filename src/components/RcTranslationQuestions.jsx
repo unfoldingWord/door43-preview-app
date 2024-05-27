@@ -174,8 +174,15 @@ export default function RcTranslationQuestions() {
     if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload();
-    } else {
-      setNavAnchor(`${b}-${c}-${v}`);
+    } else if(setNavAnchor) {
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
+      }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
     }
   };
 
@@ -269,7 +276,7 @@ export default function RcTranslationQuestions() {
   }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
-    if (navAnchor && navAnchor.split('-').length) {
+    if (navAnchor && ! navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -280,8 +287,8 @@ export default function RcTranslationQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section tq-book-section" id="tq-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tq-book-section-header"><a href="#tq-${bookId}" data-nav-anchor="${bookId}" class="header-link">${bookTitle}</a></h1>
+<div class="section tq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
 `;
       let usfmJSONs = [];
       for (let targetUsfm of targetUsfmBookFiles) {
@@ -296,8 +303,8 @@ export default function RcTranslationQuestions() {
         <div class="tq-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tq-question-body">
-            ${convertNoteFromMD2HTML(row.Question, 'tq', bookId, 'front')}
-            ${convertNoteFromMD2HTML(row.Response, 'tq', bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Question, bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Response, bookId, 'front')}
           </div>
         </div>
 `;
@@ -310,20 +317,20 @@ export default function RcTranslationQuestions() {
         const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
         html += `
-      <div id="tq-${bookId}-${chapterStr}" data-nav-id="${bookId}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tq-chapter-header"><a href="#tq-${bookId}-${chapterStr}" data-nav-anchor="${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+      <div id="nav-${bookId}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
+        <h2 class="tq-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tqTsvData?.[chapterStr]?.intro) {
           html += `
         <div class="section tq-chapter-intro-section">
 `;
           for (let row of tqTsvData[chapterStr].intro) {
-            const link = `${bookId}-${chapterStr}-intro-${row.ID}`;
+            const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
             const article = `
-          <div id="tq-${link}" data-nav-id="${link}">
+          <div id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
-            ${convertNoteFromMD2HTML(row.Question, 'tq', bookId, chapterStr)}
-            ${convertNoteFromMD2HTML(row.Response, 'tq', bookId, chapterStr)}
+            ${convertNoteFromMD2HTML(row.Question, bookId, chapterStr)}
+            ${convertNoteFromMD2HTML(row.Response, bookId, chapterStr)}
           </div>
 `;
             html += article;
@@ -336,11 +343,11 @@ export default function RcTranslationQuestions() {
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
           const verseStr = String(verseIdx + 1);
           const refStr = `${chapterStr}:${verseStr}`;
-          const verseLink = `${bookId}-${chapterStr}-${verseStr}`;
+          const verseLink = `nav-${bookId}-${chapterStr}-${verseStr}`;
           let usfmJSONVerseStr = verseStr;
           html += `
-        <div id="tq-${verseLink}" data-nav-id="${verseLink}" class="section tq-chapter-verse-section">
-          <h3 class="tq-verse-header"><a href="#tq-${verseLink}" data-nav-anchor="${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+        <div id="${verseLink}" class="section tq-chapter-verse-section">
+          <h3 class="tq-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -369,11 +376,11 @@ export default function RcTranslationQuestions() {
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
-            const scriptureLink = `${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
-          <div class="tq-scripture-block" id="tq-${scriptureLink}" data-nav-id="${scriptureLink}">
+          <div class="tq-scripture-block" id="${scriptureLink}">
             <h4 class="tq-scripture-header">
-              <a href="#tq-${scriptureLink}" data-nav-anchor="${scriptureLink}" class="header-link">
+              <a href="#${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
             </h4>
@@ -386,17 +393,17 @@ export default function RcTranslationQuestions() {
           if (tqTsvData?.[chapterStr]?.[verseStr]) {
             for (let rowIdx in tqTsvData[chapterStr][verseStr]) {
               const row = tqTsvData[chapterStr][verseStr][rowIdx];
-              const questionLink = `${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
+              const questionLink = `nav-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
               let verseBridge = '';
               if (refStr != row.Reference) {
                 verseBridge += `(${row.Reference})`;
               }
               if (row.Question) {
                 let article = `
-              <div id="tq-${questionLink}" data-nav-id="${questionLink}" class="tq-question-article">
+              <div id="${questionLink}" class="tq-question-article">
                 <div class="tq-entry">
                   <h4 class="tq-entry-question">
-                    <a class="header-link" href="#tq-${questionLink}" data-nav-anchor="${questionLink}>
+                    <a class="header-link" href="#${questionLink}">
                       ${row.Question} ${verseBridge}
                     </a>
                   </h4>
@@ -406,7 +413,7 @@ export default function RcTranslationQuestions() {
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
                   <div class="tq-entry-response">
-                    ${convertNoteFromMD2HTML(row.Response, 'tq', bookId, chapterStr)}
+                    ${convertNoteFromMD2HTML(row.Response, bookId, chapterStr)}
                   </div>
 `;
                 }

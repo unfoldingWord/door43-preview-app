@@ -4,10 +4,11 @@ import PropTypes from 'prop-types';
 
 // Material UI imports
 import { styled } from '@mui/material/styles';
-import {LinearProgress} from '@mui/material';
-import { Box, IconButton, Button, Grid, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
+import { LinearProgress, Grid, Box } from '@mui/material';
+import { IconButton, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
 import PrintIcon from '@mui/icons-material/Print';
 import PdfIcon from '@mui/icons-material/PictureAsPdf';
+import HtmlIcon from '@mui/icons-material/Html';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // Local component imports
@@ -35,7 +36,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint }) {
   const {
-    state: { printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone },
+    state: { catalogEntry, bookId, printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, pagedJsReadyHtml },
     actions: { setPrintOptions },
   } = useContext(AppContext);
 
@@ -76,6 +77,16 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
 
   const columnsList = [1, 2, 3];
 
+  const handleDownloadHtml = () => {
+    const element = document.createElement('a');
+    const file = new Blob([pagedJsReadyHtml], { type: 'text/html' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.html`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <>
       <Drawer anchor="right" open={openPrintDrawer} onClose={onClosePrintDrawer}>
@@ -91,7 +102,7 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
         <Box>
           <Grid container sx={{ display: 'flex', flexDirection: 'column' }}>
             {false /* TODO: We need to use this */ && (
-              <Grid sx={{ margin: '4%' }}>
+              <Grid item sx={{ margin: '4%' }}>
                 <form
                   style={{
                     display: 'flex',
@@ -112,10 +123,10 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
                 </form>
               </Grid>
             )}
-            <Grid sx={{ margin: '4%' }}>
+            <Grid item sx={{ margin: '4%' }}>
               <PageOrientationSelector formLabelTitle={'Page Orientation'} pageOrientation={pageOrientation} setPageOrientation={setPageOrientation} />
             </Grid>
-            <Grid sx={{ margin: '4%' }}>
+            <Grid item sx={{ margin: '4%' }}>
               <PageSizeSelector
                 formLabelTitle={'Page Size'}
                 pageSizes={printResources.pageSizes[pageOrientation]}
@@ -125,74 +136,71 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
               />
             </Grid>
             {canChangeColumns && (
-              <Grid sx={{ margin: '4%' }}>
+              <Grid item sx={{ margin: '4%' }}>
                 <ColumnsSelector formLabelTitle={'Columns'} listItems={columnsList} columns={printOptions.columns} setPrintOptions={setPrintOptions} />
               </Grid>
             )}
           </Grid>
-          <Tooltip title={printPreviewStatus == 'ready' ? 'Save as PDF' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
-            <Button
-              sx={{
-                margin: '5px',
-                backgroundColor: '#808080',
-                '&:hover': {
-                  backgroundColor: '#404040',
-                },
-              }}
-              onClick={() => {
-                alert("Be sure to select 'Save as PDF' in the print dialog box.");
-                handlePrint();
-              }}
-            >
-              <PdfIcon sx={{ fontSize: 40 }} />
-              <LinearProgress
-                  variant="determinate"
-                  value={printPreviewPercentDone}
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0.5,
-                    borderRadius: 1,
-                    backgroundColor: 'grey',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
-                    },
+          <Grid container spacing={2} justifyContent="center" sx={{ marginTop: '4%'}}>
+            <Grid item>
+              <Tooltip title={printPreviewStatus == 'ready' ? 'Print' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
+                <IconButton onClick={handlePrint}>
+                  <PrintIcon sx={{ fontSize: 40, backgroundColor: "white" }} />
+                  <LinearProgress
+                    variant="determinate"
+                    value={printPreviewPercentDone}
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0.5,
+                      borderRadius: 1,
+                      backgroundColor: 'white',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                      },
+                    }}
+                  />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+            <Grid item>
+              <Tooltip title={printPreviewStatus == 'ready' ? 'Save as PDF' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
+                <IconButton
+                  onClick={() => {
+                    alert("Be sure to select 'Save as PDF' in the print dialog box.");
+                    handlePrint();
                   }}
-                />
-            </Button>
-          </Tooltip>
-          <Tooltip title={printPreviewStatus == 'ready' ? 'Print' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
-            <Button
-              sx={{
-                margin: '5px',
-                backgroundColor: '#808080',
-                '&:hover': {
-                  backgroundColor: '#404040',
-                },
-              }}
-              onClick={handlePrint}
-            >
-              <PrintIcon sx={{ fontSize: 40 }} />
-              <LinearProgress
-                  variant="determinate"
-                  value={printPreviewPercentDone}
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0.5,
-                    borderRadius: 1,
-                    backgroundColor: 'grey',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
-                    },
-                  }}
-                />
-            </Button>
-          </Tooltip>
+                >
+                  <PdfIcon sx={{ fontSize: 40 }} />
+                  <LinearProgress
+                    variant="determinate"
+                    value={printPreviewPercentDone}
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0.5,
+                      borderRadius: 1,
+                      backgroundColor: 'white',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                      },
+                    }}
+                  />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+            <Grid item>
+              <Tooltip title={'Download the HTML'} arrow>
+                <IconButton onClick={handleDownloadHtml}>
+                  <HtmlIcon sx={{ fontSize: 40, color: 'green' }} />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+          </Grid>
         </Box>
       </Drawer>
     </>

@@ -188,8 +188,8 @@ export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resol
 
   for (const story of obsData.stories) {
     html += `
-<div class="section story" id="obs-${story.storyNum}"  data-toc-title="${encodeHTML(story.title)}">
-  <h1 class="obs-story-title title">${story.title}</h1>
+<div class="section story" id="nav-obs-${story.storyNum}"  data-toc-title="${encodeHTML(story.title)}">
+  <h1 class="obs-story-title title"><a href="#nav-obs-${story.storyNum}" class="header-link">${story.title}</a></h1>
 `;
     let frames = story.frames;
     if (frames.length == 0) {

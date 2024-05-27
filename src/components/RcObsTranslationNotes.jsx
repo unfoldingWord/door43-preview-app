@@ -166,12 +166,15 @@ export default function RcObsTranslationNotes() {
   const onBibleReferenceChange = (b, c, v) => {
     if (bookId && b != bookId) {
       window.location.hash = b;
-      window.location.reload();
-    } else {
-      const hash = `${b}-${c}-${v}`;
-      if (!navAnchor.startsWith(hash)) {
-        setNavAnchor(hash);
+    } else if (setNavAnchor) {
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
       }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
     }
   };
 
@@ -214,6 +217,7 @@ export default function RcObsTranslationNotes() {
   const obsZipFileData = useFetchZipFileData({
     catalogEntry: obsCatalogEntries?.[0],
     authToken,
+    setErrorMessage,
   });
 
   const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData, setErrorMessage });
@@ -228,6 +232,7 @@ export default function RcObsTranslationNotes() {
   const taZipFileData = useFetchZipFileData({
     authToken,
     catalogEntry: taCatalogEntries?.[0],
+    setErrorMessage,
   });
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
@@ -246,6 +251,7 @@ export default function RcObsTranslationNotes() {
   const twZipFileData = useFetchZipFileData({
     authToken,
     catalogEntry: twCatalogEntries?.[0],
+    setErrorMessage,
   });
 
   const twFileContents = useGenerateTranslationWordsFileContents({
@@ -272,7 +278,7 @@ export default function RcObsTranslationNotes() {
   });
 
   useEffect(() => {
-    if (navAnchor && navAnchor.split('-').length) {
+    if (navAnchor && ! navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -322,7 +328,7 @@ export default function RcObsTranslationNotes() {
             title: file,
             body: `${resource.toUpperCase()} ARTICLE NOT FOUND`,
             rcLink,
-            anchor: `appendex--${resource}--${file.replace(/\//g, '--')}`,
+            anchor: `nav-${bookId}--${resource}-${file.replace(/\//g, '-')}`,
           };
           const fileParts = file.split('/');
           switch (resource) {
@@ -353,8 +359,8 @@ export default function RcObsTranslationNotes() {
 
     const generateHtml = async () => {
       let html = `
-<div class="section obs-tn-book-section" id="obs-tn-${bookId}" data-nav-id="${bookId}" data-toc-title="${catalogEntry.title}">
-  <h1 class="header obs-tn-book-section-header"><a href="#tn-${bookId}" data-nav-anchor="${bookId}" class="header-link">${catalogEntry.title}</a></h1>
+<div class="section obs-tn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title}">
+  <h1 class="header obs-tn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title}</a></h1>
 `;
       const rcLinksData = {};
 
@@ -367,7 +373,7 @@ export default function RcObsTranslationNotes() {
     <div class="article obs-tn-front-intro-note">
       <span class="header-title">${catalogEntry.title} :: Introduction</span>
       <div class="obs-tn-note-body">
-${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       </div>
     </div>
 `;
@@ -380,19 +386,19 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-  <div id="obs-tn-${bookId}-${storyStr}" data-nav-id="${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-tn-chapter-header"><a href="#tn-${bookId}-${storyStr}" data-nav-anchor="${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+  <div id="obs-${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+    <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tnTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section obs-tn-chapter-intro-section">
 `;
           for (let row of tnTsvData[storyStr]['intro']) {
-            const link = `${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
             const article = `
-        <div class="article" id="obs-tn-${link}" data-nav-id="${link}">
+        <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
         </div>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
@@ -405,10 +411,10 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
           html += `
-      <div id="obs-tn-${frameLink}" data-nav-id="${frameLink}" class="section obs-tn-chapter-frame-section">
-        <h3 class="obs-tn-frame-header"><a href="#tn-${frameLink}" data-nav-anchor="${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+      <div id="${frameLink}" class="section obs-tn-chapter-frame-section">
+        <h3 class="obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -427,15 +433,14 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
           if (tnTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in tnTsvData[storyStr][frameStr]) {
               const row = tnTsvData[storyStr][frameStr][rowIdx];
-              const noteLink = `${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const noteLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
               let article = `
-        <div class="article obs-tn-note-article" id="obs-tn-${noteLink}" data-nav-id="${noteLink}">
+        <div class="article obs-tn-note-article" id="${noteLink}">
 `;
-
               if (!row.Quote) {
                 article += `
           <h4 class="obs-tn-note-header">
-            <a href="#tn-${noteLink}" data-nav-anchor="${noteLink}" class="header-link">
+            <a href="#${noteLink}" class="header-link">
             Note:
             </a>
           </h4>
@@ -453,7 +458,7 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
               article += `
           <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
           <div class="obs-tn-note-body">
-            ${convertNoteFromMD2HTML(row.Note, 'obs-tn', bookId, storyStr)}
+            ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
           </div>
 `;
               if (row.SupportReference) {
@@ -658,5 +663,6 @@ ${convertNoteFromMD2HTML(row.Note, 'tn', bookId, 'front')}
         <MenuItem value="2160px">3840x2160px</MenuItem>
       </Select>
     </FormControl>
-  </ThemeProvider>)
+  </ThemeProvider>
+  )
 }

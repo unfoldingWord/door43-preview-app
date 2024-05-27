@@ -25,13 +25,12 @@ import { ResourcesCardGrid } from '@components/ResourcesCardGrid';
 import { ResourceLanguagesAccordion } from '@components/ResourceLanguagesAccordion';
 import { WebPreviewComponent } from '@components/WebPreviewComponent';
 import { PrintPreviewComponent } from '@components/PrintPreviewComponent';
-import CatalogEntriesGrid from './CatalogEntriesGrid';
 
 // Context imports
 import { AppContext } from '@components/App.context';
 
 // Constants imports
-import { APP_NAME, DCS_SERVERS } from '@common/constants';
+import { APP_NAME } from '@common/constants';
 
 // Helper imports
 import { useReactToPrint } from 'react-to-print';
@@ -107,7 +106,7 @@ export default function AppWorkspace() {
   // }
 
   const printDrawerProps = {
-    openPrintDrawer: isOpenPrint && htmlSections?.body,
+    openPrintDrawer: isOpenPrint && htmlSections?.body !== '',
     onClosePrintDrawer: () => {
       setIsOpenPrint(false);
     },
@@ -130,9 +129,9 @@ export default function AppWorkspace() {
 
   const scrollToAnchor = (myAnchor, myRef, myView) => {
     if (myAnchor && myRef?.current?.innerHTML) {
-      let elementToScrollTo = myRef.current.querySelector(`[data-nav-id='${myAnchor}']`);
-      if (!elementToScrollTo) {
-        elementToScrollTo = myRef.current.querySelector(`[id='${myAnchor}']`);
+      let elementToScrollTo = myRef.current.querySelector(`#nav-${myAnchor}`);
+      if (!elementToScrollTo && !/^\d/.test(myAnchor)) {
+        elementToScrollTo = myRef.current.querySelector(`#${myAnchor}`);
       }
       if (elementToScrollTo) {
         window.scrollTo({
@@ -171,13 +170,9 @@ export default function AppWorkspace() {
       let href = a.getAttribute('href');
       if (href.startsWith('#')) {
         let anchor = href.replace('#', '');
-        let dataNavAnchor = a.getAttribute('data-nav-anchor');
-        if (!dataNavAnchor && anchor && currentViewRef?.current?.current && currentViewRef.current.current.querySelector(`[data-nav-id='${anchor}']`)) {
-          dataNavAnchor = anchor;
-        }
-        if (dataNavAnchor) {
-          console.log("SET NAV ANCHOR", dataNavAnchor)
-          setNavAnchor(dataNavAnchor);
+        if (anchor.startsWith('nav-')) {
+          console.log("SET NAV ANCHOR", anchor);
+          setNavAnchor(anchor.replace(/^nav-/, ''));
         } else if (anchor) {
           console.log('Scrolling without setting to: ', anchor);
           scrollToAnchor(anchor, currentViewRef.current, view);
@@ -191,7 +186,7 @@ export default function AppWorkspace() {
     return () => {
       document.querySelector('#root').removeEventListener('click', handleClick);
     };
-  }, [setNavAnchor]);
+  }, [view, setNavAnchor]);
 
   useEffect(() => {
     if (navAnchor) {
@@ -266,7 +261,7 @@ export default function AppWorkspace() {
           window.location.host == 'localhost:4173') && (
           <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={bookId} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
         )}
-      <Card>
+      <Card sx={{backgroundColor: (urlInfo?.repo ? 'white' : 'lightgrey'), border: 'none', borderRadius: 'none'}}>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
         {fullScreen && (
           <Tooltip title="Close full screen" arrow>
