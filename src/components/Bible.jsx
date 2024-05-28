@@ -62,7 +62,7 @@ h1 {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages },
     actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
@@ -148,8 +148,6 @@ export default function Bible() {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      setSupportedBooks(sb);
-      bibleReferenceActions.applyBooksFilter(sb);
 
       let _bookId = urlInfo.hashParts[0] || sb[0] || bookId;
       if (!_bookId) {
@@ -168,8 +166,11 @@ export default function Bible() {
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
         sb = [_bookId, ...sb];
-        return;
       }
+
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
+
       setCanChangeColumns(true);
       setPrintOptions((prevState) => ({ ...prevState, columns: 2 }));
     };
@@ -211,7 +212,7 @@ export default function Bible() {
         });
     };
 
-    if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId)) {
+    if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
   }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, setBookTitle, setErrorMessage]);

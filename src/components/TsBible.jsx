@@ -145,9 +145,6 @@ export default function TsBible() {
         setErrorMessage('No books found for this tS project');
       }
 
-      setSupportedBooks(sb);
-      bibleReferenceActions.applyBooksFilter(sb);
-
       let _bookId = urlInfo.hashParts[0] || sb[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
@@ -164,8 +161,12 @@ export default function TsBible() {
       );
       if (!sb.includes(_bookId)) {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        return;
+        sb = [_bookId, ...sb];
       }
+
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
+
       setCanChangeColumns(true);
     };
 

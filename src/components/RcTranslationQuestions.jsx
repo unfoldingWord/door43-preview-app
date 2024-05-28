@@ -247,8 +247,6 @@ export default function RcTranslationQuestions() {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      setSupportedBooks(sb);
-      bibleReferenceActions.applyBooksFilter(sb);
 
       let _bookId = urlInfo.hashParts[0] || sb[0];
       if (!_bookId) {
@@ -270,6 +268,9 @@ export default function RcTranslationQuestions() {
         setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
         sb = [_bookId, ...sb];
       }
+
+      setSupportedBooks(sb);
+      bibleReferenceActions.applyBooksFilter(sb);
     };
 
     setInitialBookIdAndSupportedBooks();

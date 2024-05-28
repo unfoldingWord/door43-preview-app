@@ -44,6 +44,7 @@ for entry in entries:
     for ingredient in entry['ingredients']:
       url = f"/u/{entry['full_name']}/{entry['branch_or_tag_name']}#{ingredient['identifier']}"
       if url in get_urls('completed') or url in get_urls('errors') or ingredient['identifier'] == 'frt' or ingredient['identifier'] == 'bak':
+        print(f"Skipping {url}...")
         continue
 
       print(root+url)
