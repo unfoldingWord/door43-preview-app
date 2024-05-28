@@ -81,7 +81,16 @@ export default function OpenBibleStories() {
   const [copyright, setCopyright] = useState('');
 
   const onBibleReferenceChange = (b, c, v) => {
-    setNavAnchor(`${b}-${c}-${v}`);
+    if (setNavAnchor) {
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
+      }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
+    }
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
@@ -115,7 +124,7 @@ export default function OpenBibleStories() {
 
     setStatusMessage(
       <>
-        Preparing preview for {catalogEntry?.title}.
+        Preparing preview for {catalogEntry.title}.
         <br />
         Please wait...
       </>

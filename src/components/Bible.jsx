@@ -83,7 +83,7 @@ export default function Bible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != bookId) {
+    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -159,7 +159,8 @@ export default function Bible() {
       setBookTitle(title);
       setStatusMessage(
         <>
-          Preparing preview for {title}.<br />
+          Preparing preview for {title}.
+          <br />
           Please wait...
         </>
       );

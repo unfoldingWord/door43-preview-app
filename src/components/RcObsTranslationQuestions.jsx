@@ -185,10 +185,7 @@ export default function RcObsTranslationQuestions() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != bookId) {
-      window.location.hash = b;
-      window.location.reload();
-    } else if (setNavAnchor) {
+    if (setNavAnchor) {
       let anchorParts = [b];
       if (c != '1' || v != '1') {
         anchorParts.push(c);
