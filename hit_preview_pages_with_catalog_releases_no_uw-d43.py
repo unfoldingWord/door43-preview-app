@@ -28,7 +28,7 @@ webdriver_service = Service(ChromeDriverManager().install())
 # Initialize the driver
 
 # url = "http://git.door43.org/api/v1/catalog/search?owner=unfoldingWord&owner=Door43-Catalog&subject=TSV+Translation+Notes&stage=latest&limit=1"
-url = "http://git.door43.org/api/v1/catalog/search?subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&subject=TSV+OBS+Translation+Notes&subject=TSV+OBS+Translation+Questions&stage=prod&sort=released&order=desc&limit=300"
+url = "http://git.door43.org/api/v1/catalog/search?subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&subject=TSV+OBS+Translation+Notes&subject=TSV+OBS+Translation+Questions&stage=prod&sort=released&order=desc&limit=1"
 
 response = requests.get(url)
 entries = response.json()['data']
@@ -41,9 +41,9 @@ temp_url = "about:blank"
 
 # Loop through the entries
 for entry in entries:
-  for ref in [entry['branch_or_tag_name'], 'master']:
+  for ref in [entry['branch_or_tag_name'], '']:
     for ingredient in entry['ingredients']:
-      url = f"/u/{entry['full_name']}/{entry['branch_or_tag_name']}#{ingredient['identifier']}"
+      url = f"/u/{entry['full_name']}/{ref}#{ingredient['identifier']}"
       if url in get_urls('completed') or url in get_urls('errors') or ingredient['identifier'] == 'frt' or ingredient['identifier'] == 'bak' or entry['owner'] in ['unfoldingWord', 'Door43-Catalog']:
         continue
 
