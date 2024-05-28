@@ -119,6 +119,9 @@ export default function RcTranslationWords() {
   const html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals });
 
   useEffect(() => {
+    if (! catalogEntry ) {
+      return;
+    }
     setStatusMessage(
       <>
         Preparing {catalogEntry.subject} Preview.

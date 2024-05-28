@@ -44,6 +44,11 @@ const webCss = `
   margin: 10px 0;
 }
 
+.tq-chapter-verse-section {
+  break-after: auto !important;
+  page-break-after: auto !important;
+}
+
 .article.tq-scripture,
 .article.tq-entry,
 .section.tq-verse {
@@ -171,7 +176,7 @@ export default function RcTranslationQuestions() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
       window.location.reload();
     } else if(setNavAnchor) {
@@ -193,7 +198,7 @@ export default function RcTranslationQuestions() {
     onChange: onBibleReferenceChange,
   });
 
-  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
 
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
@@ -231,7 +236,7 @@ export default function RcTranslationQuestions() {
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
       if (!catalogEntry) {
-        setErrorMessage('No catalog entry for this resource found.');
+        // setErrorMessage('No catalog entry for this resource found.');
         return;
       }
 
@@ -260,7 +265,8 @@ export default function RcTranslationQuestions() {
       setCanChangeColumns(false);
       setStatusMessage(
         <>
-          Preparing preview for {title}.<br />
+          Preparing preview for {title}.
+          <br />
           Please wait...
         </>
       );

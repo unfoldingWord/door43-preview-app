@@ -56,13 +56,13 @@ const webCss = `
 
 .article.tq-scripture,
 .article.tq-entry,
-.section.tq-verse {
+.section.tq-frame {
   break-before: auto !important;
   break-inside: avoid !important;
   break-after: auto !important
 }
 
-.section.book-chapter {
+.section.book-story {
   break-after: page !important;
 }
 
@@ -146,12 +146,15 @@ a.header-link:hover::after {
   font-style: italic;
 }
 
-.tq-chapter-section {
+.tq-story-section {
   break-after: page !important;
 }
 
-.tq-chapter-section * {
+.tq-story-frame-section {
+  break-after: auto !important;
+  page-break-after: auto !important;
   break-inside: avoid !important;
+  page-break-inside: avoid !important;
 }
 
 `;
@@ -182,7 +185,7 @@ export default function RcObsTranslationQuestions() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -213,7 +216,7 @@ export default function RcObsTranslationQuestions() {
     authToken,
   });
 
-  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
 
   const tqTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -242,30 +245,32 @@ export default function RcObsTranslationQuestions() {
 
   useEffect(() => {
     if (catalogEntry && obsCatalogEntries.length) {
-      setBuiltWith([catalogEntry, ...obsCatalogEntries])
+      setBuiltWith([
+        catalogEntry,
+        ...(obsCatalogEntries?.[0] ? [obsCatalogEntries[0]] : [])
+      ])
     }
   }, [ catalogEntry, obsCatalogEntries, setBuiltWith])
 
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
-      if (!catalogEntry) {
-        setErrorMessage('No catalog entry for this resource found.');
-        return;
-      }
-
       let sb = ['obs']
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
-
-      let _bookId = 'obs';
-      const title = catalogEntry.title;
-      setBookId(_bookId);
+      setBookId('obs');
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
+
+      if (!catalogEntry) {
+        // setErrorMessage('No catalog entry for this resource found.');
+        return;
+      }
+
       setStatusMessage(
         <>
-          Preparing preview for {title}.<br />
+          Preparing preview for {catalogEntry.title}.
+          <br />
           Please wait...
         </>
       );
@@ -311,12 +316,12 @@ export default function RcObsTranslationQuestions() {
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-      <div id="nav-${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-        <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+      <div id="nav-${bookId}-${storyStr}" class="section tq-story-section" data-toc-title="${obsData.stories[storyIdx].title}">
+        <h2 class="tq-story-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tqTsvData?.[storyStr]?.['intro']) {
           html += `
-      <div class="section tq-chapter-intro-section">
+      <div class="section tq-story-intro-section">
 `;
           for (let row of tqTsvData[storyStr]['intro']) {
             const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
@@ -337,7 +342,7 @@ export default function RcObsTranslationQuestions() {
           const frameStr = String(frameIdx + 1);
           const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
           html += `
-      <div id="${frameLink}" class="section obs-tq-chapter-frame-section">
+      <div id="${frameLink}" class="section tq-story-frame-section">
         <h3 class="tq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
@@ -386,8 +391,8 @@ export default function RcObsTranslationQuestions() {
             }
           } else {
             html += `
-          <div class="tq-verse-no-content">
-            (There are no questions for this verse)
+          <div class="tq-frame-no-content">
+            (There are no questions for this frame)
           </div>
 `;
           }

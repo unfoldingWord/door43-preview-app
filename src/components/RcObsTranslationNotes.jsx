@@ -87,13 +87,13 @@ const webCss = `
 
 .article {
   break-after: auto !important;
-  break-inside: avoid-page !important;
+  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
 
 hr {
-  break-before: avoid-page !important;
+  break-before: avoid !important;
 }
 
 .ta.appendex article {
@@ -164,7 +164,7 @@ export default function RcObsTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
     } else if (setNavAnchor) {
       let anchorParts = [b];
@@ -194,7 +194,7 @@ export default function RcObsTranslationNotes() {
     authToken,
   });
 
-  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -288,13 +288,27 @@ export default function RcObsTranslationNotes() {
 
   useEffect(() => {
     if (catalogEntry && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
-      setBuiltWith([catalogEntry, ...taCatalogEntries, ...twCatalogEntries, ...twlCatalogEntries]);
+      setBuiltWith([
+        catalogEntry, 
+        ...(obsCatalogEntries?.[0] ? [obsCatalogEntries[0]] : []), 
+        ...(taCatalogEntries?.[0] ? [taCatalogEntries?.[0]] : []), 
+        ...(twCatalogEntries?.[0] ? [twCatalogEntries[0]] : []), 
+        ...(twlCatalogEntries?.[0] ? [twlCatalogEntries[0]] : [])
+      ]);
     }
-  }, [catalogEntry, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
+  }, [catalogEntry, obsCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
 
   useEffect(() => {
+    const sb = ['obs'];
+    bibleReferenceActions.applyBooksFilter(sb);
+    setSupportedBooks(sb);
+    setBookId('obs');
+    setHtmlSections((prevState) => {
+      return { ...prevState, css: { web: webCss, print: '' } };
+    });
+    setCanChangeColumns(false);
     if (!catalogEntry) {
-      setErrorMessage('No catalog entry for this resource found.');
+      // setErrorMessage('No catalog entry for this resource found.');
       return;
     }
     setStatusMessage(
@@ -304,13 +318,6 @@ export default function RcObsTranslationNotes() {
         Please wait...
       </>
     );
-    bibleReferenceActions.applyBooksFilter(['obs']);
-    setSupportedBooks('obs');
-    setBookId('obs');
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: '' } };
-    });
-    setCanChangeColumns(false);
   }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
@@ -594,13 +601,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let data of Object.values(rcLinksData.ta || {})) {
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       for (let data of Object.values(rcLinksData.tw || {})) {
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);

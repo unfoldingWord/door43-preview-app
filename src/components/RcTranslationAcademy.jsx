@@ -110,7 +110,7 @@ const printCss = `
 
 export default function RcTranslationAcademy() {
   const {
-    state: { catalogEntry, navAnchor, authToken },
+    state: { urlInfo, catalogEntry, navAnchor, authToken },
     actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
@@ -122,6 +122,9 @@ export default function RcTranslationAcademy() {
   const html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals });
 
   useEffect(() => {
+    if (!catalogEntry) {
+      return;
+    }
     setStatusMessage(
       <>
         Preparing {catalogEntry.subject} Preview.

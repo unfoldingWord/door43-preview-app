@@ -80,7 +80,7 @@ export default function TsBible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -135,7 +135,7 @@ export default function TsBible() {
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
       if (!catalogEntry) {
-        setErrorMessage('No catalog entry for this resource found.');
+        // setErrorMessage('No catalog entry for this resource found.');
         return;
       }
 
@@ -155,7 +155,8 @@ export default function TsBible() {
       setBookTitle(title);
       setStatusMessage(
         <>
-          Preparing preview for {title}.<br />
+          Preparing preview for {title}.
+          <br />
           Please wait...
         </>
       );

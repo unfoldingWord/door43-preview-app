@@ -10,20 +10,23 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
 
   useEffect(() => {
     const fetchBookFileContents = async () => {
-      if (!catalogEntries || !bookId) {
+      if (!catalogEntries || ! catalogEntries.length || !bookId) {
         return;
       }
 
       const promises = [];
       catalogEntries.forEach((catalogEntry) => {
+        if (!catalogEntry) {
+          return;
+        }
         let filePath = '';
-        catalogEntry.ingredients.forEach((ingredient) => {
+        catalogEntry?.ingredients?.forEach((ingredient) => {
           if (ingredient.identifier == bookId) {
             filePath = ingredient.path.replace(/^\./, '');
           }
         });
         if (!filePath) {
-          setErrorMessage(`The required related resource ${catalogEntry.full_name} (${catalogEntry.subject}) does not contain a project for \`${bookId}\`.`);
+          setErrorMessage(`The required related resource ${catalogEntry?.full_name} (${catalogEntry?.subject}) does not contain a project for \`${bookId}\`.`);
           return;
         }
         promises.push(getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.branch_or_tag_name, authToken));
@@ -40,7 +43,9 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
       }
     };
 
-    fetchBookFileContents();
+    if (catalogEntries && catalogEntries.length) {
+      fetchBookFileContents();
+    }
   }, [catalogEntries, bookId, authToken, setErrorMessage]);
 
   return bookFiles;

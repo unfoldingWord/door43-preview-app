@@ -83,7 +83,7 @@ export default function Bible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -132,7 +132,7 @@ export default function Bible() {
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
       if (!catalogEntry) {
-        setErrorMessage('No catalog entry for this resource found.');
+        // setErrorMessage('No catalog entry for this resource found.');
         return;
       }
 

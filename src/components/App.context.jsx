@@ -17,9 +17,12 @@ import RcTranslationAcademy from '@components/RcTranslationAcademy';
 import RcTranslationNotes from '@components/RcTranslationNotes';
 import RcTranslationQuestions from '@components/RcTranslationQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
+import RcObsStudyNotes from '@components/RcObsStudyNotes';
+import RcObsStudyQuestions from '@components/RcObsStudyQuestions';
 import RcObsTranslationNotes from '@components/RcObsTranslationNotes';
 import RcObsTranslationQuestions from '@components/RcObsTranslationQuestions';
 import TsBible from '@components/TsBible';
+import { getMetadataTypeFromRepoName, getSubjectFromRepoName } from '@helpers/dcsApi';
 
 export const AppContext = React.createContext();
 
@@ -116,7 +119,7 @@ export function AppContextProvider({ children }) {
         ref: '',
         hash: '',
         hashParts: [],
-      }
+      };
       if (urlParts.length > 1) {
         urlParts = url.pathname
           .replace(/^\/(u\/){0,1}/, '')
@@ -182,7 +185,7 @@ export function AppContextProvider({ children }) {
         url.searchParams.get('force-render') === '1' ||
         url.searchParams.get('force-render') === 'true'
       ) {
-        setRenderMessage("Rerender requested. Generating new copy, ignoring cache.");
+        setRenderMessage('Rerender requested. Generating new copy, ignoring cache.');
       }
       if (
         url.searchParams.get('nocache') === '1' ||
@@ -202,9 +205,9 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const fetchOwner = async () => {
       try {
-        const o = await getOwner(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, authToken)
+        const o = await getOwner(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, authToken);
         setOwner(o);
-      } catch(err) {
+      } catch (err) {
         console.log(err.message);
       }
     };
@@ -218,49 +221,69 @@ export function AppContextProvider({ children }) {
     const fetchRepo = async () => {
       getRepo(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, urlInfo.repo, authToken)
         .then((r) => {
-          setRepo(r)
+          setRepo(r);
           if (!owner) {
-            setOwner(r.owner)
+            setOwner(r.owner);
           }
         })
         .catch((err) => {
           console.log(err.message);
-          setErrorMessage(<>Unable to find <a href={`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`} target="_blank" rel="noreferrer">this resource on DCS</a> via the repo API.</>);
+          setErrorMessage(
+            <>
+              Unable to find{' '}
+              <a href={`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}`} target="_blank" rel="noreferrer">
+                this resource on DCS
+              </a>{' '}
+              via the repo API.
+            </>
+          );
         })
         .finally(() => setFetchingRepo(false));
     };
 
-    if (! fetchingRepo && !errorMessages?.length && serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !repo) {
+    if (!fetchingRepo && !errorMessages?.length && serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !repo) {
       setFetchingRepo(true);
-      fetchRepo()
+      fetchRepo();
     }
   }, [serverInfo, urlInfo, authToken, fetchingRepo, repo, owner, errorMessages, setErrorMessage]);
 
   useEffect(() => {
     const fetchCatalogEntry = async () => {
-      if( repo && (! repo.subject || ! repo.metadata_type)){
-        setErrorMessage("This repository does not appear to be a valid resource that we can render.");
+      if (repo && (!repo.subject || !repo.metadata_type)) {
+        setErrorMessage('This repository does not appear to be a valid resource that we can render.');
         setFetchingCatalogEntry(false);
         return;
       }
-      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, urlInfo.repo, urlInfo.ref || repo?.default_branch || "master", authToken);
+      const entry = await getCatalogEntry(`${serverInfo.baseUrl}/${API_PATH}`, urlInfo.owner, urlInfo.repo, urlInfo.ref || repo?.default_branch || 'master', authToken);
       if (entry) {
         setCatalogEntry(entry);
-        if (! repo) {
+        if (!repo) {
           setRepo(entry.repo);
         }
-        if (! owner) {
-          setOwner(entry.repo.owner)
+        if (!owner) {
+          setOwner(entry.repo.owner);
         }
       } else {
         if (repo) {
-          setErrorMessage(<>Unable to <a href={`${serverInfo.baseUrl}/${API_PATH}/catalog/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || "master"}`} target="_blank" rel="noreferrer">get a valid catalog entry</a> for this resource.</>);
+          setErrorMessage(
+            <>
+              Unable to{' '}
+              <a
+                href={`${serverInfo.baseUrl}/${API_PATH}/catalog/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || 'master'}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                get a valid catalog entry
+              </a>{' '}
+              for this resource.
+            </>
+          );
         }
       }
       setFetchingCatalogEntry(false);
     };
 
-    if (!fetchingCatalogEntry && !errorMessages?.length &&  serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !catalogEntry) {
+    if (!fetchingCatalogEntry && !errorMessages?.length && serverInfo?.baseUrl && urlInfo && urlInfo.owner && urlInfo.repo && !catalogEntry) {
       setFetchingCatalogEntry(true);
       fetchCatalogEntry();
     }
@@ -268,16 +291,19 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let b = bookId || "default";
+      let b = bookId || 'default';
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
-        b = urlInfo.hashParts[0].toLowerCase()
+        b = urlInfo.hashParts[0].toLowerCase();
       }
-      const response = await fetch(`/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${b}`, {
-        cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`
+      const response = await fetch(
+        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${b}`,
+        {
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
         }
-      });
+      );
       if (!response.ok && catalogEntry) {
         setCachedBook({});
         return;
@@ -299,44 +325,82 @@ export function AppContextProvider({ children }) {
   }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
-    if (renderMessage || ! cachedBook) {
+    if (renderMessage || !cachedBook) {
       return; // just waiting for cache to be checked. Will be {} (true) if checked but not there.
     }
-    if (! Object.keys(cachedBook).length) {
-      console.log("No cached copy of this resource/book, so rendering first time.");
+    if (!Object.keys(cachedBook).length) {
+      console.log('No cached copy of this resource/book, so rendering first time.');
       return;
     }
-    if (! catalogEntry) {
+    if (!catalogEntry) {
       return; // Just waiting for catalog entry to be fetched
     }
     if (cachedBook.catalogEntry.commit_sha !== catalogEntry.commit_sha) {
-      console.log(`The cached copy's catalog entry's sha and the newly fetched catalog entry sha do not match! Cached: ${cachedBook.catalogEntry.commit_sha}, New: ${catalogEntry.commit_sha}. Rendering new.`);
-      setRenderMessage(`You are viewing a previous rendering (${cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name ? cachedBook.catalogEntry.branch_or_tag_name : cachedBook.catalogEntry.commit_sha.substring(0, 8)}). Please wait while it is updated...`);
+      console.log(
+        `The cached copy's catalog entry's sha and the newly fetched catalog entry sha do not match! Cached: ${cachedBook.catalogEntry.commit_sha}, New: ${catalogEntry.commit_sha}. Rendering new.`
+      );
+      setRenderMessage(
+        `You are viewing a previous rendering (${
+          cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name
+            ? cachedBook.catalogEntry.branch_or_tag_name
+            : cachedBook.catalogEntry.commit_sha.substring(0, 8)
+        }). Please wait while it is updated...`
+      );
       return;
     }
-    if (cachedBook.preview_version !== APP_VERSION ) {
-      console.log(`The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`);
-      setRenderMessage(`You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated with v${APP_VERSION}...`);
+    if (cachedBook.preview_version !== APP_VERSION) {
+      console.log(
+        `The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`
+      );
+      setRenderMessage(
+        `You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated with v${APP_VERSION}...`
+      );
       return;
     }
     if (Object.keys(cachedBook.builtWith).length !== builtWith.length) {
-      console.log(`The number of resources used to build the cached copy and this one do not match: Cached: ${Object.keys(cachedBook.builtWith).length}, New: ${builtWith.length}.`);
+      console.log(
+        `The number of resources used to build the cached copy and this one do not match: Cached: ${Object.keys(cachedBook.builtWith).length}, New: ${builtWith.length}.`
+      );
       return;
     }
 
-    for (let entry of (builtWith || [])) {
+    for (let entry of builtWith || []) {
       if (!(entry.full_name in cachedBook.builtWith) || cachedBook.builtWith[entry.full_name] !== entry.commit_sha) {
-        console.log(`Commit SHA for ${entry.full_name} used to build the cached copy is not the same as the current one to be used. Cached: ${cachedBook.builtWith[entry.full_name]}, New: ${entry.commit_sha}. Rendering new.`);
-        setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`)
+        console.log(
+          `Commit SHA for ${entry.full_name} used to build the cached copy is not the same as the current one to be used. Cached: ${cachedBook.builtWith[entry.full_name]}, New: ${
+            entry.commit_sha
+          }. Rendering new.`
+        );
+        setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`);
         return;
       }
     }
-    console.log("All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.")
+    console.log('All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.');
     setHtmlSections(cachedBook.htmlSections);
   }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
 
   useEffect(() => {
-    if (catalogEntry) {
+    let metadataType = ''; // default
+    let subject = '';
+    let flavorType = '';
+    let flavor = '';
+    if (!catalogEntry) {
+      if (urlInfo?.repo) {
+        metadataType = getMetadataTypeFromRepoName(urlInfo.repo);
+        subject = getSubjectFromRepoName(urlInfo.repo);
+        if (metadataType == 'sb' && subject) {
+          if (subject == 'Bible' || subject == 'Aligned Bible') {
+            flavorType = 'scripture';
+            flavorType = 'textTranslation';
+         } else {
+            flavorType = 'gloss';
+            if (subject == 'Open Bible Stories') {
+              flavor = 'textStories';
+            }
+          }
+        }
+      }
+    } else {
       if (!catalogEntry.subject || !catalogEntry.ingredients || !catalogEntry.metadata_type) {
         if (catalogEntry.repo?.title && catalogEntry.repo?.subject && catalogEntry.repo?.ingredients && catalogEntry.repo?.metadata_type) {
           catalogEntry.title = catalogEntry.repo.title;
@@ -347,93 +411,112 @@ export function AppContextProvider({ children }) {
           catalogEntry.flavor = catalogEntry.repo.flavor;
         } else {
           setErrorMessage(`This references an invalid ${catalogEntry.ref_type ? catalogEntry.ref_type : 'entry'}. Unable to determine its type and/or ingredients.`);
+          setResourceComponent(null);
           return;
         }
       }
-      if (catalogEntry.metadata_type && catalogEntry.subject) {
-        switch (catalogEntry.metadata_type) {
-          case 'rc':
-            switch (catalogEntry.subject) {
-              case 'Aligned Bible':
-              case 'Bible':
-              case 'Greek New Testament':
-              case 'Hebrew Old Testament':
-                setResourceComponent(() => Bible);
-                return;
-              case 'Open Bible Stories':
-                setResourceComponent(() => OpenBibleStories);
-                return;
-              case 'Translation Academy':
-                setResourceComponent(() => RcTranslationAcademy);
-                return;
-              case 'TSV Translation Notes':
-                setResourceComponent(() => RcTranslationNotes);
-                return;
-              case 'TSV Translation Questions':
-                setResourceComponent(() => RcTranslationQuestions);
-                return;
-              case 'Translation Words':
-                setResourceComponent(() => RcTranslationWords);
-                return;
-              case 'TSV OBS Translation Notes':
-                setResourceComponent(() => RcObsTranslationNotes)
-                return;
-              case 'TSV OBS Translation Questions':
-                setResourceComponent(() => RcObsTranslationQuestions)
-                return;
-              default:
-                setErrorMessage(`Conversion of \`${catalogEntry.subject}\` resources is currently not supported.`);
-            }
-            return;
-          case 'sb':
-            switch (catalogEntry.flavor_type) {
-              case 'scripture':
-                switch (catalogEntry.flavor) {
-                  case 'textTranslation':
-                    setResourceComponent(() => Bible);
-                    return;
-                  default:
-                    setErrorMessage(`Conversion of SB flavor \`${catalogEntry.flavor}\` is not currently supported.`);
-                }
-                return;
-              case 'gloss':
-                switch (catalogEntry.flavor) {
-                  case 'textStories':
-                    setResourceComponent(() => OpenBibleStories);
-                    return;
-                }
-                return;
-              default:
-                setErrorMessage(`Conversion of SB flavor type \`${catalogEntry.flavor_type}\` is not currently supported.`);
-            }
-            return;
-          case 'ts':
-            switch (catalogEntry.subject) {
-              case 'Open Bible Stories':
-                setResourceComponent(() => OpenBibleStories);
-                return;
-              case 'Bible':
-                setResourceComponent(() => TsBible);
-                return;
-              default:
+      metadataType = catalogEntry.metadata_type;
+      subject = catalogEntry.subject;
+      flavorType = catalogEntry.flavor_type;
+      flavor = catalogEntry.flavor;
+    }
+    if (metadataType && subject) {
+      switch (metadataType) {
+        case 'rc':
+          switch (subject) {
+            case 'Aligned Bible':
+            case 'Bible':
+            case 'Greek New Testament':
+            case 'Hebrew Old Testament':
+              setResourceComponent(() => Bible);
+              return;
+            case 'Open Bible Stories':
+              setResourceComponent(() => OpenBibleStories);
+              return;
+            case 'Translation Academy':
+              setResourceComponent(() => RcTranslationAcademy);
+              return;
+            case 'TSV Translation Notes':
+              setResourceComponent(() => RcTranslationNotes);
+              return;
+            case 'TSV Translation Questions':
+              setResourceComponent(() => RcTranslationQuestions);
+              return;
+            case 'Translation Words':
+              setResourceComponent(() => RcTranslationWords);
+              return;
+            case 'TSV OBS Study Notes':
+              setResourceComponent(() => RcObsStudyNotes);
+              return;
+            case 'TSV OBS Study Questions':
+              setResourceComponent(() => RcObsStudyQuestions);
+              return;
+            case 'TSV OBS Translation Notes':
+              setResourceComponent(() => RcObsTranslationNotes);
+              return;
+            case 'TSV OBS Translation Questions':
+              setResourceComponent(() => RcObsTranslationQuestions);
+              return;
+            default:
+              if (catalogEntry) {
+                setErrorMessage(`Conversion of \`${subject}\` resources is currently not supported.`);
+              }
+          }
+          return;
+        case 'sb':
+          switch (flavorType) {
+            case 'scripture':
+              switch (flavor) {
+                case 'textTranslation':
+                  setResourceComponent(() => Bible);
+                  return;
+                default:
+                  setErrorMessage(`Conversion of SB flavor \`${flavor}\` is not currently supported.`);
+              }
+              return;
+            case 'gloss':
+              switch (catalogEntry.flavor) {
+                case 'textStories':
+                  setResourceComponent(() => OpenBibleStories);
+                  return;
+              }
+              return;
+            default:
+              if (catalogEntry) {
+                setErrorMessage(`Conversion of SB flavor type \`${flavorType}\` is not currently supported.`);
+              }
+          }
+          return;
+        case 'ts':
+          switch (catalogEntry.subject) {
+            case 'Open Bible Stories':
+              setResourceComponent(() => OpenBibleStories);
+              return;
+            case 'Bible':
+              setResourceComponent(() => TsBible);
+              return;
+            default:
+              if (catalogEntry) {
                 setErrorMessage('Conversion of translationStudio repositories is currently not supported.');
-            }
-            return;
-          case 'tc':
-            switch (catalogEntry.subject) {
-              case 'Aligned Bible':
-              case 'Bible':
-                setResourceComponent(() => Bible);
-                return;
-              default:
-                setErrorMessage(`Conversion of translationCore \`${catalogEntry.subject}\` repositories is currently not supported.`);
-            }
-            return;
-        }
+              }
+          }
+          return;
+        case 'tc':
+          switch (catalogEntry.subject) {
+            case 'Aligned Bible':
+            case 'Bible':
+              setResourceComponent(() => Bible);
+              return;
+            default:
+              if (catalogEntry) {
+                setErrorMessage(`Conversion of translationCore \`${subject}\` repositories is currently not supported.`);
+              }
+          }
+          return;
       }
       setErrorMessage(`Not a valid repository that can be convert.`);
     }
-  }, [catalogEntry, setErrorMessage]);
+  }, [urlInfo, catalogEntry, setErrorMessage]);
 
   useEffect(() => {
     const sendCachedBook = async () => {

@@ -302,7 +302,7 @@ export default function AppWorkspace() {
               }}
             >
               <div>&nbsp;</div>
-              {catalogEntry && cachedBook && ResourceComponent ? <ResourceComponent /> : ''}
+              {ResourceComponent ? <ResourceComponent /> : ''}
               <div style={{ whiteSpace: 'nowrap' }}>
                 <ToggleButtonGroup
                   value={view}

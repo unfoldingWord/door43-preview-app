@@ -99,24 +99,27 @@ export default function OpenBibleStories() {
   const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
 
   useEffect(() => {
-    if (!catalogEntry) {
-      setErrorMessage('No catalog entry for this resource found.');
-      return;
-    }
-    setStatusMessage(
-      <>
-        Preparing preview for {catalogEntry.title}.
-        <br />
-        Please wait...
-      </>
-    );
-    bibleReferenceActions.applyBooksFilter(['obs']);
-    setSupportedBooks('obs');
+    const sb = ['obs'];
+    bibleReferenceActions.applyBooksFilter(sb);
+    setSupportedBooks(sb);
     setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: printCss } };
     });
     setCanChangeColumns(false);
+
+    if (!catalogEntry) {
+      // setErrorMessage('No catalog entry for this resource found.');
+      return;
+    }
+
+    setStatusMessage(
+      <>
+        Preparing preview for {catalogEntry?.title}.
+        <br />
+        Please wait...
+      </>
+    );
   }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {

@@ -19,7 +19,10 @@ export function parseTsvText(tsvText) {
               row.SupportReference = `rc://*/ta/man/translate/${row.SupportReference}`;
             }
           }
-          const reference = row.Reference?.split(':');
+          if (!row.Reference || !row.Reference.includes(':')) {
+            return;
+          }
+          const reference = row.Reference.split(':');
           const chapter = reference[0];
           const verse = reference[1];
           const first_verse = verse.split(',')[0].split('-')[0];

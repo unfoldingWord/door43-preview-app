@@ -80,13 +80,13 @@ const webCss = `
 
 .article {
   break-after: auto !important;
-  break-inside: avoid-page !important;
+  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
 
 hr {
-  break-before: avoid-page !important;
+  break-before: avoid !important;
 }
 
 .ta.appendex article {
@@ -157,7 +157,7 @@ export default function RcTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (bookId && b != bookId) {
+    if (b != bookId) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -214,7 +214,7 @@ export default function RcTranslationNotes() {
     setErrorMessage,
   });
 
-  const catalogEntries = useMemo(() => [catalogEntry], [catalogEntry]);
+  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -306,11 +306,11 @@ export default function RcTranslationNotes() {
     if (catalogEntry && sourceBibleCatalogEntries?.length && targetBibleCatalogEntries?.length && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
       setBuiltWith([
         catalogEntry,
-        ...sourceBibleCatalogEntries,
         ...targetBibleCatalogEntries,
-        ...taCatalogEntries,
-        ...twCatalogEntries,
-        ...twlCatalogEntries,
+        ...(sourceBibleCatalogEntries?.[0] ? [sourceBibleCatalogEntries[0]] : []),
+        ...(taCatalogEntries?.[0] ? [taCatalogEntries[0]] : []),
+        ...(twCatalogEntries?.[0] ? [twCatalogEntries[0]] : []),
+        ...(twlCatalogEntries?.[0] ? [twlCatalogEntries[0]] : []),
       ]);
     }
   }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
@@ -318,7 +318,7 @@ export default function RcTranslationNotes() {
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
       if (!catalogEntry) {
-        setErrorMessage('No catalog entry for this resource found.');
+        // setErrorMessage('No catalog entry for this resource found.');
         return;
       }
 
@@ -343,9 +343,11 @@ export default function RcTranslationNotes() {
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
       setBookId(_bookId);
       setBookTitle(title);
+
       setStatusMessage(
         <>
-          Preparing preview for {title}.<br />
+          Preparing preview for {title}.
+          <br />
           Please wait...
         </>
       );
@@ -709,13 +711,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let data of Object.values(rcLinksData.ta || {})) {
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       for (let data of Object.values(rcLinksData.tw || {})) {
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]*`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);
