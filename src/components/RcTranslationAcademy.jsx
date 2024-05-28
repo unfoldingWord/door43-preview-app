@@ -164,5 +164,5 @@ export default function RcTranslationAcademy() {
     }
   }, [html, copyright, setHtmlSections, setStatusMessage]);
 
-  return <TaNavigation taManuals={taManuals} anchor={navAnchor} setNavAnchor={setNavAnchor} />;
+  return <TaNavigation taManuals={taManuals} navAnchor={navAnchor} setNavAnchor={setNavAnchor} />;
 }
