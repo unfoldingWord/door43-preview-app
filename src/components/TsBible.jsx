@@ -84,7 +84,14 @@ export default function TsBible() {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
-      setNavAnchor(`${b}-${c}-${v}`);
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
+      }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
     }
   };
 

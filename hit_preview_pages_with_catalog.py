@@ -9,13 +9,15 @@ import time
 import requests
 
 
+def get_urls(name):
+  urls = []
+  try:
+    with open(f'./{name}_urls', 'r') as file:
+      urls = file.read().splitlines()
+  except FileNotFoundError:
+    pass
+  return urls
 
-completed_urls = []
-try:
-  with open('./completed_urls', 'r') as file:
-    completed_urls = file.read().splitlines()
-except FileNotFoundError:
-  pass
 
 # Setup Chrome options
 chrome_options = webdriver.ChromeOptions()
@@ -26,7 +28,7 @@ webdriver_service = Service(ChromeDriverManager().install())
 # Initialize the driver
 
 # url = "http://git.door43.org/api/v1/catalog/search?owner=unfoldingWord&owner=Door43-Catalog&subject=TSV+Translation+Notes&stage=latest&limit=1"
-url = "http://git.door43.org/api/v1/catalog/search?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&stage=latest&sort=released&order=desc&limit=1"
+url = "http://git.door43.org/api/v1/catalog/search?owner=unfoldingWord&owner=Door43-Catalog&subject=Aligned+Bible&subject=Bible&subject=Greek+New+Testament&subject=Hebrew+Old+Testament&subject=Open+Bible+Stories&subject=Translation+Words&subject=TSV+Translation+Notes&subject=TSV+Translation+Questions&subject=TSV+OBS+Translation+Notes&subject=TSV+OBS+Translation+Questions&stage=latest&sort=released&order=desc&limit=300"
 
 response = requests.get(url)
 entries = response.json()['data']
@@ -40,10 +42,9 @@ temp_url = "about:blank"
 # Loop through the entries
 for entry in entries:
     for ingredient in entry['ingredients']:
-      url = "/u/unfoldingWord/en_tn/v71#psa"
-      # url = f"/u/{entry['full_name']}/{entry['branch_or_tag_name']}?rerender=1#{ingredient['identifier']}"
-      # if url in completed_urls:
-      #   continue
+      url = f"/u/{entry['full_name']}/{entry['branch_or_tag_name']}#{ingredient['identifier']}"
+      if url in get_urls('completed') or url in get_urls('errors') or ingredient['identifier'] == 'frt' or ingredient['identifier'] == 'bak':
+        continue
 
       print(root+url)
 
@@ -61,23 +62,20 @@ for entry in entries:
 
         print("SUCCESS: "+url)
         # Add a delay to ensure the page has fully loaded (adjust as needed)
-        # time.sleep(5)
+        time.sleep(3)
         # Read the completed URLs from the file if it exists
 
-        # Add the completed URL to the array
-        completed_urls.append(url)
-
         # Save the completed URLs to the file
-        with open('./completed_urls', 'w') as file:
-          file.write('\n'.join(completed_urls))
+        with open('./completed_urls', 'a') as file:
+          file.write(url + '\n')
 
         time.sleep(2)
       except Exception as e:
         print("ERROR: "+url)
         print(e)
+        with open('./errors_urls', 'a') as file:
+          file.write(url + '\n')
         continue
-      break
-    break
 
 # Close the WebDriver
 driver.quit()

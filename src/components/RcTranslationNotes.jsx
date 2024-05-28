@@ -502,7 +502,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
                 }
               }
             }
-            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
+            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
             const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="article tn-scripture-block" id="${scriptureLink}">

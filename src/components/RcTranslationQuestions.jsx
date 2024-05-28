@@ -375,7 +375,7 @@ export default function RcTranslationQuestions() {
                 }
               }
             }
-            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx].chapters[chapterStr][usfmJSONVerseStr].verseObjects);
+            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
             const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="tq-scripture-block" id="${scriptureLink}">

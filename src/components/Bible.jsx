@@ -86,8 +86,15 @@ export default function Bible() {
     if (bookId && b != bookId) {
       window.location.hash = b;
       window.location.reload();
-    } else if (! [b, `${b}-${c}`, `${b}-${c}-${v}`].includes(navAnchor) && setNavAnchor) {
-      setNavAnchor(`${b}-${c}-${v}`);
+    } else if (setNavAnchor) {
+      let anchorParts = [b];
+      if (c != '1' || v != '1') {
+        anchorParts.push(c);
+      }
+      if (v != '1') {
+        anchorParts.push(v);
+      }
+      setNavAnchor(anchorParts.join('-'));
     }
   };
 
