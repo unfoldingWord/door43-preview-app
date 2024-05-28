@@ -18,6 +18,7 @@
     "@mui/lab": "5.0.0-alpha.164",
     "@mui/material": "^5.15.7",
     "@oce-editor-tools/base": "^0.1.30",
+    "@swc/types": "^0.1.7",
     "@types/autosuggest-highlight": "^3.2.3",
     "@vivliostyle/react": "^2.27.0",
     "autosuggest-highlight": "^3.3.4",

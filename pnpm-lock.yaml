@@ -32,6 +32,9 @@ importers:
       '@oce-editor-tools/base':
         specifier: ^0.1.30
         version: 0.1.30(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@swc/types':
+        specifier: ^0.1.7
+        version: 0.1.7
       '@types/autosuggest-highlight':
         specifier: ^3.2.3
         version: 3.2.3
