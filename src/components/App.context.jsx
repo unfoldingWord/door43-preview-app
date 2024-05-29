@@ -488,7 +488,7 @@ export function AppContextProvider({ children }) {
           }
           return;
         case 'ts':
-          switch (catalogEntry.subject) {
+          switch (subject) {
             case 'Open Bible Stories':
               setResourceComponent(() => OpenBibleStories);
               return;
@@ -502,7 +502,7 @@ export function AppContextProvider({ children }) {
           }
           return;
         case 'tc':
-          switch (catalogEntry.subject) {
+          switch (subject) {
             case 'Aligned Bible':
             case 'Bible':
               setResourceComponent(() => Bible);
