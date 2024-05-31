@@ -391,7 +391,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-  <div id="obs-${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+  <div id="obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
     <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tnTsvData?.[storyStr]?.['intro']) {
