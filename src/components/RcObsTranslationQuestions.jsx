@@ -408,7 +408,7 @@ export default function RcObsTranslationQuestions() {
       setHtml(html);
     };
 
-    if (obsData && Object.keys(tqTsvData).length) {
+    if (obsData && tqTsvData) {
       generateHtml();
     }
   }, [
