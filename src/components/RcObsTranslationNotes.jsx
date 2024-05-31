@@ -333,7 +333,7 @@ export default function RcObsTranslationNotes() {
             title: file,
             body: `${resource.toUpperCase()} ARTICLE NOT FOUND`,
             rcLink,
-            anchor: `nav-${bookId}--${resource}-${file.replace(/\//g, '-')}`,
+            anchor: `nav-obs--${resource}-${file.replace(/\//g, '-')}`,
           };
           const fileParts = file.split('/');
           switch (resource) {
@@ -364,8 +364,8 @@ export default function RcObsTranslationNotes() {
 
     const generateHtml = async () => {
       let html = `
-<div class="section obs-tn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title}">
-  <h1 class="header obs-tn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title}</a></h1>
+<div class="section obs-tn-book-section" id="nav-obs" data-toc-title="${catalogEntry.title}">
+  <h1 class="header obs-tn-book-section-header"><a href="#nav-obs" class="header-link">${catalogEntry.title}</a></h1>
 `;
       const rcLinksData = {};
 
@@ -391,15 +391,15 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-  <div id="obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+  <div id="nav-obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+    <h2 class="obs-tn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tnTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section obs-tn-chapter-intro-section">
 `;
           for (let row of tnTsvData[storyStr]['intro']) {
-            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-obs-${storyStr}-intro-${row.ID}`;
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
@@ -416,7 +416,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-tn-chapter-frame-section">
         <h3 class="obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
@@ -438,7 +438,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           if (tnTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in tnTsvData[storyStr][frameStr]) {
               const row = tnTsvData[storyStr][frameStr][rowIdx];
-              const noteLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const noteLink = `nav-obs-${storyStr}-${frameStr}-${row.ID}`;
               let article = `
         <div class="article obs-tn-note-article" id="${noteLink}">
 `;
