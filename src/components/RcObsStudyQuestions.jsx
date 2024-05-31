@@ -407,7 +407,7 @@ export default function RcObsStudyQuestions() {
       setHtml(html);
     };
 
-    if (obsData && Object.keys(sqTsvData).length) {
+    if (obsData && sqTsvData) {
       generateHtml();
     }
   }, [
