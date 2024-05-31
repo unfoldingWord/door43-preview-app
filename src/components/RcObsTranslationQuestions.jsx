@@ -313,15 +313,15 @@ export default function RcObsTranslationQuestions() {
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-      <div id="nav-${bookId}-${storyStr}" class="section tq-story-section" data-toc-title="${obsData.stories[storyIdx].title}">
-        <h2 class="tq-story-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+      <div id="nav-obs-${storyStr}" class="section tq-story-section" data-toc-title="${obsData.stories[storyIdx].title}">
+        <h2 class="tq-story-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tqTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section tq-story-intro-section">
 `;
           for (let row of tqTsvData[storyStr]['intro']) {
-            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-obs-${storyStr}-intro-${row.ID}`;
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
@@ -337,7 +337,7 @@ export default function RcObsTranslationQuestions() {
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section tq-story-frame-section">
         <h3 class="tq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
@@ -359,7 +359,7 @@ export default function RcObsTranslationQuestions() {
           if (tqTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in tqTsvData[storyStr][frameStr]) {
               const row = tqTsvData[storyStr][frameStr][rowIdx];
-              const questionLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const questionLink = `nav-obs-${storyStr}-${frameStr}-${row.ID}`;
               if (row.Question) {
                 let article = `
               <div id="${questionLink}" class="tq-question-article">
