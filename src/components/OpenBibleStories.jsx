@@ -73,7 +73,7 @@ const theme = createTheme({
 
 export default function OpenBibleStories() {
   const {
-    state: { catalogEntry, urlInfo, navAnchor, authToken },
+    state: { catalogEntry, urlInfo, navAnchor, authToken, renderOptions },
     actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns },
   } = useContext(AppContext);
 
@@ -105,7 +105,7 @@ export default function OpenBibleStories() {
 
   const obsData = useGetOBSData({ catalogEntry, zipFileData, setErrorMessage });
 
-  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
+  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution, chapters: renderOptions.chapters });
 
   useEffect(() => {
     const sb = ['obs'];
@@ -165,7 +165,11 @@ export default function OpenBibleStories() {
     // Handle Print Preview & Status & Navigation
     if (html && copyright) {
       setHtmlSections((prevState) => {
-        return { ...prevState, copyright, body: html };
+        return { ...prevState,
+          cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
+          copyright,
+          body: html
+        };
       });
       setStatusMessage('');
     }

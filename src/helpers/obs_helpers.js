@@ -181,12 +181,15 @@ export async function getOBSData(catalogEntry, zipFileData) {
   return obsData;
 }
 
-export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resolution = '360px-compressed') {
+export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resolution = '360px-compressed', chapters = null) {
   let html = `
 <div class="section" id="obs" data-toc-title="${encodeHTML(obsData.title)}">
 `;
 
   for (const story of obsData.stories) {
+    if (chapters && !chapters.includes(story.storyNum.toString())) {
+      continue;
+    }
     html += `
 <div class="section story" id="nav-obs-${story.storyNum}"  data-toc-title="${encodeHTML(story.title)}">
   <h1 class="obs-story-title title"><a href="#nav-obs-${story.storyNum}" class="header-link">${story.title}</a></h1>
