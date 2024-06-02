@@ -205,7 +205,7 @@ export function AppContextProvider({ children }) {
               const [start, end] = chapter.split('-').map((num) => num.trim());
               if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
                 for (let i = parseInt(start); i <= parseInt(end); i++) {
-                  chapters.push(i);
+                    chapters.push(i.toString());
                 }
               }
             } else {
