@@ -163,7 +163,7 @@ const requiredSubjects = ['Open Bible Stories'];
 
 export default function RcObsTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
     actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -291,7 +291,7 @@ export default function RcObsTranslationQuestions() {
 <div class="section tq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
   <h1 class="header tq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
 `;
-      if (tqTsvData?.front?.intro) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tqTsvData?.front?.intro) {
         html += `
       <div class="section tq-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
@@ -312,6 +312,9 @@ export default function RcObsTranslationQuestions() {
       }
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.includes(storyStr)) {
+          continue;
+        }
         html += `
       <div id="nav-obs-${storyStr}" class="section tq-story-section" data-toc-title="${obsData.stories[storyIdx].title}">
         <h2 class="tq-story-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
@@ -419,6 +422,7 @@ export default function RcObsTranslationQuestions() {
     imageResolution,
     bookId,
     bookTitle,
+    renderOptions,
     setHtmlSections,
     setStatusMessage,
     setErrorMessage,
@@ -445,12 +449,12 @@ export default function RcObsTranslationQuestions() {
     if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>`,
+        cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
         copyright,
         body: html,
       }));
     }
-  }, [html, copyright, bookTitle, setHtmlSections]);
+  }, [html, copyright, bookTitle, renderOptions, setHtmlSections]);
 
   return (
     <ThemeProvider theme={theme}>

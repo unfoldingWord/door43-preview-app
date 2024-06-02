@@ -155,7 +155,7 @@ const requiredSubjects = ['Aligned Bible'];
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
     actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -301,7 +301,7 @@ export default function RcTranslationQuestions() {
       for (let targetUsfm of targetUsfmBookFiles) {
         usfmJSONs.push(usfm.toJSON(targetUsfm));
       }
-      if (tqTsvData?.front?.intro) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tqTsvData?.front?.intro) {
         html += `
       <div class="section tq-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
@@ -323,6 +323,9 @@ export default function RcTranslationQuestions() {
       for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
         const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.incldues(chapterStr)) {
+          continue;
+        }
         html += `
       <div id="nav-${bookId}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
         <h2 class="tq-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
@@ -492,12 +495,12 @@ export default function RcTranslationQuestions() {
     if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>`,
+        cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
         copyright,
         body: html,
       }));
     }
-  }, [html, copyright, bookTitle, setHtmlSections]);
+  }, [html, copyright, bookTitle, renderOptions, setHtmlSections]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

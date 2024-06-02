@@ -62,6 +62,7 @@ export function AppContextProvider({ children }) {
   const [noCache, setNoCache] = useState(false);
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
+  const [renderOptions, setRenderOptions] = useState({});
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -195,6 +196,26 @@ export function AppContextProvider({ children }) {
       ) {
         setNoCache(true);
       }
+      if (url.searchParams.get('chapters')) {
+          const chaptersOrigStr = url.searchParams.get('chapters');
+          const chapterList = chaptersOrigStr.split(',').map((chapter) => chapter.trim());
+          const chapters = [];
+          chapterList.forEach((chapter) => {
+            if (chapter.includes('-')) {
+              const [start, end] = chapter.split('-').map((num) => num.trim());
+              if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
+                for (let i = parseInt(start); i <= parseInt(end); i++) {
+                  chapters.push(i);
+                }
+              }
+            } else {
+              chapters.push(chapter);
+            }
+          });
+          console.log(chapterList, chapters);
+          setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
+          setNoCache(true);
+        }
     };
 
     getServerInfo().catch((e) => setErrorMessage(e.message));
@@ -528,10 +549,10 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    if (!noCache && htmlSections.body != '' && (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)) {
+    if (!noCache && !Object.keys(renderOptions).length && htmlSections.body != '' && (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)) {
       sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, builtWith, supportedBooks]);
+  }, [htmlSections, catalogEntry, renderOptions, renderMessage, cachedBook, bookId, urlInfo, noCache, builtWith, supportedBooks]);
 
   // create the value for the context provider
   const context = {
@@ -561,6 +582,7 @@ export function AppContextProvider({ children }) {
       builtWith,
       renderMessage,
       pagedJsReadyHtml,
+      renderOptions,
     },
     actions: {
       onPrintClick,
@@ -581,6 +603,7 @@ export function AppContextProvider({ children }) {
       setBuiltWith,
       setRenderMessage,
       setPagedJsReadyHtml,
+      setRenderOptions,
     },
   };
 
