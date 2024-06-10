@@ -63,6 +63,8 @@ export function AppContextProvider({ children }) {
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
   const [renderOptions, setRenderOptions] = useState({});
+  const [optionComponents, setOptionComponents] = useState();
+  const [navComponent, setNavComponent] = useState();
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -215,6 +217,24 @@ export function AppContextProvider({ children }) {
           console.log(chapterList, chapters);
           setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
           setNoCache(true);
+        }
+        if (url.searchParams.get('web-cover')) {
+          setRenderOptions((prevState) => ({ ...prevState, showWebCover: true}))
+        }
+        if (url.searchParams.get('web-copyright')) {
+          setRenderOptions((prevState) => ({ ...prevState, showWebCopyright: true}))
+        }
+        if (url.searchParams.get('web-toc')) {
+          setRenderOptions((prevState) => ({ ...prevState, showWebToc: true}))
+        }
+        if (url.searchParams.get('hide-cover')) {
+          setPrintOptions((prevState) => ({ ...prevState, hideCover: true}))
+        }
+        if (url.searchParams.get('hide-toc')) {
+          setPrintOptions((prevState) => ({ ...prevState, hideToc: true}))
+        }
+        if (url.searchParams.get('hide-copyright')) {
+          setPrintOptions((prevState) => ({ ...prevState, hideCopyright: true}))
         }
     };
 
@@ -583,6 +603,8 @@ export function AppContextProvider({ children }) {
       renderMessage,
       pagedJsReadyHtml,
       renderOptions,
+      optionComponents,
+      navComponent,
     },
     actions: {
       onPrintClick,
@@ -604,10 +626,16 @@ export function AppContextProvider({ children }) {
       setRenderMessage,
       setPagedJsReadyHtml,
       setRenderOptions,
+      setOptionComponents,
+      setNavComponent,
     },
   };
 
-  return <AppContext.Provider value={context}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={context}>
+      {children}
+    </AppContext.Provider>
+  );
 }
 
 AppContextProvider.propTypes = {

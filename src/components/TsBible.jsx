@@ -17,7 +17,7 @@ import { getLtrPreviewStyle, getRtlPreviewStyle } from '@helpers/previewStyling.
 import { ts2usfm } from '@helpers/ts2usfm';
 
 // Context
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Data
 import { BibleBookData } from '@common/books';

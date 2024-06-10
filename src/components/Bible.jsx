@@ -17,14 +17,14 @@ import BibleReference from 'bible-reference-rcl';
 import { getLtrPreviewStyle, getRtlPreviewStyle } from '@helpers/previewStyling.js';
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoContentsContent, getRepoGitTrees } from '@helpers/dcsApi';
+import { generateCoverPage, generateTocHtml, generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 // Context
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Bible reference hook and data
 import { useBibleReference } from 'bible-reference-rcl';
 import { BibleBookData } from '@common/books';
-import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 const theme = createTheme({
   overrides: {
@@ -60,14 +60,15 @@ h1 {
 }
 `;
 
+const printCss = '';
+
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages, renderOptions },
+    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions, setNavComponent },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
-  const [copyright, setCopyright] = useState('');
 
   const renderFlags = {
     showWordAtts: false,
@@ -117,6 +118,7 @@ export default function Bible() {
   useEffect(() => {
     if (catalogEntry) {
       setBuiltWith([catalogEntry])
+      setNavComponent(<BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />);
     }
   }, [catalogEntry, setBuiltWith])
 
@@ -216,68 +218,57 @@ export default function Bible() {
     if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
-  }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, setBookTitle, setErrorMessage]);
+  }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, errorMessages, setBookTitle, setErrorMessage]);
 
   useEffect(() => {
-    const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
-      setCopyright(copyrightAndLicense);
-    };
-
-    if (catalogEntry && builtWith.length) {
-      generateCopyrightPage();
-    }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
-
-  useEffect(() => {
-    const handleRenderedDataFromUsfmToHtmlHook = async () => {
-      let _html = renderedData.replaceAll(
+    const populateHtmlSections = async () => {
+      const cover = generateCoverPage(catalogEntry, `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''));
+      const copyright = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
+      let body = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
         `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
       );
-      _html = _html.replaceAll(
+      body = body.replaceAll(
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
         `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
       );
-      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+      body = body.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+      const toc = generateTocHtml(body);
 
       // const footnotes = _html.match(/<span class="footnote">/g);
       // if (footnotes) {
       //   footnotes.forEach((footnote, index) => {
       //     const footnoteId = `footnote-${index}`;
       //     const anchor = `<a href="#${footnoteId}">${index + 1}.</a>`;
-      //     _html = _html.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
+      //     body = body.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
       //   });
       // }
 
-      _html = `
+      body = `
         <div class="section bible-book" id="nav-${bookId}" data-toc-title="${bookTitle}">
-          ${_html}
+          ${body}
         </div>
 `;
 
-      setHtmlSections((prevState) => {return {
+      setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
+        css: {
+          web: webCss,
+          print: printCss,
+        },
+        toc,
+        cover,
         copyright,
-        body: _html
-      }});
+        body,
+      }));
       setStatusMessage('');
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
     };
 
-    if (htmlReady && renderedData && copyright) {
-      handleRenderedDataFromUsfmToHtmlHook();
+    if (renderedData && htmlReady && builtWith?.length) {
+      populateHtmlSections();
     }
-  }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
-  return (
-    <ThemeProvider theme={theme}>
-      <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
-    </ThemeProvider>
-  );
+  }, [renderedData, htmlReady, bookId, bookTitle, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
+
+  return <></>;
 }

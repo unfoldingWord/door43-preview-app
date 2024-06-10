@@ -2,7 +2,7 @@
 import { useEffect, useContext, useState } from 'react';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Component imports
 import TaNavigation from './TaNavigation';

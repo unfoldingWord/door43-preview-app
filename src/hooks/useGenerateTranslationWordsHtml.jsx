@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { encodeHTML } from '@helpers/html';
 
-export default function useGenerateTranslationWordsHtml({ taManuals }) {
+export default function useGenerateTranslationWordsHtml({ catalogEntry, twManuals, setErrorMessage }) {
   const [html, setHtml] = useState();
 
   useEffect(() => {
@@ -64,14 +64,23 @@ export default function useGenerateTranslationWordsHtml({ taManuals }) {
         return html;
       };
 
-      const html = taManuals.flatMap((manual, index) => toHtml(manual, manual, index, taManuals.length)).join('');
-      setHtml(html);
+      const html = twManuals.flatMap((manual, index) => toHtml(manual, manual, index, twManuals.length)).join('');
+      if (! html) {
+        setErrorMessage('No articles found to generate a TW manual');
+      } else {
+        setHtml(`
+<div class="section tw-manual">
+  <h1 class="header tw-section-header" id="nav-tw"><a class="header-link" href="#nav-tw">${catalogEntry.title}</a></h1>
+  ${html}
+</div>
+`);
+      }
     };
 
-    if (taManuals && taManuals) {
+    if (twManuals) {
       flattenToHtml();
     }
-  }, [taManuals, setHtml]);
+  }, [twManuals, setHtml, setErrorMessage]);
 
   return html;
 }

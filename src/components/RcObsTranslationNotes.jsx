@@ -23,7 +23,7 @@ import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslati
 import useGetOBSData from '@hooks/useGetOBSData';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 const theme = createTheme({
@@ -301,9 +301,6 @@ export default function RcObsTranslationNotes() {
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
     setBookId('obs');
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: '' } };
-    });
     setCanChangeColumns(false);
     if (!catalogEntry) {
       // setErrorMessage('No catalog entry for this resource found.');

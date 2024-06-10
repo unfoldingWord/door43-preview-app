@@ -2,6 +2,22 @@ import MarkdownIt from "markdown-it";
 import { getRepoContentsContent } from '@helpers/dcsApi';
 import { APP_VERSION } from '@common/constants';
 
+const abbreviationToLogoMap = {
+  ta: 'uta',
+  tn: 'utn',
+  tq: 'utq',
+  tw: 'utw',
+  ult: 'ult',
+  ust: 'ust',
+  glt: 'ult',
+  gst: 'ust',
+  obs: 'obs',
+  'obs-sn': 'obs',
+  'obs-sq': 'obs',
+  'obs-tn': 'obs',
+  'obs-tq': 'obs',
+};
+
 export function encodeHTML(s) {
   if( ! s) {
     return '';
@@ -25,6 +41,68 @@ export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   note = note.replace(/\s*\(See: \[\[[^\]]+\]\]\)/, '');
 
   return note;
+}
+
+export function generateCoverPage(catalogEntry, extraHtml) {
+  let logo = `uW-app-256.png`;
+  if (catalogEntry.abbreviation in abbreviationToLogoMap) {
+    logo = `logo-${abbreviationToLogoMap[catalogEntry.abbreviation]}-256.png`;
+  }
+  const html = `
+  <span class="header-title"></span>
+  <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/${logo}" alt="${logo}">
+  <h1 class="cover-header section-header">${catalogEntry.title}</h1>
+  <h3 class="cover-version">${catalogEntry.branch_or_tag_name}</h3>
+  ${extraHtml}
+`;
+
+  return html;
+}
+
+export function generateTocHtml(body) {
+  const doc = new DOMParser().parseFromString(body, 'text/html');
+  let html = `
+<h1 class="toc-header">Table of Contents</h1>
+<div id="toc-contents">
+<ul class="toc-section top-toc-section">
+  ${generateTocSectionHtml(doc.getElementsByTagName('body')?.[0])}
+</ul>
+</div>
+`;
+  return html;
+}
+
+function generateTocSectionHtml(topElement) {
+  const elements = topElement.querySelectorAll(':scope > *');
+  let html = '';
+  elements.forEach((element) => {
+    const title = element.getAttribute('data-toc-title');
+    if (title && element.id) {
+      //       html += `
+      // <li class="toc-entry">
+      //   <a class="toc-element" href="#print-${element.id}"><span class="toc-element-title">${title}</span></a>
+      // </li>
+      // `
+      html += `
+<li class="toc-entry">
+  <a class="toc-element" href="#${element.id}"><span class="toc-element-title">${title}</span></a>
+</li>
+`;
+    }
+    const subHtml = generateTocSectionHtml(element);
+    if (subHtml) {
+      if (title) {
+        html += `
+<ul class="toc-section">
+  ${subHtml}
+</ul>
+`;
+      } else {
+        html += subHtml;
+      }
+    }
+  });
+  return html;
 }
 
 export async function generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken = '') {

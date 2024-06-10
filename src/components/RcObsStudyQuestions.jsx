@@ -9,7 +9,7 @@ import { createTheme, ThemeProvider } from '@mui/material';
 import BibleReference, {useBibleReference} from 'bible-reference-rcl';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';

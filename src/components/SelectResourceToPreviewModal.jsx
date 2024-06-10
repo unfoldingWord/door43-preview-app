@@ -1,6 +1,6 @@
 // React imports
 import React, { useState, useEffect, useContext } from 'react';
-import { AppContext } from './App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Material UI imports
 import {

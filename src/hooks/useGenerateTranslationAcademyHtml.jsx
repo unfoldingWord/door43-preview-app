@@ -67,7 +67,7 @@ export default function useGenerateTranslationAcademyHtml({ catalogEntry, taManu
       setHtml(html);
     };
 
-    if (taManuals && taManuals) {
+    if (taManuals) {
       flattenToHtml();
     }
   }, [catalogEntry, taManuals, setHtml]);

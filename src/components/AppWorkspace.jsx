@@ -27,7 +27,7 @@ import { WebPreviewComponent } from '@components/WebPreviewComponent';
 import { PrintPreviewComponent } from '@components/PrintPreviewComponent';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Constants imports
 import { APP_NAME } from '@common/constants';
@@ -70,6 +70,7 @@ export default function AppWorkspace() {
       renderMessage,
       bookId,
       bookTitle,
+      navComponent,
     },
     actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady },
   } = useContext(AppContext);
@@ -302,7 +303,7 @@ export default function AppWorkspace() {
               }}
             >
               <div>&nbsp;</div>
-              {ResourceComponent ? <ResourceComponent /> : ''}
+              {navComponent}
               <div style={{ whiteSpace: 'nowrap' }}>
                 <ToggleButtonGroup
                   value={view}
@@ -443,7 +444,7 @@ export default function AppWorkspace() {
             </Box>
           )}
           {!urlInfo?.repo && serverInfo && <ResourcesCardGrid />}
-          {urlInfo?.repo && serverInfo && view == 'web' && (
+          {urlInfo?.repo && serverInfo && view == 'web' && (htmlSections?.body || cachedHtmlSections?.body) && (
             <WebPreviewComponent
               ref={webPreviewRef}
               style={{
@@ -455,6 +456,7 @@ export default function AppWorkspace() {
           {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
             <PrintPreviewComponent ref={printPreviewRef} view={view} />
           )}
+          {ResourceComponent && <ResourceComponent />}
         </div>
       </Card>
       {serverInfo && (

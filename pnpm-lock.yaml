@@ -48,8 +48,8 @@ importers:
         specifier: ^1.6.7
         version: 1.7.2
       bible-reference-rcl:
-        specifier: ^1.4.0
-        version: 1.4.0(@babel/core@7.24.5)(@types/react@18.3.3)(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(rollup@4.18.0)
+        specifier: ^1.4.1
+        version: 1.4.1(@babel/core@7.24.5)(@types/react@18.3.3)(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(rollup@4.18.0)
       dompurify:
         specifier: ^3.0.8
         version: 3.1.4
@@ -1637,8 +1637,8 @@ packages:
   bible-reference-range@1.1.1:
     resolution: {integrity: sha512-rEHpdcTrlJcLP/KuSl5hJjPND3EBD67m81hvDrSbZ48xyE1r6V7qgxUacDY2ZfT6nu1pBTkc6JizH9a+m3LMRQ==}
 
-  bible-reference-rcl@1.4.0:
-    resolution: {integrity: sha512-VDpz9uXhXTs7EfkLgtKdPaA/K5IKJadKjTKx3U0hV7m8mjL8NI6eK3P5PU+w/RJyVmnAhZg/QIoUEWnlRxWduA==}
+  bible-reference-rcl@1.4.1:
+    resolution: {integrity: sha512-VNWlEl1dtb6Ah2JL1ptSXpLYoWWIOtQUGuSGyO1ADYVOld+80WY9YGlg7QQiaIBkC4saiVJwn69usPWTAcrxpg==}
     peerDependencies:
       prop-types: ^15.x
       react: ^18.2.0
@@ -4760,7 +4760,7 @@ snapshots:
 
   bible-reference-range@1.1.1: {}
 
-  bible-reference-rcl@1.4.0(@babel/core@7.24.5)(@types/react@18.3.3)(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(rollup@4.18.0):
+  bible-reference-rcl@1.4.1(@babel/core@7.24.5)(@types/react@18.3.3)(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(rollup@4.18.0):
     dependencies:
       '@emotion/react': 11.11.4(@types/react@18.3.3)(react@18.3.1)
       '@emotion/styled': 11.11.5(@emotion/react@11.11.4(@types/react@18.3.3)(react@18.3.1))(@types/react@18.3.3)(react@18.3.1)

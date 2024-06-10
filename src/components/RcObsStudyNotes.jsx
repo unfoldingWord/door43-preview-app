@@ -5,12 +5,14 @@ import { useState, useEffect, useContext, useMemo } from 'react';
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 
 // Helper imports
-import { convertNoteFromMD2HTML } from '@helpers/html';
+import { convertNoteFromMD2HTML, generateCoverPage, generateTocHtml, generateCopyrightAndLicenseHTML } from '@helpers/html';
 import { getOBSImgURL } from '@helpers/obs_helpers';
 
 // Material UI imports
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
+
+// Component imports
+import ImageResolutionSelector from '@components/ImageResolutionSelector';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
@@ -21,8 +23,7 @@ import usePivotTsvFileOnReference from '@hooks/usePivotTsvFileOnReference';
 import useGetOBSData from '@hooks/useGetOBSData';
 
 // Context imports
-import { AppContext } from '@components/App.context';
-import { generateCopyrightAndLicenseHTML } from '@helpers/html';
+import { AppContext } from '@contexts/App.context';
 
 const theme = createTheme({
   overrides: {
@@ -136,17 +137,19 @@ a.header-link:hover::after {
 }
 `;
 
+const printCss = '';
+
 const requiredSubjects = ['Open Bible Stories'];
+
+const DEFAULT_IMAGE_RESOLUTION = "none";
 
 export default function RcObsStudyNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith, setOptionComponents, setRenderOptions },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
-  const [copyright, setCopyright] = useState();
-  const [imageResolution, setImageResolution] = useState('none');
 
   const renderFlags = {
     showWordAtts: false,
@@ -241,9 +244,6 @@ export default function RcObsStudyNotes() {
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
     setBookId('obs');
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: '' } };
-    });
     setCanChangeColumns(false);
 
     if (!catalogEntry) {
@@ -258,6 +258,7 @@ export default function RcObsStudyNotes() {
         Please wait...
       </>
     );
+    setOptionComponents(<ImageResolutionSelector formLabelTitle={"Image Resolution"} value={renderOptions?.imageResolution || DEFAULT_IMAGE_RESOLUTION} setImageResolution={(value) => setRenderOptions((prevState) => {return {...prevState, imageResolution: value}})} />)
   }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
@@ -320,10 +321,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         <h3 class="obs-sn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
-        if (imageResolution != 'none') {
+        if (renderOptions && renderOptions?.imageResolution != 'none') {
           html += `
         <div class="obs-image-container" style="text-align: center">
-         <img src="${await getOBSImgURL({ storyNum: storyStr, frameNum: frameStr, resolution: imageResolution })}" alt="Frame ${storyStr}-${frameStr}">
+          <img src="${await getOBSImgURL({ storyNum: storyStr, frameNum: frameStr, resolution: renderOptions.imageResolution })}" alt="Frame ${storyStr}-${frameStr}">
         </div>
 `;
       }
@@ -410,49 +411,41 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     bookId,
     snTsvData,
     obsData,
-    imageResolution,
     setHtmlSections,
     setErrorMessage,
     setNavAnchor,
   ]);
 
   useEffect(() => {
-    const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
-      setCopyright(copyrightAndLicense);
-    };
+    const populateHtmlSections = async () => {
+      const cover = generateCoverPage(catalogEntry, `<h3>${catalogEntry.title}</h3>` + (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''));
+      const copyright = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
+      const toc = generateTocHtml(html);
+      const body = html;
 
-    if (catalogEntry && builtWith.length) {
-      generateCopyrightPage();
-    }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
-
-  useEffect(() => {
-    if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
+        css: {
+          web: webCss,
+          print: printCss,
+        },
+        toc,
+        cover,
         copyright,
-        body: html,
+        body,
       }));
       setStatusMessage('');
+    };
+
+    if (html && builtWith?.length) {
+      populateHtmlSections();
     }
-  }, [html, copyright, catalogEntry, setHtmlSections, setStatusMessage]);
+
+  }, [html, renderOptions, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
 
   return (
   <ThemeProvider theme={theme}>
     <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
-    <FormControl>
-      <InputLabel id="image-resolution-label">Images</InputLabel>
-      <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
-        <MenuItem value="none">Hide Images</MenuItem>
-        <MenuItem value="360px">640x360px</MenuItem>
-        <MenuItem value="2160px">3840x2160px</MenuItem>
-      </Select>
-    </FormControl>
   </ThemeProvider>
   )
 }

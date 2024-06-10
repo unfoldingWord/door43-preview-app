@@ -17,7 +17,7 @@ import PageSizeSelector from '@components/PageSizeSelector';
 import PageOrientationSelector from '@components/PageOrientationSelector';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Helper imports
 import { getColorForProgressBar } from '@helpers/loading';
@@ -36,7 +36,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint }) {
   const {
-    state: { catalogEntry, bookId, printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, pagedJsReadyHtml },
+    state: { catalogEntry, bookId, printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, pagedJsReadyHtml, optionComponents },
     actions: { setPrintOptions },
   } = useContext(AppContext);
 
@@ -199,6 +199,15 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
                   <HtmlIcon sx={{ fontSize: 40, color: 'green' }} />
                 </IconButton>
               </Tooltip>
+            </Grid>
+          </Grid>
+        </Box>
+        <Divider />
+        <DrawerHeader>Render Options</DrawerHeader>
+        <Box>
+          <Grid container sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Grid item sx={{ margin: '4%' }}>
+              {optionComponents}
             </Grid>
           </Grid>
         </Box>

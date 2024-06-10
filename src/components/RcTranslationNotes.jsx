@@ -8,7 +8,8 @@ import { BibleBookData } from '@common/books';
 // Helper imports
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoGitTrees } from '@helpers/dcsApi';
-import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
+import { encodeHTML, convertNoteFromMD2HTML, generateCoverPage, generateTocHtml, generateCopyrightAndLicenseHTML } from '@helpers/html';
+import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
@@ -23,15 +24,19 @@ import useGenerateTranslationWordsFileContents from '@hooks/useGenerateTranslati
 // Other imports
 import usfm from 'usfm-js';
 import { verseObjectsToString } from 'uw-quote-helpers';
-import { insertUnmatchedCurlyBracesInQuote } from '@helpers/quotes';
-import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 const webCss = `
-.tn-book-section-header {
+.tn-book-section-header,
+.tn-chapter-header {
   break-after: avoid !important;
+}
+
+.tn-book-section-header + *,
+.tn-chapter-header + * {
+  break-before: avoid !important;
 }
 
 .tn-scripture-block {
@@ -135,6 +140,8 @@ a.header-link:hover::after {
 }
 `;
 
+const printCss = '';
+
 const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
 const quoteTokenDelimiter = ' … ';
 
@@ -145,7 +152,6 @@ export default function RcTranslationNotes() {
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
-  const [copyright, setCopyright] = useState();
 
   const renderFlags = {
     showWordAtts: false,
@@ -363,12 +369,9 @@ export default function RcTranslationNotes() {
       bibleReferenceActions.applyBooksFilter(sb);
     };
 
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: '' } };
-    });
     setCanChangeColumns(false);
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setStatusMessage, setBookTitle, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -753,31 +756,31 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   ]);
 
   useEffect(() => {
-    const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
-      setCopyright(copyrightAndLicense);
-    };
+    const populateHtmlSections = async () => {
+      const cover = generateCoverPage(catalogEntry, `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''));
+      const copyright = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
+      const toc = generateTocHtml(html);
+      const body = html;
 
-    if (catalogEntry && builtWith.length) {
-      generateCopyrightPage();
-    }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
-
-  useEffect(() => {
-    if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
+        css: {
+          web: webCss,
+          print: printCss,
+        },
+        toc,
+        cover,
         copyright,
-        body: html,
+        body,
       }));
       setStatusMessage('');
+    };
+
+    if (html && builtWith?.length) {
+      populateHtmlSections();
     }
-  }, [html, copyright, bookTitle, renderOptions, setHtmlSections, setStatusMessage]);
+
+  }, [html, bookTitle, renderOptions, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

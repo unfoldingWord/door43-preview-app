@@ -2,15 +2,15 @@ import markdownit from 'markdown-it';
 import { encodeHTML } from '@helpers/html';
 import * as JSZip from 'jszip';
 
-export const getObsImgZipFileData = async (resolution = '360px-compressed') => {
+export const getObsImgZipFileData = async (resolution = '360px') => {
   return await fetch(`https://cdn.door43.org/obs/jpg/obs-images-${resolution}.zip`, { cache: 'force-cache' })
     .then((response) => response.arrayBuffer())
     .then((data) => JSZip.loadAsync(data));
 };
 
-export const getOBSImgURL = async ({ storyNum, frameNum, imgZipFileData = null, imgSrc = null, resolution = '360px-compressed' }) => {
+export const getOBSImgURL = async ({ storyNum, frameNum, imgZipFileData = null, imgSrc = null, resolution = '360px' }) => {
   let imgFile;
-  if (resolution && resolution == 'none') {
+  if (! resolution || resolution == 'none') {
     return '';
   }
   if (imgZipFileData) {
@@ -181,7 +181,7 @@ export async function getOBSData(catalogEntry, zipFileData) {
   return obsData;
 }
 
-export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resolution = '360px-compressed', chapters = null) {
+export async function convertOBSDataToHTML(obsData, imgZipFileData = null, resolution = '360px', chapters = null) {
   let html = `
 <div class="section" id="obs" data-toc-title="${encodeHTML(obsData.title)}">
 `;

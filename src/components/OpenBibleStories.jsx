@@ -1,12 +1,11 @@
 // React imports
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useContext } from 'react';
 
 // Material UI imports
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Custom hooks imports
 import useGetOBSData from '@hooks/useGetOBSData';
@@ -16,6 +15,8 @@ import useFetchZipFileData from '@hooks/useFetchZipFileData';
 // Other imports
 import { useBibleReference } from 'bible-reference-rcl';
 import BibleReference from 'bible-reference-rcl';
+import { generateCoverPage, generateTocHtml } from '@helpers/html';
+import ImageResolutionSelector from './ImageResolutionSelector';
 
 const webCss = `
 .article img {
@@ -71,14 +72,13 @@ const theme = createTheme({
   },
 });
 
+const DEFAULT_IMAGE_RESOLUTION = '360px';
+
 export default function OpenBibleStories() {
   const {
-    state: { catalogEntry, urlInfo, navAnchor, authToken, renderOptions },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns },
+    state: { catalogEntry, urlInfo, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns, setRenderOptions, setOptionComponents, },
   } = useContext(AppContext);
-
-  const [imageResolution, setImageResolution] = useState('360px');
-  const [copyright, setCopyright] = useState('');
 
   const onBibleReferenceChange = (b, c, v) => {
     if (setNavAnchor) {
@@ -105,16 +105,13 @@ export default function OpenBibleStories() {
 
   const obsData = useGetOBSData({ catalogEntry, zipFileData, setErrorMessage });
 
-  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution, chapters: renderOptions.chapters });
+  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: renderOptions?.imageResolution || DEFAULT_IMAGE_RESOLUTION, chapters: renderOptions.chapters });
 
   useEffect(() => {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
     setBookId('obs');
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: printCss } };
-    });
     setCanChangeColumns(false);
 
     if (!catalogEntry) {
@@ -129,7 +126,9 @@ export default function OpenBibleStories() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+
+    setOptionComponents(<ImageResolutionSelector formLabelTitle={"Image Resolution"} value={renderOptions?.imageResolution || DEFAULT_IMAGE_RESOLUTION} setImageResolution={(value) => setRenderOptions((prevState) => {return {...prevState, imageResolution: value}})} />)
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setStatusMessage, setSupportedBooks, setOptionComponents, setRenderOptions]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -147,45 +146,39 @@ export default function OpenBibleStories() {
   }, [navAnchor]);
 
   useEffect(() => {
-    const generateCopyrightPage = async () => {
-      const copyrightAndLicense = `
+    const populateHtmlSections = async () => {
+      const cover = generateCoverPage(catalogEntry, (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''));
+      const copyright = `
 <div class="obs-front-matter">
   ${obsData.front}
 </div>
 `;
-      setCopyright(copyrightAndLicense);
+      const toc = generateTocHtml(html);
+      const body = html;
+
+      setHtmlSections((prevState) => ({
+        ...prevState,
+        css: {
+          web: webCss,
+          print: printCss,
+        },
+        toc,
+        cover,
+        copyright,
+        body,
+      }));
+      setStatusMessage('');
     };
 
-    if (catalogEntry && obsData) {
-      generateCopyrightPage();
+    if (html && builtWith?.length) {
+      populateHtmlSections();
     }
-  }, [catalogEntry, obsData, authToken, setCopyright]);
 
-  useEffect(() => {
-    // Handle Print Preview & Status & Navigation
-    if (html && copyright) {
-      setHtmlSections((prevState) => {
-        return { ...prevState,
-          cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
-          copyright,
-          body: html
-        };
-      });
-      setStatusMessage('');
-    }
-  }, [html, copyright, setHtmlSections, setStatusMessage]);
+  }, [html, renderOptions, obsData, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
 
   return (
     <ThemeProvider theme={theme}>
       <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
-      <FormControl>
-        <InputLabel id="image-resolution-label">Images</InputLabel>
-        <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
-          <MenuItem value="none">Hide Images</MenuItem>
-          <MenuItem value="360px">640x360px</MenuItem>
-          <MenuItem value="2160px">3840x2160px</MenuItem>
-        </Select>
-      </FormControl>
     </ThemeProvider>
   );
 }

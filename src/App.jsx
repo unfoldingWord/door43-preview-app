@@ -1,5 +1,5 @@
 import AppWorkspace from './components/AppWorkspace'
-import { AppContextProvider } from './components/App.context'
+import { AppContextProvider } from '@contexts/App.context'
 import './App.css'
 
 function App() {

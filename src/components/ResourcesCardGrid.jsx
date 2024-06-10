@@ -16,11 +16,17 @@ import {
   Tooltip,
   FormControlLabel,
   Checkbox,
+  Dialog,
+  DialogTitle, 
+  DialogContent,
+  DialogActions,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, FormControl, Select, MenuItem } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -29,7 +35,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CatalogEntriesGrid from './CatalogEntriesGrid';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Constants
 import { API_PATH } from '@common/constants';
@@ -397,6 +403,9 @@ export const ResourcesCardGrid = () => {
                   value={order}
                   exclusive
                   onChange={(event, newOrder) => {
+                    if (!newOrder) {
+                      return;
+                    }
                     setOrder(newOrder);
                     urlParams.set('order', newOrder);
                     window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
@@ -406,12 +415,12 @@ export const ResourcesCardGrid = () => {
                 >
                   <Tooltip title="Ascending" arrow>
                     <ToggleButton value="asc" aria-label="Ascending">
-                      <ArrowUpwardIcon />
+                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                   <Tooltip title="Descending" arrow>
                     <ToggleButton value="desc" aria-label="Descending">
-                      <ArrowDownwardIcon />
+                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                 </ToggleButtonGroup>

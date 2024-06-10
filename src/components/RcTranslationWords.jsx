@@ -2,7 +2,7 @@
 import { useEffect, useContext, useState } from 'react';
 
 // Context imports
-import { AppContext } from '@components/App.context';
+import { AppContext } from '@contexts/App.context';
 
 // Component imports
 import TwNavigation from './TwNavigation';
@@ -13,7 +13,7 @@ import useGenerateTranslationWordsHtml from '@hooks/useGenerateTranslationWordsH
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
 
 // Library imports
-import { generateCopyrightAndLicenseHTML } from '@helpers/html';
+import { generateCoverPage, generateTocHtml, generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 const webCss = `
 .section > section:nth-child(1),
@@ -110,13 +110,13 @@ export default function RcTranslationWords() {
     actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
 
-  const [copyright, setCopyright] = useState('');
-
   const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
 
   const twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData, setErrorMessage });
 
-  const html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals });
+  const html = useGenerateTranslationWordsHtml({ catalogEntry, twManuals, setErrorMessage });
+
+  console.log(zipFileData, twManuals, html);
 
   useEffect(() => {
     if (! catalogEntry ) {
@@ -129,8 +129,7 @@ export default function RcTranslationWords() {
         Please wait...
       </>
     );
-    setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: printCss}}});
-  }, [catalogEntry, setStatusMessage, setHtmlSections]);
+  }, [catalogEntry, setStatusMessage]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -139,30 +138,30 @@ export default function RcTranslationWords() {
   }, [catalogEntry, setBuiltWith])
 
   useEffect(() => {
-    const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      )
-      setCopyright(copyrightAndLicense);
-    };
+    const populateHtmlSections = async () => {
+      const cover = generateCoverPage(catalogEntry);
+      const copyright = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
+      const toc = generateTocHtml(html);
+      const body = html;
 
-    if (catalogEntry && builtWith.length) {
-      generateCopyrightPage();
-    }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
-
-  useEffect(() => {
-    if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
+        css: {
+          web: webCss,
+          print: printCss,
+        },
+        toc,
+        cover,
         copyright,
-        body: html,
+        body,
       }));
       setStatusMessage('');
+    };
+
+    if (html && builtWith?.length) {
+      populateHtmlSections();
     }
-  }, [html, copyright, setHtmlSections, setStatusMessage]);
+  }, [html, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
 
   return <TwNavigation twManuals={twManuals} anchor={navAnchor} setNavAnchor={setNavAnchor} />;
 }
