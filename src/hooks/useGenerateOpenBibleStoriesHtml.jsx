@@ -9,7 +9,7 @@ export default function useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessa
     if (obsData) {
       convertOBSDataToHTML(obsData, null, resolution, chapters).then((sections) => setHtmlSections(sections));
     }
-  }, [obsData, resolution, setErrorMessage]);
+  }, [obsData, chapters, resolution, setErrorMessage]);
 
   return htmlSections;
 }

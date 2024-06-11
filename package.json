@@ -24,7 +24,7 @@
     "@vivliostyle/react": "^2.27.0",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.6.7",
-    "bible-reference-rcl": "^1.4.0",
+    "bible-reference-rcl": "^1.4.1",
     "dompurify": "^3.0.8",
     "jszip": "^3.10.1",
     "lodash": "4.17.21",
