@@ -142,7 +142,7 @@ const requiredSubjects = ['Open Bible Stories', 'Translation Academy', 'Translat
 
 export default function RcObsTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith },
+    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith, renderOptions },
     actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -369,7 +369,7 @@ export default function RcObsTranslationNotes() {
 `;
       const rcLinksData = {};
 
-      if (tnTsvData?.['front']?.['intro']) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvData?.['front']?.['intro']) {
         html += `
   <div class="section obs-tn-front-intro-section" data-toc-title="Introduciton">
 `;
@@ -390,6 +390,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.includes(storyStr)) {
+          continue;
+        }
         html += `
   <div id="nav-obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
     <h2 class="obs-tn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
@@ -626,6 +629,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     twFileContents,
     twlTsvData,
     imageResolution,
+    renderOptions,
     setHtmlSections,
     setErrorMessage,
     setNavAnchor,
@@ -651,11 +655,12 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setHtmlSections((prevState) => ({
         ...prevState,
         copyright,
+        cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
         body: html,
       }));
       setStatusMessage('');
     }
-  }, [html, copyright, catalogEntry, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, catalogEntry, renderOptions, setHtmlSections, setStatusMessage]);
 
   return (
   <ThemeProvider theme={theme}>

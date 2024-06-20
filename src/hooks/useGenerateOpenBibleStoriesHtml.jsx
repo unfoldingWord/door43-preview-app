@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { convertOBSDataToHTML } from '@helpers/obs_helpers';
 
-export default function useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution = '360px-compressed' }) {
+export default function useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution = '360px-compressed', chapters }) {
   const [htmlSections, setHtmlSections] = useState();
 
   useEffect(() => {
     if (obsData) {
-      convertOBSDataToHTML(obsData, null, resolution).then((sections) => setHtmlSections(sections));
+      convertOBSDataToHTML(obsData, null, resolution, chapters).then((sections) => setHtmlSections(sections));
     }
   }, [obsData, resolution, setErrorMessage]);
 

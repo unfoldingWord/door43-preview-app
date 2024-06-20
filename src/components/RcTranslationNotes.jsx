@@ -30,6 +30,10 @@ import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 import { AppContext } from '@components/App.context';
 
 const webCss = `
+.tn-book-section-header {
+  break-after: avoid !important;
+}
+
 .tn-scripture-block {
   border: 1px solid black;
   padding: 10px;
@@ -136,7 +140,7 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
+    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
     actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -421,7 +425,7 @@ export default function RcTranslationNotes() {
       }
       const rcLinksData = {};
 
-      if (tnTsvDataWithGLQuotes?.['front']?.['intro']) {
+      if ((! renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
       <div class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
@@ -442,6 +446,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
         const numVerses = BibleBookData[bookId].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.includes(chapterStr)) {
+          continue;
+        }
         html += `
       <div id="nav-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
         <h2 class="tn-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
@@ -739,6 +746,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     twCatalogEntries,
     twFileContents,
     twlTsvDataWithGLQuotes,
+    renderOptions,
     setHtmlSections,
     setErrorMessage,
     setNavAnchor,
@@ -763,13 +771,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>`,
+        cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
         copyright,
         body: html,
       }));
       setStatusMessage('');
     }
-  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, bookTitle, renderOptions, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }
