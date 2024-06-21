@@ -73,13 +73,13 @@ export default function Bible() {
     showWordAtts: false,
     showTitles: true,
     showHeadings: true,
-    showIntroductions: true,
     showFootnotes: true,
-    showXrefs: false,
-    showParaStyles: true,
-    showCharacterMarkup: false,
+    showXrefs: true,
     showChapterLabels: true,
     showVersesLabels: true,
+    showCharacterMarkup: true,
+    showParaStyles: true,
+    selectedBcvNotes: []
   };
 
   const onBibleReferenceChange = (b, c, v) => {
