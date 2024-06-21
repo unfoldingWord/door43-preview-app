@@ -6,6 +6,7 @@
       "@components/*": ["src/components/*"],
       "@helpers/*": ["src/helpers/*"],
       "@hooks/*": ["src/hooks/*"],
+      "@renderer/*": ["src/renderer/*"]
     }
   },
   "include": ["src"],
