@@ -234,6 +234,19 @@ export default function Bible() {
   }, [catalogEntry, builtWith, authToken, setCopyright]);
 
   useEffect(() => {
+    const numberSpans = document.querySelectorAll('.footnote-number');
+    numberSpans.forEach((numberSpan) => {
+      numberSpan.remove();
+    });
+
+    const toggleFootnotes = () => {
+      const footnotes = document.querySelectorAll('.footnote');
+      footnotes.forEach((footnote) => {
+        const isFootnoteVisible = footnote.style.display === 'inline';
+        footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
+      });
+    };
+    
     const footnotes = document.querySelectorAll('.footnote');
     footnotes.forEach((footnote, index) => {
       const numberSpan = document.createElement('span');
@@ -248,32 +261,20 @@ export default function Bible() {
 
       footnote.parentNode.insertBefore(numberSpan, footnote);
 
-      const toggleFootnote = () => {
-        const footnotes = document.querySelectorAll('.footnote');
-        footnotes.forEach((footnote) => {
-          const isFootnoteVisible = footnote.style.display === 'inline';
-          footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
-        });
-      };
-
-      numberSpan.addEventListener('click', toggleFootnote);
-      footnote.addEventListener('click', toggleFootnote);
-
-      footnote._toggleFootnote = toggleFootnote;
-      numberSpan._toggleFootnote = toggleFootnote;
+      numberSpan.addEventListener('click', toggleFootnotes);
+      footnote.addEventListener('click', toggleFootnotes);
     });
 
     // Cleanup function to remove event listeners
     return () => {
+      const footnotes = document.querySelectorAll('.footnote');
       footnotes.forEach(footnote => {
-        const toggleFootnote = footnote._toggleFootnote;
-        if (toggleFootnote) {
-          footnote.removeEventListener('click', toggleFootnote);
-          const numberSpan = footnote.previousSibling;
-          if (numberSpan && numberSpan._toggleFootnote) {
-            numberSpan.removeEventListener('click', toggleFootnote);
-          }
-        }
+        footnote.removeEventListener('click', toggleFootnotes);
+      });
+      const numberSpans = document.querySelectorAll('.footnote-number');
+      numberSpans.forEach(numberSpan => {
+        numberSpan.removeEventListener('click', toggleFootnotes);
+        numberSpan.remove();
       });
     };
     }, [htmlSections?.body, cachedHtmlSections?.body]);
