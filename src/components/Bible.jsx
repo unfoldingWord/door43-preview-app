@@ -246,8 +246,8 @@ export default function Bible() {
       footnote.parentNode.insertBefore(numberSpan, footnote);
 
       const toggleFootnote = () => {
-        const isFootnoteVisible = footnote.style.display === 'block';
-        footnote.style.display = isFootnoteVisible ? 'none' : 'block';
+        const isFootnoteVisible = footnote.style.display === 'inline';
+        footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
         // numberSpan.style.display = isFootnoteVisible ? 'inline' : 'none';
       };
 

@@ -397,6 +397,9 @@ export const ResourcesCardGrid = () => {
                   value={order}
                   exclusive
                   onChange={(event, newOrder) => {
+                    if (!newOrder) {
+                      return;
+                    }
                     setOrder(newOrder);
                     urlParams.set('order', newOrder);
                     window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
