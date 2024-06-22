@@ -406,12 +406,12 @@ export const ResourcesCardGrid = () => {
                 >
                   <Tooltip title="Ascending" arrow>
                     <ToggleButton value="asc" aria-label="Ascending">
-                      <ArrowUpwardIcon />
+                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                   <Tooltip title="Descending" arrow>
                     <ToggleButton value="desc" aria-label="Descending">
-                      <ArrowDownwardIcon />
+                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                 </ToggleButtonGroup>
