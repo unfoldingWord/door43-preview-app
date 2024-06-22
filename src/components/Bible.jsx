@@ -240,15 +240,20 @@ export default function Bible() {
       numberSpan.className = 'footnote-number';
       numberSpan.style.cssText = 'vertical-align: super; font-size: x-small; font-weight: bold; margin-right: 0.25em; padding: 2px; background-color: rgb(204, 204, 204);';
       numberSpan.textContent = index + 1;
+      numberSpan.title = footnote.textContent.trim();
+      numberSpan.style.cursor = 'pointer';
 
       footnote.style.display = 'none';
+      footnote.style.cursor = 'pointer';
 
       footnote.parentNode.insertBefore(numberSpan, footnote);
 
       const toggleFootnote = () => {
-        const isFootnoteVisible = footnote.style.display === 'inline';
-        footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
-        // numberSpan.style.display = isFootnoteVisible ? 'inline' : 'none';
+        const footnotes = document.querySelectorAll('.footnote');
+        footnotes.forEach((footnote) => {
+          const isFootnoteVisible = footnote.style.display === 'inline';
+          footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
+        });
       };
 
       numberSpan.addEventListener('click', toggleFootnote);
