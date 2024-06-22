@@ -78,8 +78,8 @@ importers:
         specifier: ^0.10.7
         version: 0.10.7(@babel/core@7.24.5)
       proskomma-json-tools:
-        specifier: ^0.8.10
-        version: 0.8.10
+        specifier: 0.8.8
+        version: 0.8.8
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -2658,11 +2658,11 @@ packages:
   proskomma-core@0.10.7:
     resolution: {integrity: sha512-OIpnxUZ9Bh16jgin2H15k9AFIjBipej0z0YSZS+aju3RkW6nkrNdGg0QA5FY0+Zn93iVwCny0tFABqKXcq/+dg==}
 
-  proskomma-json-tools@0.6.6:
-    resolution: {integrity: sha512-IEBJTyg6YDKr4E54CLDO1wDjcoiqGKjLxRDTnNSDRaHBG1TJyN1k94V6CHVrvgzKUtQFdWRH77mQ6hJjIUSLVg==}
+  proskomma-json-tools@0.6.5:
+    resolution: {integrity: sha512-A6pHlTgIc7VenY4AA+YOiflsyUdx14IyU4sXgz3tHuLoPQWoWsr49Qb2wi+OqcewQKF0EPYOc24GqPAuX1EoTQ==}
 
-  proskomma-json-tools@0.8.10:
-    resolution: {integrity: sha512-4sHYIWXjg3ntkaOEVHI/V3rBwX40h4lHV6jG+O0/HLDfz+E5IL0aeJ2lmsxC+Gnw7dvu5Dr9Cj6wyCRcFjFjTQ==}
+  proskomma-json-tools@0.8.8:
+    resolution: {integrity: sha512-S+Lc+o0PQSb7qCb8eLSn/xho2e+KftKUoQ6axge8bDlfGPJ7/Lk3GdaOMEne50KRnVSkevO0TcneBZVrN6vL0A==}
 
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
@@ -6019,7 +6019,7 @@ snapshots:
       easy-crc32: 0.0.2
       fs-extra: 11.2.0
       graphql: 16.8.1
-      proskomma-json-tools: 0.6.6
+      proskomma-json-tools: 0.6.5
       pure-uuid: 1.8.1
       sax: 1.3.0
       stream: 0.0.2
@@ -6031,7 +6031,7 @@ snapshots:
       - '@babel/core'
       - supports-color
 
-  proskomma-json-tools@0.6.6:
+  proskomma-json-tools@0.6.5:
     dependencies:
       '@babel/core': 7.24.5
       '@babel/plugin-proposal-throw-expressions': 7.24.1(@babel/core@7.24.5)
@@ -6040,7 +6040,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  proskomma-json-tools@0.8.10:
+  proskomma-json-tools@0.8.8:
     dependencies:
       '@babel/core': 7.24.5
       '@babel/plugin-proposal-throw-expressions': 7.24.1(@babel/core@7.24.5)
