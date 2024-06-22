@@ -63,6 +63,7 @@ export function AppContextProvider({ children }) {
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
   const [renderOptions, setRenderOptions] = useState({});
+  const [lastBookId, setLastBookId] = useState();
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -216,12 +217,28 @@ export function AppContextProvider({ children }) {
           setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
           setNoCache(true);
         }
+
+        const cookieLastBookId = document.cookie.split('; ').find(row => row.startsWith('lastBookId')).split('=')[1];
+        if (cookieLastBookId) {
+          setLastBookId(cookieLastBookId);
+        }
     };
 
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
     getOtherUrlParameters();
   }, [setErrorMessage]);
+
+  useEffect(() => {
+    const setLastBookIdCookie = () => {
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 14); // 2 weeks from now
+      document.cookie = `lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}`;
+    };
+    if (lastBookId) {
+      setLastBookIdCookie();
+    }
+  }, [lastBookId]);
 
   useEffect(() => {
     const fetchOwner = async () => {
@@ -583,6 +600,7 @@ export function AppContextProvider({ children }) {
       renderMessage,
       pagedJsReadyHtml,
       renderOptions,
+      lastBookId,
     },
     actions: {
       onPrintClick,
@@ -604,6 +622,7 @@ export function AppContextProvider({ children }) {
       setRenderMessage,
       setPagedJsReadyHtml,
       setRenderOptions,
+      setLastBookId,
     },
   };
 

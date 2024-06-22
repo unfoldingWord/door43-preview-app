@@ -62,8 +62,8 @@ h1 {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages, cachedHtmlSections },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, lastBookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages, cachedHtmlSections },
+    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions, setLastBookId },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
@@ -83,7 +83,7 @@ export default function Bible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
+    if (b != (bookId || urlInfo.hashParts[0] || lastBookId || 'gen')) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -99,7 +99,7 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: bookId || urlInfo.hashParts[0] || lastBookId || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -149,13 +149,14 @@ export default function Bible() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0] || bookId;
+      let _bookId = urlInfo.hashParts[0] || (sb.includes(lastBookId) ? lastBookId : sb[0]);
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
       }
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
       setBookId(_bookId);
+      setLastBookId(_bookId);
       setBookTitle(title);
       setStatusMessage(
         <>
@@ -177,7 +178,7 @@ export default function Bible() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, bookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, lastBookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {

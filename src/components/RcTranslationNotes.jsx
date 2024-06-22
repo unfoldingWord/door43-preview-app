@@ -140,8 +140,8 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, bookId, lastBookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith, setLastBookId, },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -161,7 +161,7 @@ export default function RcTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
+    if (b != (bookId || urlInfo.hashParts[0] || lastBookId || 'gen')) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -177,7 +177,7 @@ export default function RcTranslationNotes() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: bookId || urlInfo.hashParts[0] || lastBookId || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -339,13 +339,14 @@ export default function RcTranslationNotes() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
+      let _bookId = urlInfo.hashParts[0] || (sb.includes(lastBookId) ? lastBookId : sb[0]);
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
       }
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
       setBookId(_bookId);
+      setLastBookId(_bookId);
       setBookTitle(title);
 
       setStatusMessage(
