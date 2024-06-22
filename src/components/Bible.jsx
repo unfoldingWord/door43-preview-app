@@ -62,7 +62,7 @@ h1 {
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages, cachedHtmlSections },
     actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
   } = useContext(AppContext);
 
@@ -232,6 +232,46 @@ export default function Bible() {
       generateCopyrightPage();
     }
   }, [catalogEntry, builtWith, authToken, setCopyright]);
+
+  useEffect(() => {
+    const footnotes = document.querySelectorAll('.footnote');
+    footnotes.forEach((footnote, index) => {
+      const numberSpan = document.createElement('span');
+      numberSpan.className = 'footnote-number';
+      numberSpan.style.cssText = 'vertical-align: super; font-size: x-small; font-weight: bold; margin-right: 0.25em; padding: 2px; background-color: rgb(204, 204, 204);';
+      numberSpan.textContent = index + 1;
+
+      footnote.style.display = 'none';
+
+      footnote.parentNode.insertBefore(numberSpan, footnote);
+
+      const toggleFootnote = () => {
+        const isFootnoteVisible = footnote.style.display === 'block';
+        footnote.style.display = isFootnoteVisible ? 'none' : 'block';
+        // numberSpan.style.display = isFootnoteVisible ? 'inline' : 'none';
+      };
+
+      numberSpan.addEventListener('click', toggleFootnote);
+      footnote.addEventListener('click', toggleFootnote);
+
+      footnote._toggleFootnote = toggleFootnote;
+      numberSpan._toggleFootnote = toggleFootnote;
+    });
+
+    // Cleanup function to remove event listeners
+    return () => {
+      footnotes.forEach(footnote => {
+        const toggleFootnote = footnote._toggleFootnote;
+        if (toggleFootnote) {
+          footnote.removeEventListener('click', toggleFootnote);
+          const numberSpan = footnote.previousSibling;
+          if (numberSpan && numberSpan._toggleFootnote) {
+            numberSpan.removeEventListener('click', toggleFootnote);
+          }
+        }
+      });
+    };
+    }, [htmlSections?.body, cachedHtmlSections?.body]);
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
