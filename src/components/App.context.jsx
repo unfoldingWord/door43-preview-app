@@ -218,9 +218,9 @@ export function AppContextProvider({ children }) {
           setNoCache(true);
         }
 
-        const cookieLastBookId = document.cookie.split('; ').find(row => row.startsWith('lastBookId')).split('=')[1];
-        if (cookieLastBookId) {
-          setLastBookId(cookieLastBookId);
+        const lastBookIdCookie = document.cookie.split('; ').find(row => row.startsWith('lastBookId'));
+        if (lastBookIdCookie) {
+          setLastBookId(lastBookIdCookie.split('=')[1]);
         }
     };
 
