@@ -357,10 +357,11 @@ export function AppContextProvider({ children }) {
       if (!cachedBook) {
         setCachedBook({});
       }
-    } else if (!cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
+    } else if (!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
+      setFetchingCachedBook(true);
       fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo, bookId, lastBookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, catalogEntry, repo?.default_branch, bookId, lastBookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
     if (renderMessage || !cachedBook) {
