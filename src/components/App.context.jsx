@@ -63,6 +63,7 @@ export function AppContextProvider({ children }) {
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
   const [renderOptions, setRenderOptions] = useState({});
+  const [lastBookId, setLastBookId] = useState();
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -216,12 +217,28 @@ export function AppContextProvider({ children }) {
           setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
           setNoCache(true);
         }
+
+        const lastBookIdCookie = document.cookie.split('; ').find(row => row.startsWith('lastBookId'));
+        if (lastBookIdCookie) {
+          setLastBookId(lastBookIdCookie.split('=')[1]);
+        }
     };
 
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
     getOtherUrlParameters();
   }, [setErrorMessage]);
+
+  useEffect(() => {
+    const setLastBookIdCookie = () => {
+      const expirationDate = new Date();
+      expirationDate.setDate(expirationDate.getDate() + 14); // 2 weeks from now
+      document.cookie = `lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}`;
+    };
+    if (lastBookId) {
+      setLastBookIdCookie();
+    }
+  }, [lastBookId]);
 
   useEffect(() => {
     const fetchOwner = async () => {
@@ -312,7 +329,7 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let b = bookId || 'default';
+      let b = bookId || lastBookId || 'default';
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
         b = urlInfo.hashParts[0].toLowerCase();
       }
@@ -340,10 +357,11 @@ export function AppContextProvider({ children }) {
       if (!cachedBook) {
         setCachedBook({});
       }
-    } else if (!cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
+    } else if (!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
+      setFetchingCachedBook(true);
       fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, catalogEntry, repo?.default_branch, bookId, lastBookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
     if (renderMessage || !cachedBook) {
@@ -583,6 +601,7 @@ export function AppContextProvider({ children }) {
       renderMessage,
       pagedJsReadyHtml,
       renderOptions,
+      lastBookId,
     },
     actions: {
       onPrintClick,
@@ -604,6 +623,7 @@ export function AppContextProvider({ children }) {
       setRenderMessage,
       setPagedJsReadyHtml,
       setRenderOptions,
+      setLastBookId,
     },
   };
 
