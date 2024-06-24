@@ -329,7 +329,7 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let b = bookId || 'default';
+      let b = bookId || lastBookId || 'default';
       if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
         b = urlInfo.hashParts[0].toLowerCase();
       }
@@ -360,7 +360,7 @@ export function AppContextProvider({ children }) {
     } else if (!cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
       fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo, bookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, catalogEntry, repo, bookId, lastBookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
     if (renderMessage || !cachedBook) {
