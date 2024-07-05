@@ -53,7 +53,6 @@ const webCss = `
 .article.tq-entry,
 .section.tq-verse {
   break-before: auto !important;
-  break-inside: avoid !important;
   break-after: auto !important
 }
 
@@ -242,7 +241,7 @@ export default function RcTranslationQuestions() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -329,7 +328,7 @@ export default function RcTranslationQuestions() {
         }
         html += `
       <div id="nav-${bookId}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tq-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+        <h2 class="header tq-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tqTsvData?.[chapterStr]?.intro) {
           html += `
@@ -358,7 +357,7 @@ export default function RcTranslationQuestions() {
           let usfmJSONVerseStr = verseStr;
           html += `
         <div id="${verseLink}" class="section tq-chapter-verse-section">
-          <h3 class="tq-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+          <h3 class="header tq-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -390,7 +389,7 @@ export default function RcTranslationQuestions() {
             const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="tq-scripture-block" id="${scriptureLink}">
-            <h4 class="tq-scripture-header">
+            <h4 class="header tq-scripture-header">
               <a href="#${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>

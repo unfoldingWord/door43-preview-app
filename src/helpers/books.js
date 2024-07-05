@@ -62,7 +62,7 @@ export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion,
   console.log('Compressed Data Size:', compressedData?.length);
 
   const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
-  const path = `u/${owner}/${repo}/${ref}/${bookId}.json.gzip`;
+  const path = `u/${owner}/${repo}/${ref}/${bookId}.json.gz`;
 
   try {
     const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {

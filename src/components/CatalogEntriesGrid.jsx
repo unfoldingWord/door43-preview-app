@@ -151,6 +151,7 @@ CatalogEntriesGrid.propTypes = {
   showJustThisCatalogEntry: PropTypes.bool,
   linkToDCS: PropTypes.bool,
   bookId: PropTypes.string,
+  extraItem: PropTypes.object,
 };
 
 export default CatalogEntriesGrid;

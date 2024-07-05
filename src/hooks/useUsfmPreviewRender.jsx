@@ -3,19 +3,21 @@ import usePkBookPreviewRenderer from '@hooks/usePkBookPreviewRenderer';
 import { Proskomma } from 'proskomma-core';
 
 export default function useUsfmPreviewRenderer(props) {
-  const { bookId, usfmText, verbose, extInfo, renderFlags, htmlRender, renderStyles, setErrorMessage } = props;
+  const { bookId, usfmText, verbose, extInfo, renderFlags, htmlRender, renderStyles, chapters, setErrorMessage } = props;
 
   const [docId, setDocId] = useState();
   // eslint-disable-next-line no-unused-vars
   const [pk, setPk] = useState(new Proskomma());
   const [renderedData, setRenderedData] = useState();
   const [importedBookDocIds, setImportedBookDocIds] = useState({});
+  const [htmlReady, setHtmlReady] = useState(false);
 
   const { ready, doRender } = usePkBookPreviewRenderer({
     pk,
     docId,
     bookId,
     renderStyles,
+    chapters,
   });
 
   useEffect(() => {
@@ -48,10 +50,16 @@ export default function useUsfmPreviewRenderer(props) {
   }, [pk, usfmText, bookId, importedBookDocIds, setErrorMessage]);
 
   useEffect(() => {
-    if (pk && ready) {
-      setRenderedData(doRender({ renderFlags, extInfo, verbose, htmlRender }));
-    }
-  }, [pk, doRender, extInfo, renderFlags, verbose, ready, htmlRender]);
+    const callDoRender = async () => {
+      const data = doRender({ renderFlags, extInfo, verbose, htmlRender });
+      setRenderedData(data);
+      setHtmlReady(true);
+    };
 
-  return { renderedData, ready };
+    if (pk && ready && doRender && !renderedData) {
+      callDoRender();
+    }
+  }, [pk, doRender, extInfo, renderFlags, verbose, ready, htmlRender, renderedData]);
+
+  return { renderedData, htmlReady };
 }

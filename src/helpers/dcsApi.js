@@ -64,19 +64,27 @@ export const getRepoContentsContent = async (repoApiUrl, filePath, ref, authToke
     .then((json) => base64.decode(json.content));
 };
 
-export const getRepoGitTrees = async (repoApiUrl, ref, authToken = '', recursive = true) => {
-  const repoGitTreesUrl = `${repoApiUrl}/git/trees/${ref}?recursive=${recursive}`;
+export const getRepoGitTrees = async (repoApiUrl, ref, authToken = '', recursive = true, page = 1, allItems = []) => {
+  const repoGitTreesUrl = `${repoApiUrl}/git/trees/${ref}?recursive=${recursive}&page=${page}`;
   return fetch(repoGitTreesUrl,
   {
     cache: 'default',
     headers: {
       Authorization: `Bearer ${authToken}`
     }
-  }).then((response) => {
+  }).then(async (response) => {
     if (!response || !response.ok) {
-      throw new Error(`Unable to get directory listting of repo on DCS.`);
+      throw new Error(`Unable to get directory listing of repo on DCS.`);
     } else {
-      return response.json();
+      const treeData = await response.json();
+      allItems.push(...treeData.tree);
+      // If there are more items to fetch, call the function recursively with the next page number
+      if (allItems.length < treeData.total_count) {
+        return await getRepoGitTrees(repoApiUrl, ref, authToken, recursive, page + 1, allItems);
+      } else {
+        // If all items have been fetched, return them
+        return allItems;
+      }
     }
   });
 };

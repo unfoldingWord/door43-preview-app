@@ -27,7 +27,7 @@ function generateCover(catalogEntry, extra) {
   const cover = `
   <span class="header-title"></span>
   <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/${logo}" alt="${logo}">
-  <h1 class="cover-header section-header">${catalogEntry.title}</h1>
+  <h1 class="header cover-header section-header">${catalogEntry.title}</h1>
   <h3 class="cover-version">${catalogEntry.branch_or_tag_name}</h3>
   ${extra}
 `;
@@ -99,7 +99,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
       const body = htmlSections?.body || cachedHtmlSections?.body || '';
       const doc = new DOMParser().parseFromString(body, 'text/html');
       let toc = htmlSections?.toc || `
-  <h1 class="toc-header">Table of Contents</h1>
+  <h1 class="header toc-header">Table of Contents</h1>
   <div id="toc-contents">
     <ul class="toc-section top-toc-section">
       ${generateToc(doc.getElementsByTagName('body')?.[0])}
@@ -189,7 +189,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
   }
 }
 
-span.footnote {
+span.paras_usfm_f {
   float: footnote;
   position: note(footnotes);
 }
@@ -337,6 +337,18 @@ h1, h2, h3, h4, h5, h6 {
 .section,
 .article {
   break-after: page !important;
+}
+
+.section {
+  break-before: page !important;
+}
+
+.section > .section:first-child {
+  break-before: auto !important;
+}
+
+.header + * {
+  break-before: auto !important;
 }
 
 ${htmlSections?.css?.web || cachedHtmlSections?.css?.web || ''}

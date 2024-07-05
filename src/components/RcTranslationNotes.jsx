@@ -84,7 +84,6 @@ const webCss = `
 
 .article {
   break-after: auto !important;
-  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
@@ -218,7 +217,7 @@ export default function RcTranslationNotes() {
     setErrorMessage,
   });
 
-  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
+  const catalogEntries = useMemo(() => (catalogEntry ? [catalogEntry] : []), [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -298,7 +297,7 @@ export default function RcTranslationNotes() {
   });
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -307,7 +306,13 @@ export default function RcTranslationNotes() {
   }, [navAnchor]);
 
   useEffect(() => {
-    if (catalogEntry && sourceBibleCatalogEntries?.length && targetBibleCatalogEntries?.length && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
+    if (catalogEntry &&
+      sourceBibleCatalogEntries?.length &&
+      targetBibleCatalogEntries?.length &&
+      taCatalogEntries?.length &&
+      twCatalogEntries?.length &&
+      twlCatalogEntries?.length
+    ) {
       setBuiltWith([
         catalogEntry,
         ...targetBibleCatalogEntries,
@@ -328,7 +333,7 @@ export default function RcTranslationNotes() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -408,7 +413,7 @@ export default function RcTranslationNotes() {
               break;
           }
         }
-        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+        if (referenceWithLink && !data[resource][rcLink].backRefs.includes(referenceWithLink)) {
           data[resource][rcLink].backRefs.push(referenceWithLink);
         }
       }
@@ -452,7 +457,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         }
         html += `
       <div id="nav-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tn-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+        <h2 class="header tn-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
           html += `
@@ -481,7 +486,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           let usfmJSONVerseStr = verseStr;
           html += `
         <div id="${verseLink}" class="section tn-chapter-verse-section">
-          <h3 class="tn-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+          <h3 class="header tn-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -516,7 +521,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="article tn-scripture-block" id="${scriptureLink}">
-            <h4 class="tn-scripture-header">
+            <h4 class="header tn-scripture-header">
               <a href="#${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
@@ -540,7 +545,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               if (!row.Quote) {
                 article += `
-                <h4 class="tn-note-header">
+                <h4 class="header tn-note-header">
                   <a href="#nav-${noteLink}" class="header-link">
                   Note: ${verseBridge}
                   </a>
@@ -560,7 +565,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
                     verseBridge += `(${row.Reference})`;
                   }
                   article += `
-                <h4 class="tn-note-header">
+                <h4 class="header tn-note-header">
                   <a href="#${noteLink}" class="header-link">
                   ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
                   </a>
@@ -602,7 +607,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             const twlLink = `twl-${bookId}-${chapterStr}-${verseStr}`;
             let article = `
           <div class="article tn-verse-twls" id="${twlLink}">
-            <h4 class="tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
+            <h4 class="header tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
 `;
             for (let targetidx in targetBibleCatalogEntries) {
               const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
@@ -649,7 +654,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
-    <h1 class="cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
+    <h1 class="header cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -686,7 +691,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
-    <h1 class="cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
+    <h1 class="header cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -755,11 +760,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
