@@ -3,10 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Proskomma } from 'proskomma-core';
 import { SofriaRenderFromProskomma } from 'proskomma-json-tools';
-import sofria2WebActions from '../renderer/sofria2web';
-import { Render2React } from '../renderer/render2react';
-import { Render2Html } from '../renderer/render2html';
-import { getBcvVerifyStruct, isVerifiedWithBcvStruct } from '@helpers/bcvVerify';
+import { render } from 'proskomma-json-tools';
+import { renderers } from '../renderer/sofria2html'
 
 const defaultFlags = {
   showWordAtts: false,
@@ -23,13 +21,13 @@ const defaultFlags = {
 
 export default function usePkBookPreviewRenderer(props) {
   const {
-    pk, 
-    docId, 
+    pk,
+    docId,
     bookId,
-    renderStyles,
+    chapters,
   } = props;
 
-  const [ready,setReady] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     if ((docId != null) && (pk != null) && (bookId != null)) {
@@ -39,7 +37,6 @@ export default function usePkBookPreviewRenderer(props) {
 
   const doRender = useCallback(({
     renderFlags,
-    htmlRender,
     verbose,
     extInfo,
   }) => {
@@ -47,26 +44,24 @@ export default function usePkBookPreviewRenderer(props) {
     if ((docId != null) && (pk != null) && (bookId != null)) {
       const renderer = new SofriaRenderFromProskomma({
         proskomma: pk,
-        actions: sofria2WebActions,
+        actions: render.sofria2web.renderActions.sofria2WebActions,
       })
 
-      let renderers = null
-      if (htmlRender) { // create a class instance of Render2Html and then get render functions bound to instance
-        const newRenderer = new Render2Html(renderStyles)
-        renderers = newRenderer.getRenderers()
-      } else {
-        const newRenderer = new Render2React(renderStyles)
-        renderers = newRenderer.getRenderers()
-      }
+      // const r2h = new Render2Html(renderStyles);
+      // const renderers = r2h.getRenderers();
+
+      // const renderers = render.sofria2web.sofria2html.renderers;
 
       const config = {
         ...defaultFlags,
         ...renderFlags,
         bookId,
         extInfo,
-        verifyBcv: getBcvVerifyStruct(extInfo),
-        doVerify: isVerifiedWithBcvStruct,
+        selectedBcvNotes: [],
         renderers,
+      }
+      if (chapters) {
+        config.chapters = chapters;
       }
       try {
         renderer.renderDocument({
@@ -79,8 +74,9 @@ export default function usePkBookPreviewRenderer(props) {
         throw err
       }
     }
-    return output.paras
-  },[bookId, docId, pk, renderStyles])
+    const styles = render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.styles);
+    return `<style type="text/css">${styles}</style>${output.paras}`;
+  },[bookId, docId, pk, chapters])
 
   return {
     ready,
@@ -98,10 +94,6 @@ export default function usePkBookPreviewRenderer(props) {
   htmlRender: PropTypes.bool,
 */
 
-usePkBookPreviewRenderer.defaultProps = {
-  renderStyles: null,
-}
-
 usePkBookPreviewRenderer.propTypes = {
   /** Instance of Proskomma class */
   pk: PropTypes.instanceOf(Proskomma),
@@ -109,6 +101,4 @@ usePkBookPreviewRenderer.propTypes = {
   docId: PropTypes.string, 
   /** bookId selector for what content to show in the preview */
   bookId: PropTypes.string,
-  /** app preferred styles to use */
-  renderStyles: PropTypes.object,
 }

@@ -64,6 +64,8 @@ export function AppContextProvider({ children }) {
   const [fetchingRepo, setFetchingRepo] = useState(false);
   const [renderOptions, setRenderOptions] = useState({});
   const [lastBookId, setLastBookId] = useState();
+  const [settingsComponent, setSettingsComponent] = useState();
+  const [extraDownloadButtons, setExtraDownloadButtons] = useState([]);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -173,7 +175,7 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    const getOtherUrlParameters = () => {
+    const getOtherUrlParameters = async () => {
       if (url.searchParams.get('token')) {
         setAuthToken(url.searchParams.get('token'));
       } else {
@@ -198,35 +200,42 @@ export function AppContextProvider({ children }) {
         setNoCache(true);
       }
       if (url.searchParams.get('chapters')) {
-          const chaptersOrigStr = url.searchParams.get('chapters');
-          const chapterList = chaptersOrigStr.split(',').map((chapter) => chapter.trim());
-          const chapters = [];
-          chapterList.forEach((chapter) => {
-            if (chapter.includes('-')) {
-              const [start, end] = chapter.split('-').map((num) => num.trim());
-              if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
-                for (let i = parseInt(start); i <= parseInt(end); i++) {
-                    chapters.push(i.toString());
-                }
+        const chaptersOrigStr = url.searchParams.get('chapters');
+        const chapterList = chaptersOrigStr.split(',').map((chapter) => chapter.trim());
+        const chapters = [];
+        chapterList.forEach((chapter) => {
+          if (chapter.includes('-')) {
+            const [start, end] = chapter.split('-').map((num) => num.trim());
+            if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
+              let parsedStart = Math.abs(parseInt(start));
+              if (parsedStart < 1) {
+                parsedStart = 1;
               }
-            } else {
+              const parsedEnd = Math.abs(parseInt(end));
+              for (let i = parsedStart; i <= parsedEnd; i++) {
+                chapters.push(i.toString());
+              }
+            }
+          } else {
+            const chapterNum = parseInt(chapter.trim());
+            if (!isNaN(chapterNum) && chapterNum > 0) {
               chapters.push(chapter);
             }
-          });
-          console.log(chapterList, chapters);
-          setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
-          setNoCache(true);
-        }
+          }
+        });
+        setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
+        setNoCache(true);
+      }
 
-        const lastBookIdCookie = document.cookie.split('; ').find(row => row.startsWith('lastBookId'));
-        if (lastBookIdCookie) {
-          setLastBookId(lastBookIdCookie.split('=')[1]);
-        }
+      const lastBookIdCookie = document.cookie.split('; ').find((row) => row.startsWith('lastBookId'));
+      if (lastBookIdCookie) {
+        setLastBookId(lastBookIdCookie.split('=')[1]);
+      }
     };
 
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
-    getOtherUrlParameters();
+    getOtherUrlParameters().catch((e) => setErrorMessage(e.message));
   }, [setErrorMessage]);
 
   useEffect(() => {
@@ -431,7 +440,7 @@ export function AppContextProvider({ children }) {
           if (subject == 'Bible' || subject == 'Aligned Bible') {
             flavorType = 'scripture';
             flavorType = 'textTranslation';
-         } else {
+          } else {
             flavorType = 'gloss';
             if (subject == 'Open Bible Stories') {
               flavor = 'textStories';
@@ -558,6 +567,32 @@ export function AppContextProvider({ children }) {
   }, [urlInfo, catalogEntry, setErrorMessage]);
 
   useEffect(() => {
+    const handleDownloadHtml = () => {
+      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.html`;
+      const fileContent = pagedJsReadyHtml || '';
+      const blob = new Blob([fileContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    };
+
+    if (bookId && catalogEntry && pagedJsReadyHtml) {
+      const noHtmlButtons = extraDownloadButtons.filter((buttonData) => buttonData.label !== 'HTML');
+      setExtraDownloadButtons([
+        ...noHtmlButtons,
+        {
+          label: 'HTML',
+          tooltip: 'Download the HTML for printing',
+          onClick: handleDownloadHtml,
+        },
+      ]);
+    }
+  }, [bookId, catalogEntry, pagedJsReadyHtml, setExtraDownloadButtons]);
+
+  useEffect(() => {
     const sendCachedBook = async () => {
       if (!bookId || bookId === 'gen' || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
         uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
@@ -602,6 +637,8 @@ export function AppContextProvider({ children }) {
       pagedJsReadyHtml,
       renderOptions,
       lastBookId,
+      settingsComponent,
+      extraDownloadButtons,
     },
     actions: {
       onPrintClick,
@@ -624,6 +661,8 @@ export function AppContextProvider({ children }) {
       setPagedJsReadyHtml,
       setRenderOptions,
       setLastBookId,
+      setSettingsComponent,
+      setExtraDownloadButtons,
     },
   };
 

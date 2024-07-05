@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
     ref = "master";
   }
 
-  const absoluteKey = `u/${owner}/${repo}/${ref}/${bookId}.json.gzip`;
+  const absoluteKey = `u/${owner}/${repo}/${ref}/${bookId}.json.gz`;
 
   // Create an S3 instance
   const s3 = new AWS.S3();
@@ -48,7 +48,7 @@ exports.handler = async (event, context) => {
 
   try {
     const data = await s3.listObjectsV2(params).promise();
-    const versions = new Set(data.Contents.filter(item => item.Key.endsWith(`/${bookId}.json.gzip`)).map(item => item.Key.split('/')[3])); // get the version part of the key
+    const versions = new Set(data.Contents.filter(item => item.Key.endsWith(`/${bookId}.json.gz`)).map(item => item.Key.split('/')[3])); // get the version part of the key
     if (versions.size === 0) {
       return {
         statusCode: 404,
@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
     const latestVersions = Array.from(versions).sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
     const index = latestVersions.findIndex(version => version.localeCompare(ref, undefined, {numeric: true}) < 0);
     const previousVersion = index !== -1 ? latestVersions[index] : latestVersions.includes('master') ? 'master' : latestVersions[0];
-    const downloadLink = `https://s3.us-west-2.amazonaws.com/${process.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(previousVersion)}/${bookId}.json.gzip`;
+    const downloadLink = `https://s3.us-west-2.amazonaws.com/${process.env.VITE_PREVIEW_S3_BUCKET_NAME}/u/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(previousVersion)}/${bookId}.json.gz`;
     return {
       statusCode: 200,
       body: downloadLink,

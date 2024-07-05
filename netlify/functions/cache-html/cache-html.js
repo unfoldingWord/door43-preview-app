@@ -28,7 +28,7 @@ exports.handler = async function (event, context) {
 
   const path = event.queryStringParameters.path;
 
-  if (!path || !path.startsWith('u/') || !path.endsWith('.json.gzip')) {
+  if (!path || !path.startsWith('u/') || !path.endsWith('.json.gz')) {
     return {
       statusCode: 400,
       message: 'Invalid Parameters',

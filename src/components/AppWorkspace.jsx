@@ -60,7 +60,6 @@ export default function AppWorkspace() {
       errorMessages,
       htmlSections,
       builtWith,
-      cachedBook,
       cachedHtmlSections,
       serverInfo,
       isOpenPrint,

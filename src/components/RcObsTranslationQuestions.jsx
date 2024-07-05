@@ -317,7 +317,7 @@ export default function RcObsTranslationQuestions() {
         }
         html += `
       <div id="nav-obs-${storyStr}" class="section tq-story-section" data-toc-title="${obsData.stories[storyIdx].title}">
-        <h2 class="tq-story-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+        <h2 class="header tq-story-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tqTsvData?.[storyStr]?.['intro']) {
           html += `
@@ -343,7 +343,7 @@ export default function RcObsTranslationQuestions() {
           const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section tq-story-frame-section">
-        <h3 class="tq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header tq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {

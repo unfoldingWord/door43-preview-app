@@ -87,7 +87,6 @@ const webCss = `
 
 .article {
   break-after: auto !important;
-  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
@@ -395,7 +394,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         }
         html += `
   <div id="nav-obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-tn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+    <h2 class="header obs-tn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tnTsvData?.[storyStr]?.['intro']) {
           html += `
@@ -422,7 +421,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-tn-chapter-frame-section">
-        <h3 class="obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -447,7 +446,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               if (!row.Quote) {
                 article += `
-          <h4 class="obs-tn-note-header">
+          <h4 class="header obs-tn-note-header">
             <a href="#${noteLink}" class="header-link">
             Note:
             </a>
@@ -455,7 +454,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               } else {
                 article += `
-          <h4 class="obs-tn-note-header">
+          <h4 class="header obs-tn-note-header">
             <a href="#${noteLink}" class="header-link">
               ${row.Quote}
             </a>
@@ -497,7 +496,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             const twlLink = `twl-${storyStr}-${frameStr}`;
             let article = `
         <div class="article obs-tn-frame-twls" id="${twlLink}">
-          <h4 class="obs-tn-frame-twl-header">${twCatalogEntries?.[0].title}</h4>
+          <h4 class="header obs-tn-frame-twl-header">${twCatalogEntries?.[0].title}</h4>
           <ul class="obs-tn-frame-twl-list">
 `;
             for (let row of twlTsvData[storyStr][frameStr]) {
@@ -532,7 +531,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
-    <h1 class="cover-header section-header">${taCatalogEntry.title} - OBS</h1>
+    <h1 class="header cover-header section-header">${taCatalogEntry.title} - OBS</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -569,7 +568,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
-    <h1 class="cover-header section-header">${twCatalogEntry.title} - OBS</h1>
+    <h1 class="header cover-header section-header">${twCatalogEntry.title} - OBS</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;

@@ -79,10 +79,6 @@ const webCss = `
   margin-bottom: 10px;
 }
 
-.section {
-  break-after: page !important;
-}
-
 .article {
   break-after: auto !important;
   break-inside: avoid !important;
@@ -266,8 +262,6 @@ export default function RcObsStudyNotes() {
 <div class="section obs-sn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title}">
   <h1 class="header obs-sn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title}</a></h1>
 `;
-
-      console.log(snTsvData);
       if (snTsvData?.front?.intro) {
         html += `
   <div class="section obs-sn-front-intro-section" data-toc-title="Introduciton">
@@ -291,7 +285,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         const storyStr = String(storyIdx + 1);
         html += `
   <div id="nav-${bookId}-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+    <h2 class="header obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (snTsvData?.[storyStr]?.['intro']) {
           html += `
@@ -317,7 +311,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-sn-chapter-frame-section">
-        <h3 class="obs-sn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header obs-sn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -342,7 +336,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               if (!row.Quote) {
                 article += `
-          <h4 class="obs-sn-note-header">
+          <h4 class="header obs-sn-note-header">
             <a href="#${noteLink}" class="header-link">
             Note:
             </a>
@@ -350,7 +344,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               } else {
                 article += `
-          <h4 class="obs-sn-note-header">
+          <h4 class="header obs-sn-note-header">
             <a href="#${noteLink}" class="header-link">
               ${row.Quote}
             </a>

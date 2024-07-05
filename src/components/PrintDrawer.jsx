@@ -8,7 +8,6 @@ import { LinearProgress, Grid, Box } from '@mui/material';
 import { IconButton, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
 import PrintIcon from '@mui/icons-material/Print';
 import PdfIcon from '@mui/icons-material/PictureAsPdf';
-import HtmlIcon from '@mui/icons-material/Html';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // Local component imports
@@ -36,7 +35,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 
 export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint }) {
   const {
-    state: { catalogEntry, bookId, printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, pagedJsReadyHtml },
+    state: { printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, settingsComponent, extraDownloadButtons },
     actions: { setPrintOptions },
   } = useContext(AppContext);
 
@@ -76,16 +75,6 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
   }, [pageOrientation, pageSize, setPrintOptions]);
 
   const columnsList = [1, 2, 3];
-
-  const handleDownloadHtml = () => {
-    const element = document.createElement('a');
-    const file = new Blob([pagedJsReadyHtml], { type: 'text/html' });
-    element.href = URL.createObjectURL(file);
-    element.download = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.html`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
 
   return (
     <>
@@ -193,12 +182,22 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
                 </IconButton>
               </Tooltip>
             </Grid>
-            <Grid item>
-              <Tooltip title={'Download the HTML'} arrow>
-                <IconButton onClick={handleDownloadHtml}>
-                  <HtmlIcon sx={{ fontSize: 40, color: 'green' }} />
+            {extraDownloadButtons.map((buttonData, idx) => (
+            <Grid item key={`button-${idx}`}>
+              <Tooltip title={buttonData.tooltip} arrow>
+                <IconButton onClick={buttonData.onClick}>
+                  {buttonData.label}
                 </IconButton>
               </Tooltip>
+            </Grid>
+            ))}
+          </Grid>
+        </Box>
+        <Divider />
+        <Box>
+          <Grid container sx={{ display: 'flex', flexDirection: 'column' }}>
+            <Grid item sx={{ margin: '4%' }}>
+              {settingsComponent}
             </Grid>
           </Grid>
         </Box>

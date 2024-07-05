@@ -313,7 +313,7 @@ export default function RcObsStudyQuestions() {
         const storyStr = String(storyIdx + 1);
         html += `
       <div id="nav-${bookId}-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-        <h2 class="obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+        <h2 class="header obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (sqTsvData?.[storyStr]?.['intro']) {
           html += `
@@ -339,7 +339,7 @@ export default function RcObsStudyQuestions() {
           const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-sq-chapter-frame-section">
-        <h3 class="sq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header sq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {

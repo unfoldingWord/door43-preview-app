@@ -6,6 +6,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 
 // USFM parsing library
 import usfm from 'usfm-js';
+import { removeAlignments } from '@helpers/usfm';
 
 // Custom hooks
 import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
@@ -58,12 +59,52 @@ h1 {
   text-decoration: none;
   color: inherit;
 }
+
+.web-preview .paras_usfm_f {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  background-color: #CCC;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.paras_usfm_fq, .paras_usfm_fqa {
+  font-style: italic;
+}
 `;
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, lastBookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages, cachedHtmlSections },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions, setLastBookId },
+    state: {
+      urlInfo,
+      catalogEntry,
+      navAnchor,
+      authToken,
+      bookId,
+      lastBookId,
+      bookTitle,
+      supportedBooks,
+      builtWith,
+      htmlSections,
+      errorMessages,
+      cachedHtmlSections,
+      renderOptions,
+      extraDownloadButtons,
+    },
+    actions: {
+      setBookId,
+      setBookTitle,
+      setBuiltWith,
+      setSupportedBooks,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setNavAnchor,
+      setCanChangeColumns,
+      setPrintOptions,
+      setLastBookId,
+      setExtraDownloadButtons,
+    },
   } = useContext(AppContext);
 
   const [usfmText, setUsfmText] = useState();
@@ -79,7 +120,7 @@ export default function Bible() {
     showVersesLabels: true,
     showCharacterMarkup: true,
     showParaStyles: true,
-    selectedBcvNotes: []
+    selectedBcvNotes: [],
   };
 
   const onBibleReferenceChange = (b, c, v) => {
@@ -105,23 +146,24 @@ export default function Bible() {
     onChange: onBibleReferenceChange,
   });
 
-  const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
+  const { renderedData, htmlReady } = useUsfmPreviewRenderer({
     bookId,
     usfmText,
     renderFlags,
     renderStyles: catalogEntry?.language_direction === 'rtl' ? getRtlPreviewStyle() : getLtrPreviewStyle(),
     htmlRender: true,
     setErrorMessage,
+    chapters: renderOptions?.chapters,
   });
 
   useEffect(() => {
     if (catalogEntry) {
-      setBuiltWith([catalogEntry])
+      setBuiltWith([catalogEntry]);
     }
-  }, [catalogEntry, setBuiltWith])
+  }, [catalogEntry, setBuiltWith]);
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId != parts[0] || bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != parts[2]) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -138,7 +180,7 @@ export default function Bible() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
       }
@@ -178,7 +220,43 @@ export default function Bible() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, lastBookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
+  }, [
+    urlInfo,
+    catalogEntry,
+    authToken,
+    lastBookId,
+    setBookId,
+    setBookTitle,
+    setCanChangeColumns,
+    setErrorMessage,
+    setPrintOptions,
+    setStatusMessage,
+    setSupportedBooks,
+    setLastBookId,
+  ]);
+
+  useEffect(() => {
+    const handleUSFMClick = () => {
+      const fileName = `${catalogEntry.repo.name}_${bookId}.usfm`;
+      const fileContent = usfmText || '';
+      const blob = new Blob([fileContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    };
+
+    if (bookId && catalogEntry && usfmText) {    
+      const noUsfmButtons = extraDownloadButtons.filter(buttonData => buttonData.label !== "USFM");
+      setExtraDownloadButtons([...noUsfmButtons, {
+        label: 'USFM',
+        onClick: handleUSFMClick,
+        tooltip: 'Download the USFM used to render this book (no alignments)',
+      }]);
+    }
+  }, [bookId, usfmText, catalogEntry, extraDownloadButtons, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
@@ -199,6 +277,7 @@ export default function Bible() {
 
       getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
         .then((_usfmText) => {
+          _usfmText = removeAlignments(_usfmText);
           const usfmJSON = usfm.toJSON(_usfmText);
           for (let i = 0; i < usfmJSON?.headers?.length; ++i) {
             if (usfmJSON.headers[i].tag && (usfmJSON.headers[i].tag == 'h' || usfmJSON.headers[i].tag.startsWith('toc'))) {
@@ -214,18 +293,14 @@ export default function Bible() {
         });
     };
 
-    if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
+    if (!htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
   }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, setBookTitle, setErrorMessage]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
@@ -241,14 +316,14 @@ export default function Bible() {
     });
 
     const toggleFootnotes = () => {
-      const footnotes = document.querySelectorAll('.footnote');
+      const footnotes = document.querySelectorAll('.paras_usfm_f');
       footnotes.forEach((footnote) => {
         const isFootnoteVisible = footnote.style.display === 'inline';
         footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
       });
     };
-    
-    const footnotes = document.querySelectorAll('.footnote');
+
+    const footnotes = document.querySelectorAll('.paras_usfm_f');
     footnotes.forEach((footnote, index) => {
       const numberSpan = document.createElement('span');
       numberSpan.className = 'footnote-number';
@@ -268,20 +343,24 @@ export default function Bible() {
 
     // Cleanup function to remove event listeners
     return () => {
-      const footnotes = document.querySelectorAll('.footnote');
-      footnotes.forEach(footnote => {
+      const footnotes = document.querySelectorAll('.paras_usfm_f');
+      footnotes.forEach((footnote) => {
         footnote.removeEventListener('click', toggleFootnotes);
       });
       const numberSpans = document.querySelectorAll('.footnote-number');
-      numberSpans.forEach(numberSpan => {
+      numberSpans.forEach((numberSpan) => {
         numberSpan.removeEventListener('click', toggleFootnotes);
         numberSpan.remove();
       });
     };
-    }, [htmlSections?.body, cachedHtmlSections?.body]);
+  }, [htmlSections?.body, cachedHtmlSections?.body]);
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
+      if (!renderedData) {
+        setErrorMessage('No text was found for this book.');
+        return;
+      }
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
         `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
@@ -307,17 +386,21 @@ export default function Bible() {
         </div>
 `;
 
-      setHtmlSections((prevState) => {return {
-        ...prevState,
-        cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
-        copyright,
-        body: _html
-      }});
+      setHtmlSections((prevState) => {
+        return {
+          ...prevState,
+          cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
+          copyright,
+          body: _html,
+        };
+      });
       setStatusMessage('');
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
+      setHtmlSections((prevState) => {
+        return { ...prevState, css: { web: webCss } };
+      });
     };
 
-    if (htmlReady && renderedData && copyright) {
+    if (htmlReady && copyright) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
   }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
