@@ -237,7 +237,7 @@ export default function Bible() {
 
   useEffect(() => {
     const handleUSFMClick = () => {
-      const fileName = `${catalogEntry.repo.name}_${bookId}.usfm`;
+      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
       const fileContent = usfmText || '';
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
