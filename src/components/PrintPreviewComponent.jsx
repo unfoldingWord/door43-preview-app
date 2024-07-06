@@ -89,7 +89,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
       <html>
         <head>
           <title>${catalogEntry.title} - ${catalogEntry.branch_or_tag_name}${bookTitle && bookTitle != catalogEntry.title && ` - ${bookTitle}`} (${catalogEntry.full_name})</title>
-          <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+          <script src="https://unpkg.com/pagedjs/dist/paged.polyfilllllllll.js"></script>
           <style>
       ${css}
           </style>

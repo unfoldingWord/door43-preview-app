@@ -2,7 +2,7 @@
 import { useEffect, useContext } from 'react';
 
 // Material UI imports
-import { createTheme, ThemeProvider } from '@mui/material';
+import { createTheme } from '@mui/material';
 
 // Context imports
 import { AppContext } from '@contexts/App.context';
@@ -77,7 +77,7 @@ const DEFAULT_IMAGE_RESOLUTION = '360px';
 export default function OpenBibleStories() {
   const {
     state: { catalogEntry, urlInfo, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns, setRenderOptions, setOptionComponents, },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns, setRenderOptions, setOptionComponents, setNavComponent, },
   } = useContext(AppContext);
 
   const onBibleReferenceChange = (b, c, v) => {
@@ -127,6 +127,7 @@ export default function OpenBibleStories() {
       </>
     );
 
+    setNavComponent(<BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />);
     setOptionComponents(<ImageResolutionSelector formLabelTitle={"Image Resolution"} value={renderOptions?.imageResolution || DEFAULT_IMAGE_RESOLUTION} setImageResolution={(value) => setRenderOptions((prevState) => {return {...prevState, imageResolution: value}})} />)
   }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setStatusMessage, setSupportedBooks, setOptionComponents, setRenderOptions]);
 
@@ -175,10 +176,4 @@ export default function OpenBibleStories() {
     }
 
   }, [html, renderOptions, obsData, authToken, builtWith, catalogEntry, setHtmlSections, setStatusMessage]);
-
-  return (
-    <ThemeProvider theme={theme}>
-      <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
-    </ThemeProvider>
-  );
 }

@@ -89,7 +89,6 @@ const webCss = `
 
 .article {
   break-after: auto !important;
-  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
@@ -334,7 +333,7 @@ export default function RcTranslationNotes() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }

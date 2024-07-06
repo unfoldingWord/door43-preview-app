@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 
 // Material UI imports
-import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress, Grid } from '@mui/material';
+import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress } from '@mui/material';
 import { Alert, Box, Card, IconButton, Sheet, Tooltip } from '@mui/joy';
 import {
   Close as CloseIcon,
@@ -21,8 +21,7 @@ import PrintDrawer from '@components/PrintDrawer';
 import LoadingBar from '@components/LoadingBar';
 import Header from '@components/Header';
 import SelectResourceToPreviewModal from '@components/SelectResourceToPreviewModal';
-import { ResourcesCardGrid } from '@components/ResourcesCardGrid';
-import { ResourceLanguagesAccordion } from '@components/ResourceLanguagesAccordion';
+import { HomePageSearch } from '@components/HomePageSearch';
 import { WebPreviewComponent } from '@components/WebPreviewComponent';
 import { PrintPreviewComponent } from '@components/PrintPreviewComponent';
 
@@ -60,7 +59,6 @@ export default function AppWorkspace() {
       errorMessages,
       htmlSections,
       builtWith,
-      cachedBook,
       cachedHtmlSections,
       serverInfo,
       isOpenPrint,
@@ -410,22 +408,6 @@ export default function AppWorkspace() {
             minHeight: printPreviewRef?.current ? printPreviewRef.current.clientHeight + 'px' : 'auto',
           }}
         >
-          {urlInfo && urlInfo.owner == 'downloadables' && serverInfo && (
-            <ResourceLanguagesAccordion
-              serverInfo={serverInfo}
-              subjects={[
-                'Open Bible Stories',
-                'OBS Study Notes',
-                'OBS Study Questions',
-                'OBS Translation Notes',
-                'OBS Translation Questions',
-                'TSV OBS Study Notes',
-                'TSV OBS Study Questions',
-                'TSV OBS Translation Notes',
-                'TSV OBS Translation Questions',
-              ]}
-            />
-          )}
           {statusMessage && !htmlSections?.body && !cachedHtmlSections?.body && !errorMessages && (
             <Box
               sx={{
@@ -443,7 +425,7 @@ export default function AppWorkspace() {
               </Typography>
             </Box>
           )}
-          {!urlInfo?.repo && serverInfo && <ResourcesCardGrid />}
+          {!urlInfo?.repo && serverInfo && <HomePageSearch />}
           {urlInfo?.repo && serverInfo && view == 'web' && (htmlSections?.body || cachedHtmlSections?.body) && (
             <WebPreviewComponent
               ref={webPreviewRef}

@@ -1,5 +1,5 @@
 // React imports
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 
 // Prop Types for type checking in React
 import PropTypes from 'prop-types';
@@ -8,17 +8,24 @@ import PropTypes from 'prop-types';
 import axios from 'axios';
 
 // Material UI components
-import { Accordion, AccordionSummary, AccordionDetails, Tooltip, Typography } from '@mui/material';
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import CircularProgress from '@mui/joy/CircularProgress';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 // Constants
 import { API_PATH } from '@common/constants';
 
+// Contexts
+import { AppContext } from '@contexts/App.context';
+
 // DOMPurify for sanitizing HTML
 import DOMPurify from 'dompurify';
-
-// Material UI component for displaying loading state
-import CircularProgress from '@mui/joy/CircularProgress';
 
 let downloads = [];
 let allowedDownloadableTypes = ['text', 'audio', 'video', 'other'];
@@ -111,7 +118,7 @@ function addLinkToDownloadableTypes(downloadable_types, asset, entry) {
   fmt.asset = asset;
   fmt.prefix = new URL(asset.browser_download_url).hostname;
   fmt.format = getFormatFromName(asset.name);
-  fmt.version = entry.release.tag_name;
+  fmt.version = entry.branch_or_tag_name;
   let type = 'other';
 
   if (fmt.prefix.indexOf('door43.org') > -1) {
@@ -257,18 +264,18 @@ async function getDownloadableTypes(entries) {
 
   const top_entry = entries[0];
 
+  // downloadable_types = addAssetToDownloadableTypes(
+  //   downloadable_types,
+  //   {
+  //     name: 'View on Door43.org',
+  //     browser_download_url: 'https://preview.door43.org/u/' + top_entry.full_name + '/' + top_entry.branch_or_tag_name,
+  //   },
+  //   top_entry
+  // );
   downloadable_types = addAssetToDownloadableTypes(
     downloadable_types,
     {
-      name: 'View on Door43.org',
-      browser_download_url: 'https://preview.door43.org/u/' + top_entry.full_name + '/' + top_entry.release.tag_name,
-    },
-    top_entry
-  );
-  downloadable_types = addAssetToDownloadableTypes(
-    downloadable_types,
-    {
-      name: top_entry.name + '-' + top_entry.release.tag_name + '.zip',
+      name: top_entry.name + '-' + top_entry.branch_or_tag_name + '.zip',
       browser_download_url: top_entry.zipball_url,
     },
     top_entry
@@ -276,7 +283,7 @@ async function getDownloadableTypes(entries) {
 
   for (let i = 0; i < entries.length; i++) {
     let entry = entries[i];
-    for (let j = 0; j < entry.release.assets.length; j++) {
+    for (let j = 0; j < entry.release?.assets.length || 0; j++) {
       let asset = entry.release.assets[j];
       if (
         asset.name.toLowerCase().endsWith('links.json') ||
@@ -475,35 +482,63 @@ function getSize(file_size) {
   return 'UNKNOWN';
 }
 
-export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) => {
+export const ResourcesListAccordion = ({defaultSubjects = []}) => {
   const [languages, setLanguages] = useState([]);
   const [owners, setOwners] = useState({});
   const [topEntries, setTopEntries] = useState({});
   const [entries, setEntries] = useState({});
 
+  const {
+    state: { serverInfo },
+  } = useContext(AppContext);
+
   useEffect(() => {
     const fetchLanguages = async () => {
       try {
-        const response = await axios.get(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?${buildQueryString(subjects)}`);
+        const response = await axios.get(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?${buildQueryString(subjects)}&stage=${stage}`);
         setLanguages(response.data.data);
       } catch (error) {
-        alert('Error fetching languages');
+        console.log('Error fetching languages', error);
       }
     };
 
-    if (serverInfo.baseUrl) {
+    if (serverInfo) {
       fetchLanguages();
     }
-  }, [serverInfo, subjects]);
+  }, [serverInfo, subjects, stage]);
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/subjects?stage=${stage}`, {
+        cache: 'default',
+      })
+        .then((response) => {
+          return response.json();
+        })
+        .then(({ data }) => {
+          setSubjects(data);
+        })
+        .catch((e) => {
+          console.log(`Error fetching subjects:`, e);
+        });
+    };
+
+    if (serverInfo?.baseUrl) {
+      fetchSubjects();
+    }
+  }, [serverInfo, stage]);
 
   const buildQueryString = (subjects) => {
+    if (! subjects) {
+      return '';
+    }
     return subjects.map((subject) => `subject=${encodeURIComponent(subject)}`).join('&');
   };
 
   const handleLanguageAccordionChange = async (language, expanded) => {
     if (expanded && !owners[language.lc]) {
       try {
-        const fetchedOwners = await axios.get(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?lang=${encodeURIComponent(language.lc)}&${buildQueryString(subjects)}`);
+        const fetchedOwners = await axios.get(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/owners?lang=${encodeURIComponent(language.lc)}&${buildQueryString(subjects)}&stage=${stage}`);
         setOwners({
           ...owners,
           [language.lc]: fetchedOwners.data.data,
@@ -518,7 +553,7 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
     if (expanded && !topEntries?.[language.lc]?.[owner.username]) {
       try {
         const fetchedTopEntries = await axios.get(
-          `${serverInfo.baseUrl}/${API_PATH}/catalog/search?owner=${encodeURIComponent(owner.username)}&lang=${encodeURIComponent(language.lc)}&${buildQueryString(subjects)}`
+          `${serverInfo.baseUrl}/${API_PATH}/catalog/search?owner=${encodeURIComponent(owner.username)}&lang=${encodeURIComponent(language.lc)}&${buildQueryString(subjects)}&stage=${stage}`
         );
         setTopEntries({
           ...topEntries,
@@ -539,7 +574,7 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
         const fetchedEntries = await axios.get(
           `${serverInfo.baseUrl}/${API_PATH}/catalog/search?owner=${encodeURIComponent(topEntry.owner)}&repo=${encodeURIComponent(
             topEntry.name
-          )}&includeHistory=1&sort=released&order=desc`
+          )}&includeHistory=1&sort=released&order=desc&stage=${stage}`
         );
         for (let i = 0; i < fetchedEntries.data.data.length; i++) {
           fetchedEntries.data.data[i].downloadableTypes = await getDownloadableTypes([fetchedEntries.data.data[i]]);
@@ -558,7 +593,8 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
   };
 
   return (
-    <div>
+    <>
+      <div>
       {languages.map((language) => (
         <Accordion key={language.lc} onChange={(event, expanded) => handleLanguageAccordionChange(language, expanded)}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -593,6 +629,19 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
                               </Tooltip>
                             </AccordionSummary>
                             <AccordionDetails>
+                              <div key="preview" style={{ paddingLeft: '10px' }}>
+                                <div>Preview</div>
+                                <ul>
+                                  <li key="pdf">
+                                    <a
+                                      href={`/u/${entry.full_name}/${entry.branch_or_tag_name}`}
+                                      style={{ textDecoration: 'none' }}
+                                      target="_blank"
+                                      rel="noreferrer noopener"
+                                    >Preview / PDF</a>
+                                  </li>
+                                </ul>
+                              </div>
                               {allowedDownloadableTypes.map((type) => {
                                 console.log(entry.downloadableTypes);
                                 if (!(type in entry.downloadableTypes) || !entry.downloadableTypes[type].length) {
@@ -636,11 +685,14 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
           </AccordionDetails>
         </Accordion>
       )) || <CircularProgress />}
-    </div>
+      </div>
+    </>
   );
 };
 
-ResourceLanguagesAccordion.propTypes = {
-  subjects: PropTypes.array,
+ResourcesListAccordion.propTypes = {
+  defaultSubjects: PropTypes.array,
   serverInfo: PropTypes.object,
 };
+
+export default ResourcesListAccordion;

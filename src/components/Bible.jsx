@@ -1,9 +1,6 @@
 // React imports
 import { useState, useEffect, useContext } from 'react';
 
-// Material UI imports
-import { ThemeProvider, createTheme } from '@mui/material';
-
 // USFM parsing library
 import usfm from 'usfm-js';
 
@@ -25,24 +22,6 @@ import { AppContext } from '@contexts/App.context';
 // Bible reference hook and data
 import { useBibleReference } from 'bible-reference-rcl';
 import { BibleBookData } from '@common/books';
-
-const theme = createTheme({
-  overrides: {
-    MuiInput: {
-      outline: {
-        '&:hover:not(.Mui-disabled):before': {
-          borderBottom: '2px solid white',
-        },
-        '&:before': {
-          borderBottom: '1px solid white',
-        },
-        '&:after': {
-          borderBottom: '2px solid white',
-        },
-      },
-    },
-  },
-});
 
 const webCss = `
 h1 {
@@ -140,7 +119,7 @@ export default function Bible() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
       }
@@ -151,7 +130,7 @@ export default function Bible() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0] || bookId;
+      let _bookId = urlInfo.hashParts[0] || sb[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -179,7 +158,7 @@ export default function Bible() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, bookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
