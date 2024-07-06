@@ -78,10 +78,6 @@ const webCss = `
   margin-bottom: 10px;
 }
 
-.section {
-  break-after: page !important;
-}
-
 .article {
   break-after: auto !important;
   orphans: 2;

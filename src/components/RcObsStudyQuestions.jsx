@@ -146,14 +146,9 @@ a.header-link:hover::after {
   font-style: italic;
 }
 
-.sq-chapter-section {
-  break-after: page !important;
-}
-
-.sq-chapter-section * {
+.sq-chapter-intro-section *, .sq-chapter-frame-section * {
   break-inside: avoid !important;
 }
-
 `;
 
 const requiredSubjects = ['Open Bible Stories'];

@@ -54,11 +54,6 @@ const printCss = `
   break-before: auto !important;
   break-after: auto !important;
 }
-
-.section {
-  break-before: page !important;
-  break-after: page !important;
-}
 `;
 
 const theme = createTheme({
