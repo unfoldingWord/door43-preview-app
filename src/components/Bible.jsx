@@ -369,7 +369,7 @@ export default function Bible() {
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
         `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
       );
-      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+      _html = _html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
 
       // const footnotes = _html.match(/<span class="footnote">/g);
       // if (footnotes) {

@@ -65,7 +65,7 @@ const webCss = `
 }
 
 .obs-sn-note-body h6 {
-  font-size: 1em;
+  font-size: 1em !important;
   margin: 10px 0;
 }
 
