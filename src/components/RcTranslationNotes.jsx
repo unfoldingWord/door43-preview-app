@@ -462,7 +462,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
             const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
             const article = `
-          <div class="article" id="${link}">
+          <div class="article tn-note-body" id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
             ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
           </div>
