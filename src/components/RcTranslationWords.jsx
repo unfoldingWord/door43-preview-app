@@ -22,7 +22,7 @@ const webCss = `
 }
 
 h5, h6 {
-  font-size: 1em;
+  font-size: 1em !important;
 }
 
 a.header-link {

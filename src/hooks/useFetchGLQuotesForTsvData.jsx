@@ -31,7 +31,7 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
                 try {
                   let glQuote = getTargetQuoteFromSourceQuote(params);
                   if (quoteTokenDelimiter) {
-                    glQuote = glQuote.replaceAll(/ *& */g, quoteTokenDelimiter);
+                    glQuote = glQuote.replace(/ *& */g, quoteTokenDelimiter);
                   }
                   if (glQuote) {
                     row[`GLQuote${targetBookIdx}`] = glQuote;

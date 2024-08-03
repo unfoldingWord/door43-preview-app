@@ -64,7 +64,7 @@ const webCss = `
 }
 
 .tn-note-body h6 {
-  font-size: 1em;
+  font-size: 1em !important;
   margin: 10px 0;
 }
 
@@ -76,10 +76,6 @@ const webCss = `
 .tn-note-support-reference,
 .tn-note-quote {
   margin-bottom: 10px;
-}
-
-.section {
-  break-after: page !important;
 }
 
 .article {
@@ -722,15 +718,15 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       }
 
       for (let data of Object.values(rcLinksData.ta || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
-        html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
-        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+        html = html.replaceAll(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+        html = html.replaceAll(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       for (let data of Object.values(rcLinksData.tw || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);

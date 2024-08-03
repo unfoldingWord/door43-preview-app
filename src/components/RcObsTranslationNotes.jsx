@@ -67,7 +67,7 @@ const webCss = `
 }
 
 .obs-tn-note-body h6 {
-  font-size: 1em;
+  font-size: 1em !important;
   margin: 10px 0;
 }
 
@@ -79,10 +79,6 @@ const webCss = `
 .obs-tn-note-support-reference,
 .obs-tn-note-quote {
   margin-bottom: 10px;
-}
-
-.section {
-  break-after: page !important;
 }
 
 .article {
