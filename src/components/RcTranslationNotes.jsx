@@ -158,14 +158,17 @@ a.header-link:hover::after {
 
 .tn-note-body h4 {
   margin-left: 10px !important;
+  font-size: 1.2em !important;
 }
 
 .tn-note-body h5 {
   margin-left: 30px !important;
+  font-size: 1.1em !important;
 }
 
 .tn-note-body h6 {
   margin-left: 50px !important;
+  font-size: 1em !important;
 }
 `;
 
