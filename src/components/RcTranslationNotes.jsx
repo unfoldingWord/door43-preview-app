@@ -53,21 +53,6 @@ const webCss = `
   margin: 10px 0;
 }
 
-.tn-note-body h4 {
-  font-size: 1.2em;
-  margin: 10px 0;
-}
-
-.tn-note-body h5 {
-  font-size: 1.1em;
-  margin: 10px 0;
-}
-
-.tn-note-body h6 {
-  font-size: 1em !important;
-  margin: 10px 0;
-}
-
 .tn-note-label,
 .tn-note-quote {
   font-weight: bold;
@@ -127,6 +112,60 @@ a.header-link:hover::after {
 
 .tn-verse-twl-list-item a {
   text-decoration: none;
+}
+
+.tn-note-body h4 ~ p,
+.tn-note-body h4 ~ ul,
+.tn-note-body h4 ~ ol {
+  margin-left: 20px;
+}
+
+.tn-note-body h5 ~ p,
+.tn-note-body h5 ~ ul,
+.tn-note-body h5 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h6 ~ p,
+.tn-note-body h6 ~ ul,
+.tn-note-body h6 ~ ol {
+  margin-left: 60px;
+}
+
+.tn-note-body h4 ~ h5 ~ h4 ~ p,
+.tn-note-body h4 ~ h5 ~ h4 ~ ul,
+.tn-note-body h4 ~ h5 ~ h4 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h5 ~ h6 ~ h5 ~ p,
+.tn-note-body h5 ~ h6 ~ h5 ~ ul,
+.tn-note-body h5 ~ h6 ~ h5 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h4 + * {
+  margin-left: 20px !important;
+}
+
+.tn-note-body h5 + * {
+  margin-left: 40px  !important;
+}
+
+.tn-note-body h6 + * {
+  margin-left: 60px !important;
+}
+
+.tn-note-body h4 {
+  margin-left: 10px !important;
+}
+
+.tn-note-body h5 {
+  margin-left: 30px !important;
+}
+
+.tn-note-body h6 {
+  margin-left: 50px !important;
 }
 `;
 
@@ -429,10 +468,11 @@ export default function RcTranslationNotes() {
 
       if ((! renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
-      <div class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
+      <div id="${bookId}-front-intro" class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
-        for (let row of tnTsvDataWithGLQuotes['front']['intro'])
-          html += `
+        for (let row of tnTsvDataWithGLQuotes['front']['intro']) {
+          const link = `nav-${bookId}-front-intro-${row.ID}`;
+          const article = `
         <div class="article tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
@@ -440,6 +480,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           </div>
         </div>
 `;
+          searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
+          html += article;
+        }
         html += `
       </div>
 `;
