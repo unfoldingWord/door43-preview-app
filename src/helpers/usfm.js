@@ -1,13 +1,37 @@
 import { UsfmFileConversionHelpers } from 'word-aligner-rcl';
 import usfm from 'usfm-js';
 
+const sortKeys = (keys) => {
+  return keys.sort((a, b) => {
+    const numA = parseInt(a.split('-')[0], 10);
+    const numB = parseInt(b.split('-')[0], 10);
+
+    if (isNaN(numA) && isNaN(numB)) {
+      // Both are NaN, sort lexicographically
+      return a.localeCompare(b);
+    } else if (isNaN(numA)) {
+      // Only numA is NaN, numA should come after numB
+      return 1;
+    } else if (isNaN(numB)) {
+      // Only numB is NaN, numB should come after numA
+      return -1;
+    } else {
+      // Both are numbers, sort numerically
+      return numA - numB;
+    }
+  })
+};
+
 const flattenChapterData = (chapterData) => {
   let usfmStr = '';
 
   if ("front" in chapterData) {
     usfmStr += UsfmFileConversionHelpers.getUsfmForVerseContent(chapterData["front"]);
   }
-  Object.keys(chapterData).forEach((verseNum) => {
+  
+  const sortedKeys = sortKeys(Object.keys(chapterData));
+
+  sortedKeys.forEach((verseNum) => {
     if (verseNum === "front") {
       return;
     }
