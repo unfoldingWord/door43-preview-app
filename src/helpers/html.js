@@ -11,7 +11,8 @@ export function encodeHTML(s) {
 
 export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   const md = new MarkdownIt();
-  note = md.render(note.replaceAll('\\n', '\n').replaceAll('<br>', '\n').replaceAll('rc://*/', 'rc://en/')); // change * to en do avoid becoming italic in Markdown
+  const noteAsProperMarkdown = note.replaceAll('\\n', '\n').replaceAll('<br>', '\n').replaceAll('rc://*/', 'rc://en/') // change * to en do avoid becoming italic in Markdown
+  note = md.render(noteAsProperMarkdown);
   note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
   note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-$1-$2"`);
   note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
