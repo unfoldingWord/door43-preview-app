@@ -3,7 +3,7 @@ import { getRepoContentsContent } from '@helpers/dcsApi';
 import { AppContext } from '@components/App.context';
 
 export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMessage }) {
-  const [bookFiles, setBookFiles] = useState([]);
+  const [bookFiles, setBookFiles] = useState();
   const {
     state: { authToken },
   } = useContext(AppContext);

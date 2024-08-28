@@ -585,7 +585,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               let article = `
               <div class="article tn-note-article" id="nav-${noteLink}">
 `;
-              if (!row.Quote) {
+              if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `
                 <h4 class="header tn-note-header">
                   <a href="#nav-${noteLink}" class="header-link">
