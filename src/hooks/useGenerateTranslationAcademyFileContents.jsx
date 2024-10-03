@@ -13,7 +13,7 @@ export default function useGenerateTranslationAcademyFileContents({ catalogEntry
         .forEach((ingredient, i) => {
           const manualPath = `${catalogEntry.repo.name.toLowerCase()}/${ingredient.path.replace(/^\.\//, '')}`;
           if (!(manualPath + '/' in zipFileData.files)) {
-            setErrorMessage(`Manual given in manifest file does not exist: ${ingredient.identifer}`);
+            setErrorMessage(`Manual given in manifest file does not exist: ${ingredient.identifier}`);
             return;
           }
           articleMap[ingredient.identifier] = {

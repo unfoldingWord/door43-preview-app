@@ -413,7 +413,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
             renderInput={(params) => <TextField {...params} label="Book" variant="outlined" />}
             isOptionEqualToValue={(option, value) => option.identifier === value.identifier}
             onChange={(event, option) => {
-              if (!selectedBook || selectedBook.identifer != option.identifier) {
+              if (!selectedBook || selectedBook.identifier != option.identifier) {
                 setSelectedBook(option);
               }
             }}
