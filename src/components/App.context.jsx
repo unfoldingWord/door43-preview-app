@@ -23,6 +23,7 @@ import RcObsTranslationNotes from '@components/RcObsTranslationNotes';
 import RcObsTranslationQuestions from '@components/RcObsTranslationQuestions';
 import TsBible from '@components/TsBible';
 import { getMetadataTypeFromRepoName, getSubjectFromRepoName } from '@helpers/dcsApi';
+import HtmlIcon from '@assets/icons/html_icon.svg?react';
 
 export const AppContext = React.createContext();
 
@@ -580,13 +581,12 @@ export function AppContextProvider({ children }) {
     };
 
     if (bookId && catalogEntry && pagedJsReadyHtml) {
-      const noHtmlButtons = extraDownloadButtons.filter((buttonData) => buttonData.label !== 'HTML');
+      const noHtmlButtons = extraDownloadButtons.filter((buttonData) => buttonData.icon.type !== HtmlIcon);
       setExtraDownloadButtons([
         ...noHtmlButtons,
         {
-          label: 'HTML',
+          icon: <HtmlIcon style={{width: 40, height: 40}} onClick={handleDownloadHtml} />,
           tooltip: 'Download the HTML for printing',
-          onClick: handleDownloadHtml,
         },
       ]);
     }

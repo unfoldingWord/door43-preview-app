@@ -55,9 +55,11 @@ function generateToc(content) {
     if (subHtml) {
       if (title) {
         html += `
+<li>
 <ul class="toc-section">
   ${subHtml}
 </ul>
+</li>
 `;
       } else {
         html += subHtml;

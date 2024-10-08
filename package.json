@@ -25,7 +25,11 @@
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.6.7",
     "bible-reference-rcl": "^1.4.1",
+    "dcs-catalog-accordion-rcl": "^0.1.14",
     "dompurify": "^3.0.8",
+    "epub-gen": "^0.1.0",
+    "express": "^4.21.0",
+    "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "lodash": "4.17.21",
     "markdown-it": "^14.0.0",
@@ -61,6 +65,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "internal-ip": "^8.0.0",
-    "vite": "5.2.11"
+    "vite": "5.2.11",
+    "vite-plugin-svgr": "^4.2.0"
   }
 }

@@ -7,7 +7,6 @@ import { styled } from '@mui/material/styles';
 import { LinearProgress, Grid, Box } from '@mui/material';
 import { IconButton, Option, Input, Select, Drawer, Typography, Tooltip, Divider } from '@mui/joy';
 import PrintIcon from '@mui/icons-material/Print';
-import PdfIcon from '@mui/icons-material/PictureAsPdf';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // Local component imports
@@ -22,6 +21,10 @@ import { AppContext } from '@components/App.context';
 import { getColorForProgressBar } from '@helpers/loading';
 import printResources from '@helpers/printResources';
 
+// Custom icon import
+import EpubIcon from '@assets/icons/epub_icon.svg?react';
+import PdfIcon from '@assets/icons/pdf_icon.svg?react';
+
 const defaultIncludeNames = ['titles', 'headings', 'introductions', 'footnotes', 'xrefs', 'paraStyles', 'characterMarkup', 'chapterLabels', 'versesLabels'];
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -33,7 +36,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   justifyContent: 'flex-start',
 }));
 
-export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint }) {
+export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handlePrint, handleDownloadEpub }) {
   const {
     state: { printOptions, canChangeColumns, printPreviewStatus, printPreviewPercentDone, settingsComponent, extraDownloadButtons },
     actions: { setPrintOptions },
@@ -162,7 +165,32 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
                     handlePrint();
                   }}
                 >
-                  <PdfIcon sx={{ fontSize: 40 }} />
+                  <PdfIcon style={{ width: 40, height: 40 }} />
+                  <LinearProgress
+                    variant="determinate"
+                    value={printPreviewPercentDone}
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0.5,
+                      borderRadius: 1,
+                      backgroundColor: 'white',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                      },
+                    }}
+                  />
+                </IconButton>
+              </Tooltip>
+            </Grid>
+            <Grid item>
+              <Tooltip title={printPreviewStatus == 'ready' ? 'Save as ePub' : `Preparing Print Preview: ${printPreviewPercentDone}%`} arrow>
+                <IconButton
+                  onClick={handleDownloadEpub}
+                >
+                  <EpubIcon style={{ width: 40, height: 40 }} />
                   <LinearProgress
                     variant="determinate"
                     value={printPreviewPercentDone}
@@ -185,9 +213,7 @@ export default function PrintDrawer({ openPrintDrawer, onClosePrintDrawer, handl
             {extraDownloadButtons.map((buttonData, idx) => (
             <Grid item key={`button-${idx}`}>
               <Tooltip title={buttonData.tooltip} arrow>
-                <IconButton onClick={buttonData.onClick}>
-                  {buttonData.label}
-                </IconButton>
+                {buttonData.icon}
               </Tooltip>
             </Grid>
             ))}

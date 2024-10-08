@@ -132,3 +132,7 @@ header {
   max-width: 80%;
   margin: 0 auto;
 }
+
+#mapwrapper #show-all-button {
+  display: none;
+}

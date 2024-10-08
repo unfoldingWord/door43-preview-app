@@ -1,5 +1,5 @@
 // React imports
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useMemo, useCallback } from 'react';
 
 // Material UI imports
 import {
@@ -19,6 +19,8 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
+import PublicIcon from '@mui/icons-material/Public';
+import { WorldLanguageMap } from 'dcs-catalog-accordion-rcl';
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, FormControl, Select, MenuItem } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -35,8 +37,8 @@ import { AppContext } from '@components/App.context';
 import { API_PATH } from '@common/constants';
 
 const DEFAULT_LIMIT = 50;
-const DEFAULT_LANGS = ['en'];
-const DEFAULT_OWNERS = ['unfoldingWord'];
+const DEFAULT_LANGS = [];
+const DEFAULT_OWNERS = [];
 const DEFAULT_SUBJECTS = [];
 const DEFAULT_SORT = 'released';
 const DEFAULT_ORDER = 'desc';
@@ -64,8 +66,19 @@ export const ResourcesCardGrid = () => {
   const [searchClicked, setSearchClicked] = useState(false);
   const [loadMoreClicked, setLoadMoreClicked] = useState(false);
   const [error, setError] = useState();
+  const [showWorldMap, setShowWorldMap] = useState(false);
+  const [languagesByContinent, setLanguagesByContinent] = useState([]);
+  const [selectedContinentLanguages, setSelectedContinentLanguages] = useState([]);
 
   const [openSortModal, setOpenSortModal] = useState(false);
+
+  const handleContinentClick = useCallback((continentLangCodes) => {
+    const languageCodes = languages.map(l => l.lc)
+    console.log("cl:", continentLangCodes)
+    console.log("lc:", languageCodes)
+    console.log("cl filterd:", continentLangCodes.filter(lc => languageCodes.includes(lc)))
+    setLanguagesByContinent(continentLangCodes.filter(lc => languageCodes.includes(lc)))
+  }, [languages]);
 
   useEffect(() => {
     const setDefaultsAndSearch = async () => {
@@ -114,7 +127,7 @@ export const ResourcesCardGrid = () => {
 
   useEffect(() => {
     const getLanguages = async () => {
-      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=other&metadataType=rc&metadataType=sb&metadataType=tc&metadataType=ts`, {
+      fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/list/languages?stage=${stage}&metadataType=rc&metadataType=sb&metadataType=tc&metadataType=ts`, {
         cache: 'default',
       })
         .then((response) => {
@@ -129,10 +142,10 @@ export const ResourcesCardGrid = () => {
         });
     };
 
-    if (serverInfo?.baseUrl && !isFetchingEntries && !languages.length) {
+    if (serverInfo?.baseUrl) {
       getLanguages();
     }
-  }, [serverInfo, isFetchingEntries, languages.length]);
+  }, [serverInfo, stage]);
 
   useEffect(() => {
     const fetchOwners = async () => {
@@ -310,31 +323,9 @@ export const ResourcesCardGrid = () => {
               }
               window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
             }}
-          />}
-          {! urlInfo?.owner && <Autocomplete
-            id="owner-select"
-            multiple
-            freeSolo
-            autoHighlight
-            clearOnEscape
-            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-            options={owners.map((o) => o.username)}
-            value={selectedOwners}
-            renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
-            onChange={(event, selected) => {
-              setSelectedOwners(selected);
-              urlParams.delete('owner');
-              if (selected.length) {
-                selected.forEach((item) => {
-                  urlParams.append('owner', item);
-                });
-              } else {
-                urlParams.append('owner', '');
-              }
-              window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-            }}
-          />}
-          <Autocomplete
+            />}
+
+            <Autocomplete
             id="subject-select"
             multiple
             freeSolo
@@ -358,6 +349,30 @@ export const ResourcesCardGrid = () => {
             }}
           />
 
+          {! urlInfo?.owner && <Autocomplete
+            id="owner-select"
+            multiple
+            freeSolo
+            autoHighlight
+            clearOnEscape
+            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+            options={owners.map((o) => o.username)}
+            value={selectedOwners}
+            renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
+            onChange={(event, selected) => {
+              setSelectedOwners(selected);
+              urlParams.delete('owner');
+              if (selected.length) {
+                selected.forEach((item) => {
+                  urlParams.append('owner', item);
+                });
+              } else {
+                urlParams.append('owner', '');
+              }
+              window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+            }}
+          />}
+          
           <Button
             onClick={() => {
               setSearchClicked(true);
@@ -440,6 +455,9 @@ export const ResourcesCardGrid = () => {
                   onChange={(event) => {
                     const s = event.target.checked ? 'prod' : 'latest';
                     setStage(s);
+                    setShowWorldMap(false);
+                    setSelectedContinentLanguages([])
+                    setLanguagesByContinent([])
                     setCatalogEntries([]);
                     setSearchClicked(true);
                     urlParams.set('stage', s);
@@ -452,6 +470,55 @@ export const ResourcesCardGrid = () => {
               label="Releases"
             />
           </Tooltip>
+
+          <IconButton
+              onClick={() => setShowWorldMap(!showWorldMap)}
+              sx={{
+              padding: 0,
+              margin: 0,
+              color: showWorldMap ? '#1976d2' : 'grey',
+              '&:hover': {
+                color: showWorldMap ? '#1976d2' : '#1976d2',
+              },
+              }}
+            >
+              <Tooltip title={showWorldMap ? 'Hide Map' : 'Pick languages from a world map'} arrow>
+              <PublicIcon />
+              </Tooltip>
+            </IconButton>
+
+          {showWorldMap && (
+            <Box style={{ maxWidth: "1024px", margin: "0 auto" }}>
+              <WorldLanguageMap onContinentClick={handleContinentClick} />
+              {languagesByContinent.length > 0 && (
+                <FormControl sx={{ display: "block", width: "90%", textAlign: "center" }}>
+            <Select
+              multiple
+              native
+              inputProps={{style: { resize: "both" }}}
+              onChange={(event) => {
+                const selectedOptions = Array.from(event.target.selectedOptions, (option) => option.value);
+                setSelectedContinentLanguages(selectedOptions);
+              }}
+            >
+              {languagesByContinent.map((langCode) => {
+                const language = languages.find((l) => l.lc === langCode);
+                return (
+                  <option key={langCode} value={langCode} selected={selectedContinentLanguages.includes(langCode)}>
+                    {language ? `${language.ln} (${langCode})` : langCode}
+                  </option>
+                );
+              })}
+            </Select>
+          <Button
+            onClick={() => {
+                setSelectedLanguages((prev) => [...new Set([...prev, ...selectedContinentLanguages])]);
+            }}
+          >
+            Apply
+          </Button>
+          </FormControl>)}
+          </Box>)}
         </Box>
       </AppBar>
       <Box sx={{ flexGrow: 1, margin: "30px" }}>
