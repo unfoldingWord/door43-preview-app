@@ -471,7 +471,7 @@ export default function RcTranslationNotes() {
 
       if ((! renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
-      <div id="${bookId}-front-intro" class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
+      <div id="nav-${bookId}-front-intro" class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
         for (let row of tnTsvDataWithGLQuotes['front']['intro']) {
           const link = `nav-${bookId}-front-intro-${row.ID}`;
