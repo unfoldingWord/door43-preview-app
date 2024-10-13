@@ -136,8 +136,8 @@ export function AppContextProvider({ children }) {
           repo: urlParts[1] || '',
           lang: urlParts[1]?.includes('_') ? urlParts[1].split('_')[0] : '',
           ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
-          hash: url.hash.replace('#', ''),
-          hashParts: url.hash ? url.hash.replace(/^#/, '').split(/--/)[0].split('-') : [], // Used for Bible Book Reference Navigation
+          hash: url.hash.replace('#', '').toLowerCase(),
+          hashParts: url.hash ? url.hash.replace(/^#/, '').toLowerCase().split(/--/)[0].split('-') : [], // Used for Bible Book Reference Navigation
         };
       } else if (urlParts.length === 1 && urlParts[0] != 'u') {
         info.lang = urlParts[0];
