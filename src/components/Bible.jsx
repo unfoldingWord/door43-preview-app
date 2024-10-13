@@ -124,7 +124,7 @@ export default function Bible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || lastBookId || 'gen')) {
+    if (b != (bookId || urlInfo.hashParts[0].toLowerCase() || lastBookId || 'gen')) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -140,7 +140,7 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || lastBookId || 'gen',
+    initialBook: bookId || urlInfo.hashParts[0].toLowerCase() || lastBookId || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
