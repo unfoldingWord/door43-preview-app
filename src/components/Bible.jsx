@@ -124,7 +124,7 @@ export default function Bible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || lastBookId || 'gen')) {
+    if (b != (bookId || urlInfo.hashParts[0].toLowerCase() || lastBookId || 'gen')) {
       window.location.hash = b;
       window.location.reload();
     } else if (setNavAnchor) {
@@ -140,7 +140,7 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || lastBookId || 'gen',
+    initialBook: bookId || urlInfo.hashParts[0].toLowerCase() || lastBookId || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -248,15 +248,23 @@ export default function Bible() {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && usfmText) {    
-      const noUsfmButtons = extraDownloadButtons.filter(buttonData => buttonData.label !== "USFM");
-      setExtraDownloadButtons([...noUsfmButtons, {
-        label: 'USFM',
-        onClick: handleUSFMClick,
-        tooltip: 'Download the USFM used to render this book (no alignments)',
-      }]);
+    if (bookId && catalogEntry && usfmText) {
+      setExtraDownloadButtons((prevButtons) => {
+        const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
+        const newButton = {
+          label: 'USFM',
+          onClick: handleUSFMClick,
+          tooltip: 'Download the USFM used to render this book (no alignments)',
+        };
+        // Check if the new button is already in the list to avoid unnecessary updates
+        const isButtonPresent = noUsfmButtons.some(button => button.label === newButton.label);
+        if (!isButtonPresent) {
+          return [...noUsfmButtons, newButton];
+        }
+        return prevButtons;
+      });
     }
-  }, [bookId, usfmText, catalogEntry, extraDownloadButtons, setExtraDownloadButtons]);
+  }, [bookId, usfmText, catalogEntry, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
