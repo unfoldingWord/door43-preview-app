@@ -238,7 +238,7 @@ export default function Bible() {
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
-      const fileContent = usfmText || '';
+      const fileContent = Object.values(usfmTexts || {}).join("\n\n\n") || '';
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -248,15 +248,23 @@ export default function Bible() {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && usfmText) {    
-      const noUsfmButtons = extraDownloadButtons.filter(buttonData => buttonData.label !== "USFM");
-      setExtraDownloadButtons([...noUsfmButtons, {
-        label: 'USFM',
-        onClick: handleUSFMClick,
-        tooltip: 'Download the USFM used to render this book (no alignments)',
-      }]);
+    if (bookId && catalogEntry && usfmTexts) {
+      setExtraDownloadButtons((prevButtons) => {
+        const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
+        const newButton = {
+          label: 'USFM',
+          onClick: handleUSFMClick,
+          tooltip: 'Download the USFM used to render this book (no alignments)',
+        };
+        // Check if the new button is already in the list to avoid unnecessary updates
+        const isButtonPresent = noUsfmButtons.some(button => button.label === newButton.label);
+        if (!isButtonPresent) {
+          return [...noUsfmButtons, newButton];
+        }
+        return prevButtons;
+      });
     }
-  }, [bookId, usfmText, catalogEntry, extraDownloadButtons, setExtraDownloadButtons]);
+  }, [bookId, usfmTexts, catalogEntry, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
