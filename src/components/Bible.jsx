@@ -238,7 +238,7 @@ export default function Bible() {
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
-      const fileContent = Object.values(usfmTexts || {}).join("\n\n\n") || '';
+      const fileContent = usfmText || '';
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -248,7 +248,7 @@ export default function Bible() {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && usfmTexts) {
+    if (bookId && catalogEntry && usfmText) {
       setExtraDownloadButtons((prevButtons) => {
         const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
         const newButton = {
@@ -264,7 +264,7 @@ export default function Bible() {
         return prevButtons;
       });
     }
-  }, [bookId, usfmTexts, catalogEntry, setExtraDownloadButtons]);
+  }, [bookId, usfmText, catalogEntry, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
