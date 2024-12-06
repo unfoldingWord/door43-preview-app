@@ -504,7 +504,7 @@ export default function Bible() {
           control={
             <Checkbox
               checked={showUsfmAsHtml}
-              onChange={() => setShowUsfmAsHtml(!showUsfmAsHtml)}
+              onChange={() => {setShowUsfmAsHtml(!showUsfmAsHtml); setNoCache(true);}}
               name="showUsfmAsHtml"
               color="primary"
               style={{ padding: 0 }}
