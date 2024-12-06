@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material';
 
 // Custom hooks
-import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
+import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRenderer';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
 
 // Bible reference imports
@@ -108,7 +108,7 @@ export default function TsBible() {
     setErrorMessage,
   });
 
-  const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
+  const { renderedData, htmlReady } = useUsfmPreviewRenderer({
     bookId,
     usfmText,
     renderFlags,

@@ -2,11 +2,11 @@ import { BibleBookData } from '@common/books';
 import pako from 'pako';
 
 // supported books are books that are both in the ingredients of a catalog entry and have existing files in zip file
-export const getSupportedBooks = (catalogEntry, fileList = null) => {
+export const getSupportedBooks = (catalogEntry, fileList = null, books = []) => {
   let supportedBooks = [];
   catalogEntry.ingredients.forEach((ingredient) => {
     const id = ingredient.identifier;
-    if (!(id in BibleBookData)) {
+    if (!(id in BibleBookData) ||  (books.length > 0 && !books.includes(id))) {
       return;
     }
     if (fileList) {

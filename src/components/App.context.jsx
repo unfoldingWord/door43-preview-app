@@ -66,6 +66,8 @@ export function AppContextProvider({ children }) {
   const [lastBookId, setLastBookId] = useState();
   const [settingsComponent, setSettingsComponent] = useState();
   const [extraDownloadButtons, setExtraDownloadButtons] = useState([]);
+  const [view, setView] = useState('web');
+  const [books, setBooks] = useState([]);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -175,6 +177,34 @@ export function AppContextProvider({ children }) {
       }
     };
 
+    const getBooksToRender = async () => {
+      const expandedBooks = []
+      if (url.searchParams.get('book')) {
+        const bookParams = url.searchParams.getAll('book').flatMap((book) => book.split(',').map((b) => b.trim().toLowerCase()));
+        for (let book of bookParams) {
+          if (['nt', 'new', 'ot', 'old', 'all'].includes(book)) {
+            if (book === 'ot')
+              book = 'old';
+            else if (book === 'nt')
+              book = 'new';
+            if (book == 'all') {
+              expandedBooks.push(...(Object.keys(BibleBookData).filter(book => !expandedBooks.includes(book))));
+            } else {
+              expandedBooks.push(...(Object.keys(BibleBookData).filter((key) => BibleBookData[key].testament === book).sort((a, b) => BibleBookData[a].usfm - BibleBookData[b].usfm)).filter(book => !expandedBooks.includes(book)));
+            }
+          } else {
+            if (BibleBookData[book] && !expandedBooks.includes(book))
+              expandedBooks.push(book);
+          }
+        }
+      }
+      const bookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
+      if (bookId && !expandedBooks.includes(bookId)) {
+        expandedBooks.push(bookId);
+      }
+      setBooks(expandedBooks);
+   };
+
     const getOtherUrlParameters = async () => {
       if (url.searchParams.get('token')) {
         setAuthToken(url.searchParams.get('token'));
@@ -236,6 +266,7 @@ export function AppContextProvider({ children }) {
     getServerInfo().catch((e) => setErrorMessage(e.message));
     getUrlInfo().catch((e) => setErrorMessage(e.message));
     getOtherUrlParameters().catch((e) => setErrorMessage(e.message));
+    getBooksToRender().catch((e) => setErrorMessage(e.message));
   }, [setErrorMessage]);
 
   useEffect(() => {
@@ -356,13 +387,19 @@ export function AppContextProvider({ children }) {
         return;
       }
       const url = await response.text();
-      const cb = await downloadCachedBook(url);
-      setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
-      setCachedHtmlSections(cb?.htmlSections);
+      try {
+        new URL(url); // Check if the response is a valid URL
+        const cb = await downloadCachedBook(url);
+        setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
+        setCachedHtmlSections(cb?.htmlSections);
+      } catch (e) {
+        console.error('Invalid URL:', url);
+        setCachedBook({});
+      }
       setFetchingCachedBook(false);
     };
 
-    if (renderMessage || noCache) {
+    if (renderMessage || noCache || books.length > 1) {
       if (!cachedBook) {
         setCachedBook({});
       }
@@ -639,6 +676,8 @@ export function AppContextProvider({ children }) {
       lastBookId,
       settingsComponent,
       extraDownloadButtons,
+      view,
+      books,
     },
     actions: {
       onPrintClick,
@@ -663,6 +702,8 @@ export function AppContextProvider({ children }) {
       setLastBookId,
       setSettingsComponent,
       setExtraDownloadButtons,
+      setView,
+      setNoCache,
     },
   };
 

@@ -34,7 +34,7 @@ export async function ts2usfm(catalogEntry, ingredient, zipFileData) {
       const chapter = chapterIdx + 1;
       const numVerses = chapters[chapterIdx];
       for (let verse = 1; verse <= numVerses; verse++) {
-        const verseFilePath = `${catalogEntry.name}/${String(chapter).padStart(2, '0')}/${String(verse).padStart(2, '0')}.txt`;
+        const verseFilePath = `${catalogEntry.name.toLowerCase()}/${String(chapter).padStart(2, '0')}/${String(verse).padStart(2, '0')}.txt`;
         if (verseFilePath in zipFileData.files) {
           let text = await zipFileData.file(verseFilePath).async('text');
           if (verse == 1 && !new RegExp(`\\c ${chapter}`).test(text)) {
