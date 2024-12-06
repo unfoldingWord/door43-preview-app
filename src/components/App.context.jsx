@@ -197,12 +197,13 @@ export function AppContextProvider({ children }) {
               expandedBooks.push(book);
           }
         }
+        const bookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
+        if (bookId && !expandedBooks.includes(bookId)) {
+          expandedBooks.push(bookId);
+        }
+        console.log("EXPANDED BOOKS:", expandedBooks);
+        setBooks(expandedBooks);  
       }
-      const bookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
-      if (bookId && !expandedBooks.includes(bookId)) {
-        expandedBooks.push(bookId);
-      }
-      setBooks(expandedBooks);
    };
 
     const getOtherUrlParameters = async () => {
@@ -704,6 +705,7 @@ export function AppContextProvider({ children }) {
       setExtraDownloadButtons,
       setView,
       setNoCache,
+      setBooks,
     },
   };
 
