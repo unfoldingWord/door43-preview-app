@@ -155,6 +155,7 @@ export default function Bible() {
     },
     actions: {
       setBookId,
+      setBooks,
       setBookTitle,
       setBuiltWith,
       setSupportedBooks,
@@ -243,7 +244,12 @@ export default function Bible() {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
       }
+      console.log("BOOKID", _bookId, books);
       setBookId(_bookId);
+      if (!books.length) {
+        setBooks([_bookId]);
+      }
+      console.log("SET BOOKS to:", [_bookId]);
       setLastBookId(_bookId);
       setStatusMessage(
         <>
