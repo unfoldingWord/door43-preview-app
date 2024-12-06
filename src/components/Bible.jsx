@@ -174,9 +174,10 @@ export default function Bible() {
   const [copyright, setCopyright] = useState('');
   const [showUsfmAsHtml, setShowUsfmAsHtml] = useState(false);
   const [html, setHtml] = useState('');
-  const [usfmTexts, setUsfmTexts] = useState(new Map());
+  const [usfmMap, setUsfmMap] = useState(new Map());
 
   const onBibleReferenceChange = (b, c, v) => {
+    console.log(b, c, v, books.length, books);
     if (books.length > 0 && ! books.includes(b)) {
       window.location.hash = b;
       const url = new URL(window.location);
@@ -287,7 +288,7 @@ export default function Bible() {
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
-      const fileContent = Object.values(usfmTexts || {}).join("\n\n\n") || '';
+      const fileContent = Object.values(usfmMap || {}).join("\n\n\n") || '';
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -297,7 +298,7 @@ export default function Bible() {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && usfmTexts) {
+    if (bookId && catalogEntry && usfmMap) {
       setExtraDownloadButtons((prevButtons) => {
         const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
         const newButton = {
@@ -313,7 +314,7 @@ export default function Bible() {
         return prevButtons;
       });
     }
-  }, [bookId, usfmTexts, catalogEntry, setExtraDownloadButtons]);
+  }, [bookId, usfmMap, catalogEntry, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
@@ -328,7 +329,7 @@ export default function Bible() {
         proskomma: pk,
         actions: render.sofria2web.renderActions.sofria2WebActions,
       });
-      const usfms = [];
+      const usfms = new Map();
       const htmls = [];
       for (const ingredient of catalogEntry.ingredients) {
         if ( (books.length > 0 && !books.includes(ingredient.identifier)) || (books.length === 0 && bookId !== ingredient.identifier)) {
@@ -344,7 +345,7 @@ export default function Bible() {
           continue;
         }
         usfm = removeAlignments(usfm);
-        usfms.push(usfm);
+        usfms.set(ingredient.identifier, usfm);
         let res;
         try {
           res = pk.importDocument(
@@ -374,7 +375,7 @@ export default function Bible() {
           throw err;
         }
       }
-      setUsfmTexts(usfms);
+      setUsfmMap(usfms);
       setHtml(htmls.join('\n'));
     };
 
@@ -465,11 +466,18 @@ export default function Bible() {
   }, [bookId,  html, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   useEffect(() => {
-    if (showUsfmAsHtml && usfmTexts) {
+    if (showUsfmAsHtml && usfmMap.size) {
+      const usfms = [];
+      usfmMap.forEach((usfm, book) => {
+        usfm = usfm
+          .replace(/\\c (\d+)/g, `<span id="nav-${book}-$1" style="text-decoration: none; color: inherit;"/>\\c $1`)
+          .replace(/\\id (...) /g, `<span id="nav-${book}" style="text-decoration: none; color: inherit;"/>\\id $1`);
+        usfms.push(usfm);
+      });
       setHtmlSections((prevState) => {
         return {
           ...prevState,
-          webView: `<div>${Object.values(usfmTexts || {}).join("\n\n<hr/>\n\n").replace(/\n/g, '<br/>')}</div>`,
+          webView: `<div>${usfms.join("\n\n<hr/>\n\n").replace(/\n/g, '<br/>')}</div>`,
         };
       });
     } else {
@@ -480,12 +488,12 @@ export default function Bible() {
         };
       });
     }
-  }, [showUsfmAsHtml, usfmTexts, setHtmlSections])
+  }, [showUsfmAsHtml, usfmMap, setHtmlSections])
 
   return (
     <ThemeProvider theme={theme}>
       <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
-      {view === "web" ? <Tooltip title="Shows the raw unaligned USFM" arrow>
+      {view === "web" && usfmMap.size ? <Tooltip title="Shows the raw unaligned USFM" arrow>
         <FormControlLabel
           control={
             <Checkbox

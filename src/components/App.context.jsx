@@ -181,7 +181,6 @@ export function AppContextProvider({ children }) {
       const expandedBooks = []
       if (url.searchParams.get('book')) {
         const bookParams = url.searchParams.getAll('book').flatMap((book) => book.split(',').map((b) => b.trim().toLowerCase()));
-        console.log(bookParams);
         for (let book of bookParams) {
           if (['nt', 'new', 'ot', 'old', 'all'].includes(book)) {
             if (book === 'ot')
@@ -194,14 +193,12 @@ export function AppContextProvider({ children }) {
               expandedBooks.push(...(Object.keys(BibleBookData).filter((key) => BibleBookData[key].testament === book).sort((a, b) => BibleBookData[a].usfm - BibleBookData[b].usfm)).filter(book => !expandedBooks.includes(book)));
             }
           } else {
-            console.log(book);
             if (BibleBookData[book] && !expandedBooks.includes(book))
               expandedBooks.push(book);
           }
         }
       }
       const bookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
-      console.log("expandedBooks before adding BookID", expandedBooks)
       if (bookId && !expandedBooks.includes(bookId)) {
         expandedBooks.push(bookId);
       }
@@ -634,7 +631,6 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const sendCachedBook = async () => {
-      console.log(Cache)
       if (!bookId || bookId === 'gen' || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
         uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
       }
