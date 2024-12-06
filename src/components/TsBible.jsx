@@ -108,7 +108,7 @@ export default function TsBible() {
     setErrorMessage,
   });
 
-  const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
+  const { renderedData, htmlReady } = useUsfmPreviewRenderer({
     bookId,
     usfmText,
     renderFlags,
