@@ -297,9 +297,7 @@ export default function Bible() {
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
-      console.log("USFM MAP", usfmMap);
       const fileContent = Array.from(usfmMap.values()).join("\n\n\n");
-      console.log("FILE CONTENT", fileContent);
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -386,7 +384,6 @@ export default function Bible() {
           throw err;
         }
       }
-      console.log("USFMS", usfms);
       setUsfmMap(usfms);
       setHtml(htmls.join('\n'));
     };
