@@ -198,7 +198,7 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0]?.toLowerCase() || lastBookId || books[0] || 'gen',
+    initialBook: urlInfo.hashParts[0]?.toLowerCase() || books?.[0] || lastBookId || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -238,6 +238,7 @@ export default function Bible() {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
+      console.log("sb", sb);
 
       let _bookId = books.join('-') || (sb.includes(lastBookId) && lastBookId) || sb[0];
       if (!_bookId) {
@@ -270,7 +271,7 @@ export default function Bible() {
       setPrintOptions((prevState) => ({ ...prevState, columns: 2 }));
     };
 
-    if (catalogEntry && !supportedBooks.length && !errorMessages) {
+    if (catalogEntry && !supportedBooks.length && !errorMessages && books.length) {
       setInitialBookIdAndSupportedBooks();
     }
   }, [

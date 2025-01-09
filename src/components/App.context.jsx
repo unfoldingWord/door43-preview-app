@@ -95,7 +95,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const url = new URL(window.location.href);
 
-    const getServerInfo = async () => {
+    const getServerInfo = () => {
       const server = url.searchParams.get('server')?.toLowerCase();
       if (server) {
         if (server in DCS_SERVERS) {
@@ -116,7 +116,7 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    const getUrlInfo = async () => {
+    const getUrlInfo = () => {
       let urlParts = url.pathname.replace(/^\/(.*)\/*$/, '$1').split('/');
       let info = {
         owner: '',
@@ -177,7 +177,7 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    const getBooksToRender = async () => {
+    const getBooksToRender = () => {
       const expandedBooks = []
       if (url.searchParams.get('book')) {
         const bookParams = url.searchParams.getAll('book').flatMap((book) => book.split(',').map((b) => b.trim().toLowerCase()));
@@ -206,7 +206,7 @@ export function AppContextProvider({ children }) {
       }
    };
 
-    const getOtherUrlParameters = async () => {
+    const getOtherUrlParameters = () => {
       if (url.searchParams.get('token')) {
         setAuthToken(url.searchParams.get('token'));
       } else {
@@ -264,10 +264,15 @@ export function AppContextProvider({ children }) {
       }
     };
 
-    getServerInfo().catch((e) => setErrorMessage(e.message));
-    getUrlInfo().catch((e) => setErrorMessage(e.message));
-    getOtherUrlParameters().catch((e) => setErrorMessage(e.message));
-    getBooksToRender().catch((e) => setErrorMessage(e.message));
+    try {
+      getServerInfo();
+      getUrlInfo();
+      getOtherUrlParameters();
+      getBooksToRender();
+    } catch (e) {
+      console.error(e);
+      setErrorMessage(e.message);
+    }
   }, [setErrorMessage]);
 
   useEffect(() => {
