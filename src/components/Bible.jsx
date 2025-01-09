@@ -239,7 +239,7 @@ export default function Bible() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || (sb.includes(lastBookId) && lastBookId) || books[0] || sb[0];
+      let _bookId = books.join('-') || (sb.includes(lastBookId) && lastBookId) || sb[0];
       if (!_bookId) {
         setErrorMessage('Unable to determine a book ID to render.');
         return;
@@ -289,12 +289,17 @@ export default function Bible() {
     setStatusMessage,
     setSupportedBooks,
     setLastBookId,
+    setBooks,
+    setNoCache,
+    setRenderMessage,
   ]);
 
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
-      const fileContent = Object.values(usfmMap || {}).join("\n\n\n") || '';
+      console.log("USFM MAP", usfmMap);
+      const fileContent = Array.from(usfmMap.values()).join("\n\n\n");
+      console.log("FILE CONTENT", fileContent);
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -381,6 +386,7 @@ export default function Bible() {
           throw err;
         }
       }
+      console.log("USFMS", usfms);
       setUsfmMap(usfms);
       setHtml(htmls.join('\n'));
     };
