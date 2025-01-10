@@ -41,7 +41,6 @@ export function AppContextProvider({ children }) {
   const [owner, setOwner] = useState();
   const [catalogEntry, setCatalogEntry] = useState();
   const [ResourceComponent, setResourceComponent] = useState();
-  const [bookId, setBookId] = useState('');
   const [bookTitle, setBookTitle] = useState('');
   const [supportedBooks, setSupportedBooks] = useState([]);
   const [htmlSections, setHtmlSections] = useState({ css: { web: '', print: '' }, cover: '', copyright: '', toc: '', body: '' });
@@ -63,11 +62,13 @@ export function AppContextProvider({ children }) {
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
   const [renderOptions, setRenderOptions] = useState({});
-  const [lastBookId, setLastBookId] = useState();
+  const [lastBookId, setLastBookId] = useState('');
   const [settingsComponent, setSettingsComponent] = useState();
   const [extraDownloadButtons, setExtraDownloadButtons] = useState([]);
   const [view, setView] = useState('web');
   const [books, setBooks] = useState([]);
+  const [expandedBooks, setExpandedBooks] = useState([]);
+  const [cachedFileID, setCachedFileID] = useState('');
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -95,183 +96,189 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const url = new URL(window.location.href);
 
-    const getServerInfo = () => {
-      const server = url.searchParams.get('server')?.toLowerCase();
-      if (server) {
-        if (server in DCS_SERVERS) {
-          setServerInfo(DCS_SERVERS[server.toLowerCase()]);
-        } else {
-          let baseUrl = server;
-          if (!server.startsWith('http')) {
-            baseUrl = `http${server.includes('door43.org') ? 's' : ''}://${server}`;
-          }
-          setServerInfo({ baseUrl, ID: server });
-        }
-      } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
-        setServerInfo(DCS_SERVERS['prod']);
-      } else if (url.hostname === 'develop.door43.org') {
-        setServerInfo(DCS_SERVERS['dev']);
+    // Get Server Info
+    const server = url.searchParams.get('server')?.toLowerCase();
+    if (server) {
+      if (server in DCS_SERVERS) {
+        setServerInfo(DCS_SERVERS[server.toLowerCase()]);
       } else {
-        setServerInfo(DCS_SERVERS['qa']);
+        let baseUrl = server;
+        if (!server.startsWith('http')) {
+          baseUrl = `http${server.includes('door43.org') ? 's' : ''}://${server}`;
+        }
+        setServerInfo({ baseUrl, ID: server });
       }
-    };
+    } else if (url.hostname.match(/^(git|preview)\.door43\.org/)) {
+      setServerInfo(DCS_SERVERS['prod']);
+    } else if (url.hostname === 'develop.door43.org') {
+      setServerInfo(DCS_SERVERS['dev']);
+    } else {
+      setServerInfo(DCS_SERVERS['qa']);
+    }
 
-    const getUrlInfo = () => {
-      let urlParts = url.pathname.replace(/^\/(.*)\/*$/, '$1').split('/');
-      let info = {
-        owner: '',
-        repo: '',
-        lang: '',
-        ref: '',
-        hash: '',
-        hashParts: [],
+    // Get URL Info
+    let urlParts = url.pathname.replace(/^\/(.*)\/*$/, '$1').split('/');
+    let info = {
+      owner: '',
+      repo: '',
+      lang: '',
+      ref: '',
+      hash: '',
+      hashParts: [],
+    };
+    if (urlParts.length > 1) {
+      urlParts = url.pathname
+        .replace(/^\/(u\/){0,1}/, '')
+        .replace(/\/+$/, '')
+        .replace(/\/preview\//, '/')
+        .replace(/\/(branch|tag)\//, '/')
+        .split('/');
+      info = {
+        owner: urlParts[0] || '',
+        repo: urlParts[1] || '',
+        lang: urlParts[1]?.includes('_') ? urlParts[1].split('_')[0] : '',
+        ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
+        hash: url.hash.replace('#', '').toLowerCase(),
+        hashParts: url.hash ? url.hash.replace(/^#/, '').toLowerCase().split(/--/)[0].split('-') : [], // Used for Bible Book Reference Navigation
       };
-      if (urlParts.length > 1) {
-        urlParts = url.pathname
-          .replace(/^\/(u\/){0,1}/, '')
-          .replace(/\/+$/, '')
-          .replace(/\/preview\//, '/')
-          .replace(/\/(branch|tag)\//, '/')
-          .split('/');
-        info = {
-          owner: urlParts[0] || '',
-          repo: urlParts[1] || '',
-          lang: urlParts[1]?.includes('_') ? urlParts[1].split('_')[0] : '',
-          ref: urlParts[2] === 'preview' ? urlParts.slice(3).join('/') : urlParts.slice(2).join('/'),
-          hash: url.hash.replace('#', '').toLowerCase(),
-          hashParts: url.hash ? url.hash.replace(/^#/, '').toLowerCase().split(/--/)[0].split('-') : [], // Used for Bible Book Reference Navigation
-        };
-      } else if (urlParts.length === 1 && urlParts[0] != 'u') {
-        info.lang = urlParts[0];
-      }
+    } else if (urlParts.length === 1 && urlParts[0] != 'u') {
+      info.lang = urlParts[0];
+    }
 
-      // The below is handling old door43.org links which had books and stories as .html files
-      // Can be removed if we no longer care about handling old door43.org links
-      // Examples:
-      // * OLD: /u/unfoldingWord/en_ult/master/01-GEN.html
-      //   -> NEW: /u/unfoldingWord/en_ult/master#gen
-      // * OLD: /u/unfoldingWord/en_ta/v79/03-translate.html#translate-manual
-      //   -> NEW: /u/unfoldingWord/en_ta/v79/#translate--translate-manual
-      // * OLD: /u/unfoldingWord/en_obs/master/01.html
-      //   -> NEW: /u/unfoldingWord/en_obs/master#obs-1
-      // * OLD: /u/unfoldingWord/en_tw/master/other.html#acknowledge
-      //   -> NEW: /u/unfoldingWord/en_tw/master/#other--acknowledge
-      const match = info.ref.match(/^(.*)\/(\d+-)*([^/]+)\.html$/);
-      if (match) {
-        info.ref = match[1];
-        info.hash = match[3].toLowerCase() + (info.hash ? `--${info.hash}` : '');
-        if (/^\d+$/.test(info.hash)) {
-          info.hash = 'obs-' + parseInt(info.hash, 10);
+    // The below is handling old door43.org links which had books and stories as .html files
+    // Can be removed if we no longer care about handling old door43.org links
+    // Examples:
+    // * OLD: /u/unfoldingWord/en_ult/master/01-GEN.html
+    //   -> NEW: /u/unfoldingWord/en_ult/master#gen
+    // * OLD: /u/unfoldingWord/en_ta/v79/03-translate.html#translate-manual
+    //   -> NEW: /u/unfoldingWord/en_ta/v79/#translate--translate-manual
+    // * OLD: /u/unfoldingWord/en_obs/master/01.html
+    //   -> NEW: /u/unfoldingWord/en_obs/master#obs-1
+    // * OLD: /u/unfoldingWord/en_tw/master/other.html#acknowledge
+    //   -> NEW: /u/unfoldingWord/en_tw/master/#other--acknowledge
+    const match = info.ref.match(/^(.*)\/(\d+-)*([^/]+)\.html$/);
+    if (match) {
+      info.ref = match[1];
+      info.hash = match[3].toLowerCase() + (info.hash ? `--${info.hash}` : '');
+      if (/^\d+$/.test(info.hash)) {
+        info.hash = 'obs-' + parseInt(info.hash, 10);
+      }
+      info.hash = info.hash.replace('tw-section-', '');
+      info.hashParts = [info.hash];
+      url.pathname = url.pathname.replace(/[^/]+.html$/, '');
+      url.hash = `#${info.hash}`;
+      window.history.replaceState({}, document.title, url.toString());
+    }
+
+    setUrlInfo(info);
+    setNavAnchor(info.hash);
+    if (!info.repo) {
+      setStatusMessage('');
+    }
+
+    // Get Book(s) Info
+    const lastBookIdCookie = document.cookie.split('; ').find((row) => row.startsWith('lastBookId'));
+    let _lastBookId = '';
+    if (lastBookIdCookie) {
+      _lastBookId = lastBookIdCookie.split('=')[1];
+    }
+    console.log("lastBookIdCookie:", lastBookIdCookie);
+
+    let _books = [];
+    const _expandedBooks = [];
+    if (url.searchParams.get('book')) {
+      _books = url.searchParams.getAll('book').flatMap((book) => book.split(',').map((b) => b.trim().toLowerCase()));
+    }
+    const hashBookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
+    if (hashBookId && hashBookId in BibleBookData && !_books.includes(hashBookId)) {
+      _books.push(hashBookId);
+    }
+    console.log(_lastBookId, _books);
+    if (_lastBookId && !_books.length) {
+      console.log("HERE", _lastBookId)
+      _books = _lastBookId.split('-');
+    }
+    console.log("BOOKS AFTER LAST BOOK", _books);
+
+    for (let book of _books) {
+      if (['nt', 'new', 'ot', 'old', 'all'].includes(book)) {
+        if (book === 'ot') {
+          book = 'old';
+        } else if (book === 'nt') {
+          book = 'new';
         }
-        info.hash = info.hash.replace('tw-section-', '');
-        info.hashParts = [info.hash];
-        url.pathname = url.pathname.replace(/[^/]+.html$/, '');
-        url.hash = `#${info.hash}`;
-        window.history.replaceState({}, document.title, url.toString());
+        if (book == 'all') {
+          _expandedBooks.push(...Object.keys(BibleBookData).filter((book) => !_expandedBooks.includes(book)));
+        } else {
+          _expandedBooks.push(
+            ...Object.keys(BibleBookData)
+              .filter((key) => BibleBookData[key].testament === book)
+              .sort((a, b) => BibleBookData[a].usfm - BibleBookData[b].usfm)
+              .filter((book) => !_expandedBooks.includes(book))
+          );
+        }
+      } else if (book in BibleBookData && !_expandedBooks.includes(book)) {
+        _expandedBooks.push(book);
       }
+    }
+    console.log('BOOKS:', _books);
+    console.log('EXPANDED BOOKS:', _expandedBooks);
+    setBooks(_books);
+    setExpandedBooks(_expandedBooks);
+    setLastBookId(_books.join('-') || _lastBookId);
 
-      setUrlInfo(info);
-      setNavAnchor(info.hash);
-      if (!info.repo) {
-        setStatusMessage('');
-      }
-    };
+    // Get Auth Token
+    if (url.searchParams.get('token')) {
+      setAuthToken(url.searchParams.get('token'));
+    } else {
+      setAuthToken(import.meta.env.VITE_DCS_READ_ONLY_TOKEN);
+    }
+    if (
+      url.searchParams.get('rerender') === '1' ||
+      url.searchParams.get('rerender') === 'true' ||
+      url.searchParams.get('force-rerender') === '1' ||
+      url.searchParams.get('force-rerender') === 'true' ||
+      url.searchParams.get('force-render') === '1' ||
+      url.searchParams.get('force-render') === 'true'
+    ) {
+      setRenderMessage('Rerender requested. Generating new copy, ignoring cache.');
+    }
+    if (
+      url.searchParams.get('nocache') === '1' ||
+      url.searchParams.get('nocache') === 'true' ||
+      url.searchParams.get('no-cache') === '1' ||
+      url.searchParams.get('no-cache') === 'true'
+    ) {
+      setNoCache(true);
+    }
 
-    const getBooksToRender = () => {
-      const expandedBooks = []
-      if (url.searchParams.get('book')) {
-        const bookParams = url.searchParams.getAll('book').flatMap((book) => book.split(',').map((b) => b.trim().toLowerCase()));
-        for (let book of bookParams) {
-          if (['nt', 'new', 'ot', 'old', 'all'].includes(book)) {
-            if (book === 'ot')
-              book = 'old';
-            else if (book === 'nt')
-              book = 'new';
-            if (book == 'all') {
-              expandedBooks.push(...(Object.keys(BibleBookData).filter(book => !expandedBooks.includes(book))));
-            } else {
-              expandedBooks.push(...(Object.keys(BibleBookData).filter((key) => BibleBookData[key].testament === book).sort((a, b) => BibleBookData[a].usfm - BibleBookData[b].usfm)).filter(book => !expandedBooks.includes(book)));
+    // Get chapters to render
+    if (url.searchParams.get('chapters')) {
+      const chaptersOrigStr = url.searchParams.get('chapters');
+      const chapterList = chaptersOrigStr.split(',').map((chapter) => chapter.trim());
+      const chapters = [];
+      chapterList.forEach((chapter) => {
+        if (chapter.includes('-')) {
+          const [start, end] = chapter.split('-').map((num) => num.trim());
+          if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
+            let parsedStart = Math.abs(parseInt(start));
+            if (parsedStart < 1) {
+              parsedStart = 1;
             }
-          } else {
-            if (BibleBookData[book] && !expandedBooks.includes(book))
-              expandedBooks.push(book);
+            const parsedEnd = Math.abs(parseInt(end));
+            for (let i = parsedStart; i <= parsedEnd; i++) {
+              chapters.push(i.toString());
+            }
+          }
+        } else {
+          const chapterNum = parseInt(chapter.trim());
+          if (!isNaN(chapterNum) && chapterNum > 0) {
+            chapters.push(chapter);
           }
         }
-        const bookId = url.hash?.replace('#', '').toLowerCase().split('-')[0];
-        if (bookId && !expandedBooks.includes(bookId)) {
-          expandedBooks.push(bookId);
-        }
-        console.log("EXPANDED BOOKS:", expandedBooks);
-        setBooks(expandedBooks);  
-      }
-   };
-
-    const getOtherUrlParameters = () => {
-      if (url.searchParams.get('token')) {
-        setAuthToken(url.searchParams.get('token'));
-      } else {
-        setAuthToken(import.meta.env.VITE_DCS_READ_ONLY_TOKEN);
-      }
-      if (
-        url.searchParams.get('rerender') === '1' ||
-        url.searchParams.get('rerender') === 'true' ||
-        url.searchParams.get('force-rerender') === '1' ||
-        url.searchParams.get('force-rerender') === 'true' ||
-        url.searchParams.get('force-render') === '1' ||
-        url.searchParams.get('force-render') === 'true'
-      ) {
-        setRenderMessage('Rerender requested. Generating new copy, ignoring cache.');
-      }
-      if (
-        url.searchParams.get('nocache') === '1' ||
-        url.searchParams.get('nocache') === 'true' ||
-        url.searchParams.get('no-cache') === '1' ||
-        url.searchParams.get('no-cache') === 'true'
-      ) {
-        setNoCache(true);
-      }
-      if (url.searchParams.get('chapters')) {
-        const chaptersOrigStr = url.searchParams.get('chapters');
-        const chapterList = chaptersOrigStr.split(',').map((chapter) => chapter.trim());
-        const chapters = [];
-        chapterList.forEach((chapter) => {
-          if (chapter.includes('-')) {
-            const [start, end] = chapter.split('-').map((num) => num.trim());
-            if (!isNaN(parseInt(start)) && !isNaN(parseInt(end))) {
-              let parsedStart = Math.abs(parseInt(start));
-              if (parsedStart < 1) {
-                parsedStart = 1;
-              }
-              const parsedEnd = Math.abs(parseInt(end));
-              for (let i = parsedStart; i <= parsedEnd; i++) {
-                chapters.push(i.toString());
-              }
-            }
-          } else {
-            const chapterNum = parseInt(chapter.trim());
-            if (!isNaN(chapterNum) && chapterNum > 0) {
-              chapters.push(chapter);
-            }
-          }
-        });
-        setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
-        setNoCache(true);
-      }
-
-      const lastBookIdCookie = document.cookie.split('; ').find((row) => row.startsWith('lastBookId'));
-      if (lastBookIdCookie) {
-        setLastBookId(lastBookIdCookie.split('=')[1]);
-      }
-    };
-
-    try {
-      getServerInfo();
-      getUrlInfo();
-      getOtherUrlParameters();
-      getBooksToRender();
-    } catch (e) {
-      console.error(e);
-      setErrorMessage(e.message);
+      });
+      setRenderOptions((prevState) => ({ ...prevState, chaptersOrigStr: chaptersOrigStr, chapters: chapters }));
+      setNoCache(true);
     }
   }, [setErrorMessage]);
 
@@ -279,7 +286,7 @@ export function AppContextProvider({ children }) {
     const setLastBookIdCookie = () => {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 14); // 2 weeks from now
-      document.cookie = `lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}`;
+      document.cookie = `lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}; path=/u/${urlInfo.owner}`;
     };
     if (lastBookId) {
       setLastBookIdCookie();
@@ -375,12 +382,8 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
-      let b = bookId || lastBookId || 'default';
-      if (urlInfo.hashParts?.[0] && urlInfo.hashParts[0].toLowerCase() in BibleBookData) {
-        b = urlInfo.hashParts[0].toLowerCase();
-      }
       const response = await fetch(
-        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${b}`,
+        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileID}`,
         {
           cache: 'default',
           headers: {
@@ -405,15 +408,17 @@ export function AppContextProvider({ children }) {
       setFetchingCachedBook(false);
     };
 
-    if (renderMessage || noCache || books.length > 1) {
-      if (!cachedBook) {
-        setCachedBook({});
+    if (cachedFileID) {
+      if (renderMessage || noCache) {
+        if (!cachedBook) {
+          setCachedBook({});
+        }
+      } else if (!fetchingCachedBook && !cachedBook) {
+        setFetchingCachedBook(true);
+        fetchCachedBook();
       }
-    } else if (!fetchingCachedBook && !cachedBook && urlInfo && urlInfo.owner && urlInfo.repo && catalogEntry) {
-      setFetchingCachedBook(true);
-      fetchCachedBook();
     }
-  }, [urlInfo, catalogEntry, repo?.default_branch, bookId, lastBookId, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, books, cachedFileID, catalogEntry, repo?.default_branch, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
     if (renderMessage || !cachedBook) {
@@ -471,6 +476,16 @@ export function AppContextProvider({ children }) {
   }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
 
   useEffect(() => {
+    if (cachedFileID) {
+      console.log(cachedFileID);
+      const url = new URL(window.location);
+      url.searchParams.delete('book');
+      cachedFileID.split('-').forEach(b => url.searchParams.append('book', b));
+      window.history.replaceState(null, '', url);
+    }
+  }, [cachedFileID])
+
+  useEffect(() => {
     let metadataType = ''; // default
     let subject = '';
     let flavorType = '';
@@ -512,6 +527,11 @@ export function AppContextProvider({ children }) {
       flavor = catalogEntry.flavor;
     }
     if (metadataType && subject) {
+      if (!['rc', 'sb', 'ts', 'tc'].includes(metadataType)) {
+        setErrorMessage(`Not a valid repository that can be convert.`);
+        return;
+      }
+      let usesBooks = false;
       switch (metadataType) {
         case 'rc':
           switch (subject) {
@@ -520,98 +540,120 @@ export function AppContextProvider({ children }) {
             case 'Greek New Testament':
             case 'Hebrew Old Testament':
               setResourceComponent(() => Bible);
-              return;
+              usesBooks = true;
+              break;
             case 'Open Bible Stories':
               setResourceComponent(() => OpenBibleStories);
-              return;
+              break;
             case 'Translation Academy':
               setResourceComponent(() => RcTranslationAcademy);
-              return;
+              break;
             case 'TSV Translation Notes':
               setResourceComponent(() => RcTranslationNotes);
-              return;
+              usesBooks = true;
+              break;
             case 'TSV Translation Questions':
               setResourceComponent(() => RcTranslationQuestions);
-              return;
+              usesBooks = true;
+              break;
             case 'Translation Words':
               setResourceComponent(() => RcTranslationWords);
-              return;
+              break;
             case 'TSV OBS Study Notes':
               setResourceComponent(() => RcObsStudyNotes);
-              return;
+              break;
             case 'TSV OBS Study Questions':
               setResourceComponent(() => RcObsStudyQuestions);
-              return;
+              break;
             case 'TSV OBS Translation Notes':
               setResourceComponent(() => RcObsTranslationNotes);
-              return;
+              break;
             case 'TSV OBS Translation Questions':
               setResourceComponent(() => RcObsTranslationQuestions);
-              return;
+              break;
             default:
               if (catalogEntry) {
                 setErrorMessage(`Conversion of \`${subject}\` resources is currently not supported.`);
               }
           }
-          return;
+          break;
         case 'sb':
           switch (flavorType) {
             case 'scripture':
               switch (flavor) {
                 case 'textTranslation':
                   setResourceComponent(() => Bible);
-                  return;
+                  usesBooks = true;
+                  break;
                 default:
                   setErrorMessage(`Conversion of SB flavor \`${flavor}\` is not currently supported.`);
               }
-              return;
+              break;
             case 'gloss':
               switch (catalogEntry.flavor) {
                 case 'textStories':
                   setResourceComponent(() => OpenBibleStories);
-                  return;
+                  break;
               }
-              return;
+              break;
             default:
               if (catalogEntry) {
                 setErrorMessage(`Conversion of SB flavor type \`${flavorType}\` is not currently supported.`);
               }
           }
-          return;
+          break;
         case 'ts':
           switch (subject) {
             case 'Open Bible Stories':
               setResourceComponent(() => OpenBibleStories);
-              return;
+              break;
             case 'Bible':
               setResourceComponent(() => TsBible);
-              return;
+              break;
             default:
               if (catalogEntry) {
                 setErrorMessage('Conversion of translationStudio repositories is currently not supported.');
               }
           }
-          return;
+          break;
         case 'tc':
           switch (subject) {
             case 'Aligned Bible':
             case 'Bible':
               setResourceComponent(() => Bible);
-              return;
+              break;
             default:
               if (catalogEntry) {
                 setErrorMessage(`Conversion of translationCore \`${subject}\` repositories is currently not supported.`);
               }
           }
-          return;
+          break;
       }
-      setErrorMessage(`Not a valid repository that can be convert.`);
+      if (usesBooks) {
+        let _cachedFileID = books.join('-');
+        if (!_cachedFileID) {
+          for(const ingredient of (catalogEntry?.ingredients || [])) {
+            if (ingredient.identifier in BibleBookData) {
+              setBooks([ingredient.identifier]);
+              setExpandedBooks([ingredient.identifier]);
+              _cachedFileID = ingredient.identifier;
+              break;
+            }
+          }
+          if (!_cachedFileID) {
+            _cachedFileID = 'gen';
+          }
+        }
+        setCachedFileID(_cachedFileID);
+      } else {
+        setCachedFileID('default');
+      }
     }
-  }, [urlInfo, catalogEntry, setErrorMessage]);
+  }, [urlInfo, catalogEntry, books, setErrorMessage]);
 
   useEffect(() => {
     const handleDownloadHtml = () => {
-      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.html`;
+      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${books.length ? `_${books.join('-')}` : ''}.html`;
       const fileContent = pagedJsReadyHtml || '';
       const blob = new Blob([fileContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
@@ -622,7 +664,7 @@ export function AppContextProvider({ children }) {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && pagedJsReadyHtml) {
+    if (catalogEntry && pagedJsReadyHtml) {
       const noHtmlButtons = extraDownloadButtons.filter((buttonData) => buttonData.label !== 'HTML');
       setExtraDownloadButtons([
         ...noHtmlButtons,
@@ -633,29 +675,29 @@ export function AppContextProvider({ children }) {
         },
       ]);
     }
-  }, [bookId, catalogEntry, pagedJsReadyHtml, setExtraDownloadButtons]);
+  }, [catalogEntry, books, pagedJsReadyHtml, setExtraDownloadButtons]);
 
   useEffect(() => {
     const sendCachedBook = async () => {
-      if (!bookId || bookId === 'gen' || urlInfo.hashParts?.[0] !== bookId || supportedBooks?.[0] === bookId) {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
-      }
-      if (bookId) {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, bookId, APP_VERSION, catalogEntry, builtWith, htmlSections);
-      }
+      uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, cachedFileID, APP_VERSION, catalogEntry, builtWith, htmlSections);
     };
 
-    if (!noCache && !Object.keys(renderOptions).length && htmlSections.body != '' && (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)) {
+    if (
+      cachedFileID &&
+      !noCache &&
+      !Object.keys(renderOptions).length &&
+      htmlSections.body != '' &&
+      (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)
+    ) {
       sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, renderOptions, renderMessage, cachedBook, bookId, urlInfo, noCache, builtWith, supportedBooks]);
+  }, [htmlSections, cachedFileID, catalogEntry, renderOptions, renderMessage, cachedBook, urlInfo, noCache, builtWith, supportedBooks]);
 
   // create the value for the context provider
   const context = {
     state: {
       urlInfo,
       catalogEntry,
-      bookId,
       bookTitle,
       statusMessage,
       errorMessages,
@@ -684,6 +726,7 @@ export function AppContextProvider({ children }) {
       extraDownloadButtons,
       view,
       books,
+      expandedBooks,
     },
     actions: {
       onPrintClick,
@@ -698,7 +741,6 @@ export function AppContextProvider({ children }) {
       setNavAnchor,
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
-      setBookId,
       setBookTitle,
       setSupportedBooks,
       setBuiltWith,
@@ -711,6 +753,7 @@ export function AppContextProvider({ children }) {
       setView,
       setNoCache,
       setBooks,
+      setExpandedBooks,
     },
   };
 
