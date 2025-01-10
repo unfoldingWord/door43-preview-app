@@ -102,17 +102,17 @@ const renderFlags = {
 
 const pk = new Proskomma();
 
-const parseHtml = (html, bookId, showChapters=true) => {
+const parseHtml = (html, book, showChapters=true) => {
   const titleMatch = html.match(/<p [^>]*>(.*?)<\/p>/);
   const title = titleMatch ? titleMatch[1] : '';
-  html = html.replace(/<p /, `<p id="nav-${bookId}" `)
+  html = html.replace(/<p /, `<p id="nav-${book}" `)
   html = html.replaceAll(
     /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-    `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
+    `<span id="nav-${book}-$1-$2"$3><a href="#nav-${book}-$1-$2" class="header-link">$4</a></span>`
   );
   html = html.replaceAll(
     /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
-    `<span id="nav-${bookId}-$1"${showChapters ? ` data-toc-title="${title} $1"` : ''}$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
+    `<span id="nav-${book}-$1"${showChapters ? ` data-toc-title="${title} $1"` : ''}$2><a href="#nav-${book}-$1-1" class="header-link">$3</a></span>`
   );
   html = html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
 
@@ -126,7 +126,7 @@ const parseHtml = (html, bookId, showChapters=true) => {
   }
 
   html = `
-    <div class="section bible-book" id="nav-${bookId}" data-toc-title="${title}">
+    <div class="section bible-book" id="nav-${book}" data-toc-title="${title}">
       ${html}
     </div>
   `;
@@ -142,8 +142,8 @@ export default function Bible() {
       catalogEntry,
       navAnchor,
       authToken,
-      bookId,
-      lastBookId,
+      books,
+      expandedBooks,
       bookTitle,
       supportedBooks,
       builtWith,
@@ -151,11 +151,8 @@ export default function Bible() {
       errorMessages,
       cachedHtmlSections,
       view,
-      books,
     },
     actions: {
-      setBookId,
-      setBooks,
       setBookTitle,
       setBuiltWith,
       setSupportedBooks,
@@ -167,7 +164,6 @@ export default function Bible() {
       setNavAnchor,
       setCanChangeColumns,
       setPrintOptions,
-      setLastBookId,
       setExtraDownloadButtons,
     },
   } = useContext(AppContext);
@@ -179,10 +175,11 @@ export default function Bible() {
 
   const onBibleReferenceChange = (b, c, v) => {
     console.log(b, c, v, books.length, books);
-    if (books.length > 0 && ! books.includes(b)) {
-      window.location.hash = b;
+    if (! expandedBooks.includes(b)) {
       const url = new URL(window.location);
+      url.hash = '';
       url.searchParams.delete('book');
+      url.searchParams.set('book', b);
       window.history.replaceState(null, '', url);
       window.location.reload();
     } else if (setNavAnchor) {
@@ -198,7 +195,7 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: urlInfo.hashParts[0]?.toLowerCase() || books?.[0] || lastBookId || 'gen',
+    initialBook: expandedBooks?.[0] || books[0] || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -233,25 +230,13 @@ export default function Bible() {
         setRenderMessage('Preparing preview for multiple books. Please wait...');
       }
 
-      let sb = getSupportedBooks(catalogEntry, repoFileList, books.length > 1 ? books : []);
+      let sb = getSupportedBooks(catalogEntry, repoFileList, expandedBooks.length > 1 ? expandedBooks : []);
       if (!sb.length) {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
       console.log("sb", sb);
 
-      let _bookId = books.join('-') || (sb.includes(lastBookId) && lastBookId) || sb[0];
-      if (!_bookId) {
-        setErrorMessage('Unable to determine a book ID to render.');
-        return;
-      }
-      console.log("BOOKID", _bookId, books);
-      setBookId(_bookId);
-      if (!books.length) {
-        setBooks([_bookId]);
-      }
-      console.log("SET BOOKS to:", [_bookId]);
-      setLastBookId(_bookId);
       setStatusMessage(
         <>
           Preparing preview for {books.join(', ')}.
@@ -259,9 +244,12 @@ export default function Bible() {
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
+
+      for(const _book of expandedBooks) {
+        if (!sb.includes(_book)) {
+          setErrorMessage(`This resource does not support the rendering of the book \`${_book}\`. Please choose another book to render.`);
+          sb = [_book, ...sb];
+        }
       }
 
       setSupportedBooks(sb);
@@ -271,33 +259,30 @@ export default function Bible() {
       setPrintOptions((prevState) => ({ ...prevState, columns: 2 }));
     };
 
-    if (catalogEntry && !supportedBooks.length && !errorMessages && books.length) {
+    if (catalogEntry && !supportedBooks.length && !errorMessages && expandedBooks.length) {
       setInitialBookIdAndSupportedBooks();
     }
   }, [
     books,
+    expandedBooks,
     supportedBooks,
     errorMessages,
     urlInfo,
     catalogEntry,
     authToken,
-    lastBookId,
-    setBookId,
     setBookTitle,
     setCanChangeColumns,
     setErrorMessage,
     setPrintOptions,
     setStatusMessage,
     setSupportedBooks,
-    setLastBookId,
-    setBooks,
     setNoCache,
     setRenderMessage,
   ]);
 
   useEffect(() => {
     const handleUSFMClick = () => {
-      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}${bookId && `_${bookId}`}.usfm`;
+      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}_${books.join('-')}.usfm`;
       const fileContent = Array.from(usfmMap.values()).join("\n\n\n");
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -308,7 +293,7 @@ export default function Bible() {
       URL.revokeObjectURL(url);
     };
 
-    if (bookId && catalogEntry && usfmMap) {
+    if (catalogEntry && usfmMap && books.length) {
       setExtraDownloadButtons((prevButtons) => {
         const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
         const newButton = {
@@ -324,7 +309,7 @@ export default function Bible() {
         return prevButtons;
       });
     }
-  }, [bookId, usfmMap, catalogEntry, setExtraDownloadButtons]);
+  }, [usfmMap, catalogEntry, books, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
@@ -342,7 +327,7 @@ export default function Bible() {
       const usfms = new Map();
       const htmls = [];
       for (const ingredient of catalogEntry.ingredients) {
-        if ( (books.length > 0 && !books.includes(ingredient.identifier)) || (books.length === 0 && bookId !== ingredient.identifier)) {
+        if (!expandedBooks.includes(ingredient.identifier)) {
           continue;
         }
         const filePath = ingredient.path.replace(/^\.\//, '');
@@ -351,7 +336,7 @@ export default function Bible() {
           usfm = await getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
         } catch (e) {
           console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e);
-          setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`);
+          setErrorMessage(`Unable to get content for book \`${ingredient.identifier}\` from DCS`);
           continue;
         }
         usfm = removeAlignments(usfm);
@@ -389,10 +374,10 @@ export default function Bible() {
       setHtml(htmls.join('\n'));
     };
 
-    if (!html && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
+    if (!html && catalogEntry && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
-  }, [html, books, supportedBooks, catalogEntry, bookId, authToken, errorMessages, setBookTitle, setErrorMessage]);
+  }, [html, books, supportedBooks, catalogEntry, expandedBooks, authToken, errorMessages, setBookTitle, setErrorMessage]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
@@ -473,7 +458,7 @@ export default function Bible() {
     if (html && copyright) {
       handleHtml();
     }
-  }, [bookId,  html, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   useEffect(() => {
     if (showUsfmAsHtml && usfmMap.size) {

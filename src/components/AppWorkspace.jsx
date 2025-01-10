@@ -195,7 +195,7 @@ export default function AppWorkspace() {
 
   useEffect(() => {
     if (navAnchor) {
-      updateUrlHashInAddressBar(navAnchor);
+//      updateUrlHashInAddressBar(navAnchor);
     }
   }, [navAnchor]);
 
