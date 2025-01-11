@@ -137,8 +137,8 @@ const requiredSubjects = ['Open Bible Stories', 'Translation Academy', 'Translat
 
 export default function RcObsTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -183,7 +183,6 @@ export default function RcObsTranslationNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
     authToken,
   });
 
@@ -262,7 +261,7 @@ export default function RcObsTranslationNotes() {
 
   const twlTSVBookFiles = useFetchBookFiles({
     catalogEntries: twlCatalogEntries,
-    bookId,
+    bookId: 'obs',
     setErrorMessage,
   });
 
@@ -295,7 +294,6 @@ export default function RcObsTranslationNotes() {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
-    setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: '' } };
     });
@@ -311,7 +309,7 @@ export default function RcObsTranslationNotes() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -373,7 +371,7 @@ export default function RcObsTranslationNotes() {
     <div class="article obs-tn-front-intro-note">
       <span class="header-title">${catalogEntry.title} :: Introduction</span>
       <div class="obs-tn-note-body">
-${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
       </div>
     </div>
 `;
@@ -401,7 +399,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
         </div>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
@@ -461,7 +459,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               article += `
           <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
           <div class="obs-tn-note-body">
-            ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+            ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
           </div>
 `;
               if (row.SupportReference) {
@@ -616,7 +614,6 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     catalogEntry,
     html,
     taCatalogEntries,
-    bookId,
     tnTsvData,
     obsData,
     taFileContents,

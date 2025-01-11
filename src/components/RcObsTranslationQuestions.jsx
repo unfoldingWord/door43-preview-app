@@ -163,8 +163,8 @@ const requiredSubjects = ['Open Bible Stories'];
 
 export default function RcObsTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, bookTitle, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -209,7 +209,6 @@ export default function RcObsTranslationQuestions() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
     authToken,
   });
 
@@ -255,7 +254,6 @@ export default function RcObsTranslationQuestions() {
       let sb = ['obs']
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
-      setBookId('obs');
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
 
@@ -274,7 +272,7 @@ export default function RcObsTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (navAnchor && ! navAnchor.includes('--')) {
@@ -288,8 +286,8 @@ export default function RcObsTranslationQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section tq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
+<div class="section tq-book-section" id="nav-obs" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tq-book-section-header"><a href="#nav-obs" class="header-link">${bookTitle}</a></h1>
 `;
       if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tqTsvData?.front?.intro) {
         html += `
@@ -300,8 +298,8 @@ export default function RcObsTranslationQuestions() {
         <div class="tq-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tq-question-body">
-            ${convertNoteFromMD2HTML(row.Question, bookId, 'front')}
-            ${convertNoteFromMD2HTML(row.Response, bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Question, 'obs', 'front')}
+            ${convertNoteFromMD2HTML(row.Response, 'obs', 'front')}
           </div>
         </div>
 `;
@@ -328,7 +326,7 @@ export default function RcObsTranslationQuestions() {
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
         </div>
 `;
             html += article;
@@ -378,7 +376,7 @@ export default function RcObsTranslationQuestions() {
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
                   <div class="tq-entry-response">
-                    ${convertNoteFromMD2HTML(row.Response, bookId, storyStr)}
+                    ${convertNoteFromMD2HTML(row.Response, 'obs', storyStr)}
                   </div>
 `;
                 }
@@ -420,7 +418,6 @@ export default function RcObsTranslationQuestions() {
     tqTsvBookFiles,
     tqTsvData,
     imageResolution,
-    bookId,
     bookTitle,
     renderOptions,
     setHtmlSections,

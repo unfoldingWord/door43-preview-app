@@ -155,8 +155,8 @@ const requiredSubjects = ['Open Bible Stories'];
 
 export default function RcObsStudyQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, bookTitle, navAnchor, authToken, builtWith },
+    actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -201,7 +201,7 @@ export default function RcObsStudyQuestions() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
+    bookId: 'obs',
     authToken,
   });
 
@@ -248,8 +248,6 @@ export default function RcObsStudyQuestions() {
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
 
-      let _bookId = 'obs';
-      setBookId(_bookId);
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
 
@@ -268,7 +266,7 @@ export default function RcObsStudyQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookId, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (navAnchor && ! navAnchor.includes('--')) {
@@ -282,8 +280,8 @@ export default function RcObsStudyQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section sq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header sq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
+<div class="section sq-book-section" id="nav-obs" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header sq-book-section-header"><a href="#nav-obs" class="header-link">${bookTitle}</a></h1>
 `;
       if (sqTsvData?.front?.['0']) {
         html += `
@@ -294,8 +292,8 @@ export default function RcObsStudyQuestions() {
         <div class="sq-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="sq-question-body">
-            ${convertNoteFromMD2HTML(row.Question, bookId, 'front')}
-            ${convertNoteFromMD2HTML(row.Response, bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Question, 'obs', 'front')}
+            ${convertNoteFromMD2HTML(row.Response, 'obs', 'front')}
           </div>
         </div>
 `;
@@ -307,19 +305,19 @@ export default function RcObsStudyQuestions() {
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-      <div id="nav-${bookId}-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-        <h2 class="header obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+      <div id="nav-obs-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+        <h2 class="header obs-sn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (sqTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section sq-chapter-intro-section">
 `;
           for (let row of sqTsvData[storyStr]['intro']) {
-            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-obs-${storyStr}-intro-${row.ID}`;
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
         </div>
 `;
             html += article;
@@ -331,7 +329,7 @@ export default function RcObsStudyQuestions() {
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-sq-chapter-frame-section">
         <h3 class="header sq-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
@@ -353,7 +351,7 @@ export default function RcObsStudyQuestions() {
           if (sqTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in sqTsvData[storyStr][frameStr]) {
               const row = sqTsvData[storyStr][frameStr][rowIdx];
-              const questionLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const questionLink = `nav-obs-${storyStr}-${frameStr}-${row.ID}`;
               if (row.Question) {
                 let article = `
               <div id="${questionLink}" class="sq-question-article">
@@ -369,7 +367,7 @@ export default function RcObsStudyQuestions() {
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
                   <div class="sq-entry-response">
-                    ${convertNoteFromMD2HTML(row.Response, bookId, storyStr)}
+                    ${convertNoteFromMD2HTML(row.Response, 'obs', storyStr)}
                   </div>
 `;
                 }
@@ -411,7 +409,6 @@ export default function RcObsStudyQuestions() {
     sqTsvBookFiles,
     sqTsvData,
     imageResolution,
-    bookId,
     bookTitle,
     setHtmlSections,
     setStatusMessage,
