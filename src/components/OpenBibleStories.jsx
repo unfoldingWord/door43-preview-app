@@ -69,7 +69,7 @@ const theme = createTheme({
 export default function OpenBibleStories() {
   const {
     state: { catalogEntry, urlInfo, navAnchor, authToken, renderOptions },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
@@ -106,7 +106,6 @@ export default function OpenBibleStories() {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
-    setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: printCss } };
     });
@@ -124,7 +123,7 @@ export default function OpenBibleStories() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     if (catalogEntry) {
