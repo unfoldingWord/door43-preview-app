@@ -476,7 +476,7 @@ export function AppContextProvider({ children }) {
   }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
 
   useEffect(() => {
-    if (cachedFileID) {
+    if (cachedFileID && cachedFileID != "default") {
       console.log(cachedFileID);
       const url = new URL(window.location);
       url.searchParams.delete('book');

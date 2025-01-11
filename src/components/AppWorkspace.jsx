@@ -70,6 +70,7 @@ export default function AppWorkspace() {
       bookId,
       bookTitle,
       view,
+      expandedBooks,
       books,
     },
     actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady, setView },
@@ -175,7 +176,7 @@ export default function AppWorkspace() {
           console.log("SET NAV ANCHOR", anchor);
           setNavAnchor(anchor.replace(/^nav-/, ''));
         } else if (anchor) {
-          if (anchor.split('-')[0] in BibleBookData && !(books.includes(anchor.split('-')[0]))) {
+          if (anchor.split('-')[0] in BibleBookData && !(expandedBooks.includes(anchor.split('-')[0]))) {
             window.open(`#${anchor}`, '_blank');
           } else {
             console.log('Scrolling without setting to: ', anchor);
@@ -191,11 +192,11 @@ export default function AppWorkspace() {
     return () => {
       document.querySelector('#root').removeEventListener('click', handleClick);
     };
-  }, [view, setNavAnchor]);
+  }, [view, expandedBooks, setNavAnchor]);
 
   useEffect(() => {
     if (navAnchor) {
-//      updateUrlHashInAddressBar(navAnchor);
+      updateUrlHashInAddressBar(navAnchor);
     }
   }, [navAnchor]);
 
