@@ -19,7 +19,7 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
             if (row.OrigWords && ! row.Quote) {
               row.Quote = row.OrigWords;
             }
-            if (row.Quote && row.Occurrence && row.Occurrence != '0') {
+            if (row.Quote && !row.Quote.endsWith(':') && row.Occurrence && row.Occurrence != '0') {
               for (let targetBookIdx in targetBooks) {
                 const params = {
                   quote: row.Quote || row.OrigWords,
@@ -31,7 +31,7 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
                 try {
                   let glQuote = getTargetQuoteFromSourceQuote(params);
                   if (quoteTokenDelimiter) {
-                    glQuote = glQuote.replaceAll(/ *& */g, quoteTokenDelimiter);
+                    glQuote = glQuote.replace(/ *& */g, quoteTokenDelimiter);
                   }
                   if (glQuote) {
                     row[`GLQuote${targetBookIdx}`] = glQuote;
@@ -52,7 +52,7 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
       setRenderedData(data);
     }
 
-    if (tsvData && sourceUsfm && targetUsfms) {
+    if (tsvData && sourceUsfm && targetUsfms?.length) {
       doAddGLQuotes();
     }
   }, [tsvData, sourceUsfm, targetUsfms, quoteTokenDelimiter]);

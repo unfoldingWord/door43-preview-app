@@ -605,8 +605,8 @@ export const ResourceLanguagesAccordion = ({ subjects = [], serverInfo = {} }) =
                                       {entry.downloadableTypes[type].map((format) => {
                                         const description = getDescription(format, serverInfo.baseUrl);
                                         const cleanHTML = DOMPurify.sanitize(description, {
-                                          ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong'],
-                                          ALLOWED_ATTR: ['href', 'title', 'style', 'target'],
+                                          ALLOWED_TAGS: ['a', 'b', 'i', 'em', 'strong', 'br', 'p'],
+                                          ADD_ATTR: ['href', 'title', 'style', 'target'],
                                         });
                                         return (
                                           <li key={format.name}>

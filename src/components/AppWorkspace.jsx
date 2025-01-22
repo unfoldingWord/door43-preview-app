@@ -31,6 +31,7 @@ import { AppContext } from '@components/App.context';
 
 // Constants imports
 import { APP_NAME } from '@common/constants';
+import { BibleBookData } from '@common/books';
 
 // Helper imports
 import { useReactToPrint } from 'react-to-print';
@@ -39,7 +40,6 @@ import { getColorForProgressBar } from '@helpers/loading';
 
 export default function AppWorkspace() {
   const [showSelectResourceModal, setShowSelectResourceModal] = useState(false);
-  const [view, setView] = useState('web');
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [fullScreen, setFullScreen] = useState(false);
   const [isAtTop, setIsAtTop] = useState(window.scrollY === 0);
@@ -60,7 +60,6 @@ export default function AppWorkspace() {
       errorMessages,
       htmlSections,
       builtWith,
-      cachedBook,
       cachedHtmlSections,
       serverInfo,
       isOpenPrint,
@@ -70,8 +69,11 @@ export default function AppWorkspace() {
       renderMessage,
       bookId,
       bookTitle,
+      view,
+      expandedBooks,
+      books,
     },
-    actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady },
+    actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady, setView },
   } = useContext(AppContext);
 
   const webPreviewRef = useRef();
@@ -174,8 +176,12 @@ export default function AppWorkspace() {
           console.log("SET NAV ANCHOR", anchor);
           setNavAnchor(anchor.replace(/^nav-/, ''));
         } else if (anchor) {
-          console.log('Scrolling without setting to: ', anchor);
-          scrollToAnchor(anchor, currentViewRef.current, view);
+          if (anchor.split('-')[0] in BibleBookData && !(expandedBooks.includes(anchor.split('-')[0]))) {
+            window.open(`#${anchor}`, '_blank');
+          } else {
+            console.log('Scrolling without setting to: ', anchor);
+            scrollToAnchor(anchor, currentViewRef.current, view);
+          }
         }
         e.preventDefault();
         e.stopPropagation();
@@ -186,7 +192,7 @@ export default function AppWorkspace() {
     return () => {
       document.querySelector('#root').removeEventListener('click', handleClick);
     };
-  }, [view, setNavAnchor]);
+  }, [view, expandedBooks, setNavAnchor]);
 
   useEffect(() => {
     if (navAnchor) {

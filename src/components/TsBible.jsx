@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material';
 
 // Custom hooks
-import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
+import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRenderer';
 import useFetchZipFileData from '@hooks/useFetchZipFileData';
 
 // Bible reference imports
@@ -108,7 +108,7 @@ export default function TsBible() {
     setErrorMessage,
   });
 
-  const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
+  const { renderedData, htmlReady } = useUsfmPreviewRenderer({
     bookId,
     usfmText,
     renderFlags,
@@ -218,7 +218,7 @@ export default function TsBible() {
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
         `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
       );
-      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+      _html = _html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
       _html = `<div class="section bible-book" id="nav-${bookId}" data-toc-title="${bookTitle}">${_html}</div>`;
       setHtmlSections((prevState) => {
         return {

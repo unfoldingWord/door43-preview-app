@@ -49,7 +49,7 @@ export const ResourcesCardGrid = () => {
   } = useContext(AppContext);
 
   const [isFetchingEntries, setIsFetchingEntries] = useState(false);
-  const [stage, setStage] = useState('latest');
+  const [stage, setStage] = useState('prod');
   const [owners, setOwners] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -397,6 +397,9 @@ export const ResourcesCardGrid = () => {
                   value={order}
                   exclusive
                   onChange={(event, newOrder) => {
+                    if (!newOrder) {
+                      return;
+                    }
                     setOrder(newOrder);
                     urlParams.set('order', newOrder);
                     window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
@@ -406,12 +409,12 @@ export const ResourcesCardGrid = () => {
                 >
                   <Tooltip title="Ascending" arrow>
                     <ToggleButton value="asc" aria-label="Ascending">
-                      <ArrowUpwardIcon />
+                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                   <Tooltip title="Descending" arrow>
                     <ToggleButton value="desc" aria-label="Descending">
-                      <ArrowDownwardIcon />
+                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
                     </ToggleButton>
                   </Tooltip>
                 </ToggleButtonGroup>

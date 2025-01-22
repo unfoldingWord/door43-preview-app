@@ -21,7 +21,9 @@ export const WebPreviewComponent = forwardRef(({ style }, ref) => {
         id="web-preview"
         style={style}
         dangerouslySetInnerHTML={{
-          __html: DOMPurify.sanitize(htmlSections?.body || cachedHtmlSections?.body, { ADD_ATTR: ['target'] }),
+          __html: DOMPurify.sanitize(htmlSections?.webView || htmlSections?.body || cachedHtmlSections?.body, { 
+            ADD_ATTR: ['target'],
+          }),
         }}
         ref={ref}
       />

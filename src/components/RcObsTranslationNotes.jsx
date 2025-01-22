@@ -67,7 +67,7 @@ const webCss = `
 }
 
 .obs-tn-note-body h6 {
-  font-size: 1em;
+  font-size: 1em !important;
   margin: 10px 0;
 }
 
@@ -81,13 +81,8 @@ const webCss = `
   margin-bottom: 10px;
 }
 
-.section {
-  break-after: page !important;
-}
-
 .article {
   break-after: auto !important;
-  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
@@ -142,8 +137,8 @@ const requiredSubjects = ['Open Bible Stories', 'Translation Academy', 'Translat
 
 export default function RcObsTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -188,7 +183,6 @@ export default function RcObsTranslationNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
     authToken,
   });
 
@@ -267,7 +261,7 @@ export default function RcObsTranslationNotes() {
 
   const twlTSVBookFiles = useFetchBookFiles({
     catalogEntries: twlCatalogEntries,
-    bookId,
+    bookId: 'obs',
     setErrorMessage,
   });
 
@@ -300,7 +294,6 @@ export default function RcObsTranslationNotes() {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
-    setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: '' } };
     });
@@ -316,7 +309,7 @@ export default function RcObsTranslationNotes() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -333,7 +326,7 @@ export default function RcObsTranslationNotes() {
             title: file,
             body: `${resource.toUpperCase()} ARTICLE NOT FOUND`,
             rcLink,
-            anchor: `nav-${bookId}--${resource}-${file.replace(/\//g, '-')}`,
+            anchor: `nav-obs--${resource}-${file.replace(/\//g, '-')}`,
           };
           const fileParts = file.split('/');
           switch (resource) {
@@ -364,12 +357,12 @@ export default function RcObsTranslationNotes() {
 
     const generateHtml = async () => {
       let html = `
-<div class="section obs-tn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title}">
-  <h1 class="header obs-tn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title}</a></h1>
+<div class="section obs-tn-book-section" id="nav-obs" data-toc-title="${catalogEntry.title}">
+  <h1 class="header obs-tn-book-section-header"><a href="#nav-obs" class="header-link">${catalogEntry.title}</a></h1>
 `;
       const rcLinksData = {};
 
-      if (tnTsvData?.['front']?.['intro']) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvData?.['front']?.['intro']) {
         html += `
   <div class="section obs-tn-front-intro-section" data-toc-title="Introduciton">
 `;
@@ -378,7 +371,7 @@ export default function RcObsTranslationNotes() {
     <div class="article obs-tn-front-intro-note">
       <span class="header-title">${catalogEntry.title} :: Introduction</span>
       <div class="obs-tn-note-body">
-${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
       </div>
     </div>
 `;
@@ -390,20 +383,23 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.includes(storyStr)) {
+          continue;
+        }
         html += `
-  <div id="obs-${bookId}-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-tn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+  <div id="nav-obs-${storyStr}" class="section obs-tn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+    <h2 class="header obs-tn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (tnTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section obs-tn-chapter-intro-section">
 `;
           for (let row of tnTsvData[storyStr]['intro']) {
-            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-obs-${storyStr}-intro-${row.ID}`;
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
         </div>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
@@ -416,10 +412,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-tn-chapter-frame-section">
-        <h3 class="obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -438,13 +434,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           if (tnTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in tnTsvData[storyStr][frameStr]) {
               const row = tnTsvData[storyStr][frameStr][rowIdx];
-              const noteLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const noteLink = `nav-obs-${storyStr}-${frameStr}-${row.ID}`;
               let article = `
         <div class="article obs-tn-note-article" id="${noteLink}">
 `;
               if (!row.Quote) {
                 article += `
-          <h4 class="obs-tn-note-header">
+          <h4 class="header obs-tn-note-header">
             <a href="#${noteLink}" class="header-link">
             Note:
             </a>
@@ -452,7 +448,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               } else {
                 article += `
-          <h4 class="obs-tn-note-header">
+          <h4 class="header obs-tn-note-header">
             <a href="#${noteLink}" class="header-link">
               ${row.Quote}
             </a>
@@ -463,7 +459,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               article += `
           <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
           <div class="obs-tn-note-body">
-            ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+            ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
           </div>
 `;
               if (row.SupportReference) {
@@ -494,7 +490,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             const twlLink = `twl-${storyStr}-${frameStr}`;
             let article = `
         <div class="article obs-tn-frame-twls" id="${twlLink}">
-          <h4 class="obs-tn-frame-twl-header">${twCatalogEntries?.[0].title}</h4>
+          <h4 class="header obs-tn-frame-twl-header">${twCatalogEntries?.[0].title}</h4>
           <ul class="obs-tn-frame-twl-list">
 `;
             for (let row of twlTsvData[storyStr][frameStr]) {
@@ -529,7 +525,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
-    <h1 class="cover-header section-header">${taCatalogEntry.title} - OBS</h1>
+    <h1 class="header cover-header section-header">${taCatalogEntry.title} - OBS</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -566,7 +562,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
-    <h1 class="cover-header section-header">${twCatalogEntry.title} - OBS</h1>
+    <h1 class="header cover-header section-header">${twCatalogEntry.title} - OBS</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -618,7 +614,6 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     catalogEntry,
     html,
     taCatalogEntries,
-    bookId,
     tnTsvData,
     obsData,
     taFileContents,
@@ -626,6 +621,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     twFileContents,
     twlTsvData,
     imageResolution,
+    renderOptions,
     setHtmlSections,
     setErrorMessage,
     setNavAnchor,
@@ -651,11 +647,12 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       setHtmlSections((prevState) => ({
         ...prevState,
         copyright,
+        cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
         body: html,
       }));
       setStatusMessage('');
     }
-  }, [html, copyright, catalogEntry, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, catalogEntry, renderOptions, setHtmlSections, setStatusMessage]);
 
   return (
   <ThemeProvider theme={theme}>

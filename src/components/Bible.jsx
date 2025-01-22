@@ -2,29 +2,29 @@
 import { useState, useEffect, useContext } from 'react';
 
 // Material UI imports
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider, createTheme, Checkbox, FormControlLabel, Tooltip } from '@mui/material';
 
 // USFM parsing library
-import usfm from 'usfm-js';
-
-// Custom hooks
-import useUsfmPreviewRenderer from '@hooks/useUsfmPreviewRender';
+import { removeAlignments } from '@helpers/usfm';
 
 // Bible reference component
-import BibleReference from 'bible-reference-rcl';
+import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 
 // Helper functions and constants
 import { getLtrPreviewStyle, getRtlPreviewStyle } from '@helpers/previewStyling.js';
 import { getSupportedBooks } from '@helpers/books';
-import { getRepoContentsContent, getRepoGitTrees } from '@helpers/dcsApi';
+import { getRepoGitTrees } from '@helpers/dcsApi';
+import { getRepoContentsContent } from '@helpers/dcsApi';
 
 // Context
 import { AppContext } from '@components/App.context';
 
 // Bible reference hook and data
-import { useBibleReference } from 'bible-reference-rcl';
-import { BibleBookData } from '@common/books';
 import { generateCopyrightAndLicenseHTML } from '@helpers/html';
+import { Proskomma } from 'proskomma-core';
+import { SofriaRenderFromProskomma } from 'proskomma-json-tools';
+import { render } from 'proskomma-json-tools';
+import { renderers } from '@renderer/sofria2html';
 
 const theme = createTheme({
   overrides: {
@@ -45,6 +45,8 @@ const theme = createTheme({
 });
 
 const webCss = `
+${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.styles)}
+
 h1 {
   column-span: all;
 }
@@ -58,33 +60,127 @@ h1 {
   text-decoration: none;
   color: inherit;
 }
+
+.web-preview .paras_usfm_f {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  background-color: #CCC;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.paras_usfm_fq, .paras_usfm_fqa {
+  font-style: italic;
+}
 `;
+
+const defaultFlags = {
+  showWordAtts: false,
+  showTitles: true,
+  showHeadings: true,
+  showIntroductions: true,
+  showFootnotes: true,
+  showXrefs: true,
+  showParaStyles: true,
+  showCharacterMarkup: true,
+  showChapterLabels: true,
+  showVersesLabels: true,
+};
+
+const renderFlags = {
+  showWordAtts: false,
+  showTitles: true,
+  showHeadings: true,
+  showFootnotes: true,
+  showXrefs: true,
+  showChapterLabels: true,
+  showVersesLabels: true,
+  showCharacterMarkup: true,
+  showParaStyles: true,
+  selectedBcvNotes: [],
+};
+
+const pk = new Proskomma();
+
+const parseHtml = (html, book, showChapters=true) => {
+  const titleMatch = html.match(/<p [^>]*>(.*?)<\/p>/);
+  const title = titleMatch ? titleMatch[1] : '';
+  html = html.replace(/<p /, `<p id="nav-${book}" `)
+  html = html.replaceAll(
+    /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
+    `<span id="nav-${book}-$1-$2"$3><a href="#nav-${book}-$1-$2" class="header-link">$4</a></span>`
+  );
+  html = html.replaceAll(
+    /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
+    `<span id="nav-${book}-$1"${showChapters ? ` data-toc-title="${title} $1"` : ''}$2><a href="#nav-${book}-$1-1" class="header-link">$3</a></span>`
+  );
+  html = html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+
+  const footnotes = html.match(/<span class="footnote">/g);
+  if (footnotes) {
+    footnotes.forEach((footnote, index) => {
+      const footnoteId = `footnote-${index}`;
+      const anchor = `<a href="#${footnoteId}">${index + 1}.</a>`;
+      html = html.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
+    });
+  }
+
+  html = `
+    <div class="section bible-book" id="nav-${book}" data-toc-title="${title}">
+      ${html}
+    </div>
+  `;
+
+  return html;
+};
+
 
 export default function Bible() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, bookId, bookTitle, supportedBooks, builtWith, htmlSections, errorMessages },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setPrintOptions },
+    state: {
+      urlInfo,
+      catalogEntry,
+      navAnchor,
+      authToken,
+      books,
+      expandedBooks,
+      bookTitle,
+      supportedBooks,
+      builtWith,
+      htmlSections,
+      errorMessages,
+      cachedHtmlSections,
+      view,
+    },
+    actions: {
+      setBookTitle,
+      setBuiltWith,
+      setSupportedBooks,
+      setNoCache,
+      setRenderMessage,
+      setStatusMessage,
+      setErrorMessage,
+      setHtmlSections,
+      setNavAnchor,
+      setCanChangeColumns,
+      setPrintOptions,
+      setExtraDownloadButtons,
+    },
   } = useContext(AppContext);
 
-  const [usfmText, setUsfmText] = useState();
   const [copyright, setCopyright] = useState('');
-
-  const renderFlags = {
-    showWordAtts: false,
-    showTitles: true,
-    showHeadings: true,
-    showIntroductions: true,
-    showFootnotes: true,
-    showXrefs: false,
-    showParaStyles: true,
-    showCharacterMarkup: false,
-    showChapterLabels: true,
-    showVersesLabels: true,
-  };
+  const [showUsfmAsHtml, setShowUsfmAsHtml] = useState(false);
+  const [html, setHtml] = useState('');
+  const [usfmMap, setUsfmMap] = useState(new Map());
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
-      window.location.hash = b;
+    console.log(b, c, v, books.length, books);
+    if (! expandedBooks.includes(b)) {
+      const url = new URL(window.location);
+      url.hash = '';
+      url.searchParams.delete('book');
+      url.searchParams.set('book', b);
+      window.history.replaceState(null, '', url);
       window.location.reload();
     } else if (setNavAnchor) {
       let anchorParts = [b];
@@ -99,29 +195,20 @@ export default function Bible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: expandedBooks?.[0] || books[0] || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
   });
 
-  const { renderedData, ready: htmlReady } = useUsfmPreviewRenderer({
-    bookId,
-    usfmText,
-    renderFlags,
-    renderStyles: catalogEntry?.language_direction === 'rtl' ? getRtlPreviewStyle() : getLtrPreviewStyle(),
-    htmlRender: true,
-    setErrorMessage,
-  });
-
   useEffect(() => {
     if (catalogEntry) {
-      setBuiltWith([catalogEntry])
+      setBuiltWith([catalogEntry]);
     }
-  }, [catalogEntry, setBuiltWith])
+  }, [catalogEntry, setBuiltWith]);
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId != parts[0] || bibleReferenceState.chapter != parts[1] || bibleReferenceState.verse != parts[2]) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -131,42 +218,38 @@ export default function Bible() {
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
-      if (!catalogEntry) {
-        // setErrorMessage('No catalog entry for this resource found.');
-        return;
-      }
-
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, true)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, true): `, e);
       }
 
-      let sb = getSupportedBooks(catalogEntry, repoFileList);
+      if (books.length > 1) {
+        setNoCache(true);
+        setRenderMessage('Preparing preview for multiple books. Please wait...');
+      }
+
+      let sb = getSupportedBooks(catalogEntry, repoFileList, expandedBooks.length > 1 ? expandedBooks : []);
       if (!sb.length) {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
+      console.log("sb", sb);
 
-      let _bookId = urlInfo.hashParts[0] || sb[0] || bookId;
-      if (!_bookId) {
-        setErrorMessage('Unable to determine a book ID to render.');
-        return;
-      }
-      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
-      setBookId(_bookId);
-      setBookTitle(title);
       setStatusMessage(
         <>
-          Preparing preview for {title}.
+          Preparing preview for {books.join(', ')}.
           <br />
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
+
+      for(const _book of expandedBooks) {
+        if (!sb.includes(_book)) {
+          setErrorMessage(`This resource does not support the rendering of the book \`${_book}\`. Please choose another book to render.`);
+          sb = [_book, ...sb];
+        }
       }
 
       setSupportedBooks(sb);
@@ -176,55 +259,129 @@ export default function Bible() {
       setPrintOptions((prevState) => ({ ...prevState, columns: 2 }));
     };
 
-    setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, bookId, setBookId, setBookTitle, setCanChangeColumns, setErrorMessage, setPrintOptions, setStatusMessage, setSupportedBooks]);
+    if (catalogEntry && !supportedBooks.length && !errorMessages && expandedBooks.length) {
+      setInitialBookIdAndSupportedBooks();
+    }
+  }, [
+    books,
+    expandedBooks,
+    supportedBooks,
+    errorMessages,
+    urlInfo,
+    catalogEntry,
+    authToken,
+    setBookTitle,
+    setCanChangeColumns,
+    setErrorMessage,
+    setPrintOptions,
+    setStatusMessage,
+    setSupportedBooks,
+    setNoCache,
+    setRenderMessage,
+  ]);
+
+  useEffect(() => {
+    const handleUSFMClick = () => {
+      const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}_${books.join('-')}.usfm`;
+      const fileContent = Array.from(usfmMap.values()).join("\n\n\n");
+      const blob = new Blob([fileContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    };
+
+    if (catalogEntry && usfmMap && books.length) {
+      setExtraDownloadButtons((prevButtons) => {
+        const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
+        const newButton = {
+          label: 'USFM',
+          onClick: handleUSFMClick,
+          tooltip: 'Download the USFM used to render this book (no alignments)',
+        };
+        // Check if the new button is already in the list to avoid unnecessary updates
+        const isButtonPresent = noUsfmButtons.some(button => button.label === newButton.label);
+        if (!isButtonPresent) {
+          return [...noUsfmButtons, newButton];
+        }
+        return prevButtons;
+      });
+    }
+  }, [usfmMap, catalogEntry, books, setExtraDownloadButtons]);
 
   useEffect(() => {
     const fetchUsfmFileFromDCS = async () => {
-      if (!(bookId in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookId}`);
-        return;
-      }
-
-      let filePath = '';
-      catalogEntry.ingredients.forEach((ingredient) => {
-        if (ingredient.identifier == bookId) {
-          filePath = ingredient.path.replace(/^\.\//, '');
-        }
+      const docIds = [];
+      const config = {
+        ...defaultFlags,
+        ...renderFlags,
+        selectedBcvNotes: [],
+        renderers,
+      };
+      const renderer = new SofriaRenderFromProskomma({
+        proskomma: pk,
+        actions: render.sofria2web.renderActions.sofria2WebActions,
       });
-      if (!filePath) {
-        setErrorMessage(`Book \`${bookId}\` is not in repo's project list.`);
-      }
-
-      getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
-        .then((_usfmText) => {
-          const usfmJSON = usfm.toJSON(_usfmText);
-          for (let i = 0; i < usfmJSON?.headers?.length; ++i) {
-            if (usfmJSON.headers[i].tag && (usfmJSON.headers[i].tag == 'h' || usfmJSON.headers[i].tag.startsWith('toc'))) {
-              setBookTitle(usfmJSON.headers[i].content);
-              break;
-            }
-          }
-          setUsfmText(_usfmText);
-        })
-        .catch((e) => {
+      const usfms = new Map();
+      const htmls = [];
+      for (const ingredient of catalogEntry.ingredients) {
+        if (!expandedBooks.includes(ingredient.identifier)) {
+          continue;
+        }
+        const filePath = ingredient.path.replace(/^\.\//, '');
+        let usfm = '';
+        try {
+          usfm = await getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
+        } catch (e) {
           console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e);
-          setErrorMessage(`Unable to get content for book \`${bookId}\` from DCS`);
-        });
+          setErrorMessage(`Unable to get content for book \`${ingredient.identifier}\` from DCS`);
+          continue;
+        }
+        usfm = removeAlignments(usfm);
+        usfms.set(ingredient.identifier, usfm);
+        let res;
+        try {
+          res = pk.importDocument(
+            { lang: 'xxx', abbr: 'XXX' }, // doesn't matter...
+            'usfm',
+            usfm
+          );
+          if (!res.id) {
+            console.log('Failed to import book for rendering.');
+            continue;
+          } else {
+            docIds.push(res.id);
+          }
+        } catch (e) {
+          console.log(`Error calling pk.importDocument(): `, e);
+        }
+        try {
+          const output = {};
+          renderer.renderDocument({
+            config,
+            docId: res.id,
+            output,
+          });
+          htmls.push(parseHtml(output.paras, ingredient.identifier, books.length  < 3));
+        } catch (err) {
+          console.log('Renderer', err);
+          throw err;
+        }
+      }
+      setUsfmMap(usfms);
+      setHtml(htmls.join('\n'));
     };
 
-    if (! htmlSections?.body && catalogEntry && supportedBooks && bookId && supportedBooks.includes(bookId) && !errorMessages) {
+    if (!html && catalogEntry && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
-  }, [htmlSections, supportedBooks, catalogEntry, bookId, authToken, setBookTitle, setErrorMessage]);
+  }, [html, books, supportedBooks, catalogEntry, expandedBooks, authToken, errorMessages, setBookTitle, setErrorMessage]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
@@ -234,50 +391,117 @@ export default function Bible() {
   }, [catalogEntry, builtWith, authToken, setCopyright]);
 
   useEffect(() => {
-    const handleRenderedDataFromUsfmToHtmlHook = async () => {
-      let _html = renderedData.replaceAll(
-        /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-        `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
-      );
-      _html = _html.replaceAll(
-        /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
-        `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
-      );
-      _html = _html.replaceAll(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
+    const numberSpans = document.querySelectorAll('.footnote-number');
+    numberSpans.forEach((numberSpan) => {
+      numberSpan.remove();
+    });
 
-      // const footnotes = _html.match(/<span class="footnote">/g);
-      // if (footnotes) {
-      //   footnotes.forEach((footnote, index) => {
-      //     const footnoteId = `footnote-${index}`;
-      //     const anchor = `<a href="#${footnoteId}">${index + 1}.</a>`;
-      //     _html = _html.replace(footnote, `${footnote}<span id="${footnoteId}">${anchor}</span>`);
-      //   });
-      // }
-
-      _html = `
-        <div class="section bible-book" id="nav-${bookId}" data-toc-title="${bookTitle}">
-          ${_html}
-        </div>
-`;
-
-      setHtmlSections((prevState) => {return {
-        ...prevState,
-        cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
-        copyright,
-        body: _html
-      }});
-      setStatusMessage('');
-      setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
+    const toggleFootnotes = () => {
+      const footnotes = document.querySelectorAll('.paras_usfm_f');
+      footnotes.forEach((footnote) => {
+        const isFootnoteVisible = footnote.style.display === 'inline';
+        footnote.style.display = isFootnoteVisible ? 'none' : 'inline';
+      });
     };
 
-    if (htmlReady && renderedData && copyright) {
-      handleRenderedDataFromUsfmToHtmlHook();
+    const footnotes = document.querySelectorAll('.paras_usfm_f');
+    footnotes.forEach((footnote, index) => {
+      const numberSpan = document.createElement('span');
+      numberSpan.className = 'footnote-number';
+      numberSpan.style.cssText = 'vertical-align: super; font-size: x-small; font-weight: bold; margin-right: 0.25em; padding: 2px; background-color: rgb(204, 204, 204);';
+      numberSpan.textContent = index + 1;
+      numberSpan.title = footnote.textContent.trim();
+      numberSpan.style.cursor = 'pointer';
+
+      footnote.style.display = 'none';
+      footnote.style.cursor = 'pointer';
+
+      footnote.parentNode.insertBefore(numberSpan, footnote);
+
+      numberSpan.addEventListener('click', toggleFootnotes);
+      footnote.addEventListener('click', toggleFootnotes);
+    });
+
+    // Cleanup function to remove event listeners
+    return () => {
+      const footnotes = document.querySelectorAll('.paras_usfm_f');
+      footnotes.forEach((footnote) => {
+        footnote.removeEventListener('click', toggleFootnotes);
+      });
+      const numberSpans = document.querySelectorAll('.footnote-number');
+      numberSpans.forEach((numberSpan) => {
+        numberSpan.removeEventListener('click', toggleFootnotes);
+        numberSpan.remove();
+      });
+    };
+  }, [htmlSections?.body, cachedHtmlSections?.body]);
+
+  useEffect(() => {
+    const handleHtml = async () => {
+      if (!html) {
+        setErrorMessage('No text was found.');
+        return;
+      }
+
+      setHtmlSections((prevState) => {
+        return {
+          ...prevState,
+          cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
+          copyright,
+          body: html,
+          css: { web: webCss}
+        };
+      });
+      setStatusMessage('');
+    };
+
+    if (html && copyright) {
+      handleHtml();
     }
-  }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+
+  useEffect(() => {
+    if (showUsfmAsHtml && usfmMap.size) {
+      const usfms = [];
+      usfmMap.forEach((usfm, book) => {
+        usfm = usfm
+          .replace(/\\c (\d+)/g, `<span id="nav-${book}-$1" style="text-decoration: none; color: inherit;"/>\\c $1`)
+          .replace(/\\id (...) /g, `<span id="nav-${book}" style="text-decoration: none; color: inherit;"/>\\id $1`);
+        usfms.push(usfm);
+      });
+      setHtmlSections((prevState) => {
+        return {
+          ...prevState,
+          webView: `<div>${usfms.join("\n\n<hr/>\n\n").replace(/\n/g, '<br/>')}</div>`,
+        };
+      });
+    } else {
+      setHtmlSections((prevState) => {
+        return {
+          ...prevState,
+          webView: null,
+        };
+      });
+    }
+  }, [showUsfmAsHtml, usfmMap, setHtmlSections])
 
   return (
     <ThemeProvider theme={theme}>
       <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
+      {view === "web" && usfmMap.size ? <Tooltip title="Shows the raw unaligned USFM" arrow>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showUsfmAsHtml}
+              onChange={() => {setShowUsfmAsHtml(!showUsfmAsHtml); setNoCache(true);}}
+              name="showUsfmAsHtml"
+              color="primary"
+              style={{ padding: 0 }}
+            />
+          }
+          label="USFM"
+        />
+      </Tooltip> : null}
     </ThemeProvider>
   );
 }

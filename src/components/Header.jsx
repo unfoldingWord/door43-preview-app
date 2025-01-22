@@ -77,7 +77,6 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
               display: 'flex',
               justifyContent: 'space-between',
               width: '100%',
-              overflowX: 'scroll',
               '& > div': {
                 flex: '1 1 auto',  // Reset the flex property
               },

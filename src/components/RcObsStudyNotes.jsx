@@ -65,7 +65,7 @@ const webCss = `
 }
 
 .obs-sn-note-body h6 {
-  font-size: 1em;
+  font-size: 1em !important;
   margin: 10px 0;
 }
 
@@ -77,10 +77,6 @@ const webCss = `
 .obs-sn-note-support-reference,
 .obs-sn-note-quote {
   margin-bottom: 10px;
-}
-
-.section {
-  break-after: page !important;
 }
 
 .article {
@@ -140,8 +136,8 @@ const requiredSubjects = ['Open Bible Stories'];
 
 export default function RcObsStudyNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, navAnchor, authToken, builtWith },
-    actions: { setBookId, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, expandedBooks, navAnchor, authToken, builtWith },
+    actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -186,7 +182,7 @@ export default function RcObsStudyNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
+    bookId: 'obs',
     authToken,
   });
 
@@ -240,7 +236,6 @@ export default function RcObsStudyNotes() {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
-    setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: '' } };
     });
@@ -258,16 +253,14 @@ export default function RcObsStudyNotes() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section obs-sn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title}">
-  <h1 class="header obs-sn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title}</a></h1>
+<div class="section obs-sn-book-section" id="nav-obs" data-toc-title="${catalogEntry.title}">
+  <h1 class="header obs-sn-book-section-header"><a href="#nav-obs" class="header-link">${catalogEntry.title}</a></h1>
 `;
-
-      console.log(snTsvData);
       if (snTsvData?.front?.intro) {
         html += `
   <div class="section obs-sn-front-intro-section" data-toc-title="Introduciton">
@@ -277,7 +270,7 @@ export default function RcObsStudyNotes() {
     <div class="article obs-sn-front-intro-note">
       <span class="header-title">${catalogEntry.title} :: Introduction</span>
       <div class="obs-sn-note-body">
-${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
       </div>
     </div>
 `;
@@ -290,19 +283,19 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       for (let storyIdx = 0; storyIdx < 50; storyIdx++) {
         const storyStr = String(storyIdx + 1);
         html += `
-  <div id="obs-${bookId}-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
-    <h2 class="obs-sn-chapter-header"><a href="#nav-${bookId}-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
+  <div id="nav-obs-${storyStr}" class="section obs-sn-chapter-section" data-toc-title="${obsData.stories[storyIdx].title}">
+    <h2 class="header obs-sn-chapter-header"><a href="#nav-obs-${storyStr}" class="header-link">${obsData.stories[storyIdx].title}</a></h2>
 `;
         if (snTsvData?.[storyStr]?.['intro']) {
           html += `
       <div class="section obs-sn-chapter-intro-section">
 `;
           for (let row of snTsvData[storyStr]['intro']) {
-            const link = `nav-${bookId}-${storyStr}-intro-${row.ID}`;
+            const link = `nav-obs-${storyStr}-intro-${row.ID}`;
             const article = `
         <div class="article" id="${link}">
           <span class="header-title">${catalogEntry.title} :: Introduction</span>
-          ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+          ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
         </div>
 `;
             html += article;
@@ -314,10 +307,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
         for (let frameIdx = 0; frameIdx < obsData.stories[storyIdx].frames.length; frameIdx++) {
           const frameStr = String(frameIdx + 1);
-          const frameLink = `nav-${bookId}-${storyStr}-${frameStr}`;
+          const frameLink = `nav-obs-${storyStr}-${frameStr}`;
           html += `
       <div id="${frameLink}" class="section obs-sn-chapter-frame-section">
-        <h3 class="obs-sn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
+        <h3 class="header obs-sn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
         if (imageResolution != 'none') {
@@ -336,13 +329,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           if (snTsvData?.[storyStr]?.[frameStr]) {
             for (let rowIdx in snTsvData[storyStr][frameStr]) {
               const row = snTsvData[storyStr][frameStr][rowIdx];
-              const noteLink = `nav-${bookId}-${storyStr}-${frameStr}-${row.ID}`;
+              const noteLink = `nav-obs-${storyStr}-${frameStr}-${row.ID}`;
               let article = `
         <div class="article obs-sn-note-article" id="${noteLink}">
 `;
               if (!row.Quote) {
                 article += `
-          <h4 class="obs-sn-note-header">
+          <h4 class="header obs-sn-note-header">
             <a href="#${noteLink}" class="header-link">
             Note:
             </a>
@@ -350,7 +343,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 `;
               } else {
                 article += `
-          <h4 class="obs-sn-note-header">
+          <h4 class="header obs-sn-note-header">
             <a href="#${noteLink}" class="header-link">
               ${row.Quote}
             </a>
@@ -361,7 +354,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               article += `
           <span class="header-title">${catalogEntry.title} :: ${row.Reference}</span>
           <div class="obs-sn-note-body">
-            ${convertNoteFromMD2HTML(row.Note, bookId, storyStr)}
+            ${convertNoteFromMD2HTML(row.Note, 'obs', storyStr)}
           </div>
 `;
               if (row.SupportReference) {
@@ -407,7 +400,6 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   }, [
     catalogEntry,
     html,
-    bookId,
     snTsvData,
     obsData,
     imageResolution,

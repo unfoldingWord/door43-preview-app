@@ -54,11 +54,6 @@ const printCss = `
   break-before: auto !important;
   break-after: auto !important;
 }
-
-.section {
-  break-before: page !important;
-  break-after: page !important;
-}
 `;
 
 const theme = createTheme({
@@ -73,8 +68,8 @@ const theme = createTheme({
 
 export default function OpenBibleStories() {
   const {
-    state: { catalogEntry, urlInfo, navAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setBookId, setCanChangeColumns },
+    state: { catalogEntry, urlInfo, navAnchor, authToken, renderOptions },
+    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith, setSupportedBooks, setCanChangeColumns },
   } = useContext(AppContext);
 
   const [imageResolution, setImageResolution] = useState('360px');
@@ -105,13 +100,12 @@ export default function OpenBibleStories() {
 
   const obsData = useGetOBSData({ catalogEntry, zipFileData, setErrorMessage });
 
-  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution });
+  const html = useGenerateOpenBibleStoriesHtml({ obsData, setErrorMessage, resolution: imageResolution, chapters: renderOptions.chapters });
 
   useEffect(() => {
     const sb = ['obs'];
     bibleReferenceActions.applyBooksFilter(sb);
     setSupportedBooks(sb);
-    setBookId('obs');
     setHtmlSections((prevState) => {
       return { ...prevState, css: { web: webCss, print: printCss } };
     });
@@ -129,7 +123,7 @@ export default function OpenBibleStories() {
         Please wait...
       </>
     );
-  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setSupportedBooks]);
+  }, [catalogEntry, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setSupportedBooks]);
 
   useEffect(() => {
     if (catalogEntry) {
@@ -165,7 +159,11 @@ export default function OpenBibleStories() {
     // Handle Print Preview & Status & Navigation
     if (html && copyright) {
       setHtmlSections((prevState) => {
-        return { ...prevState, copyright, body: html };
+        return { ...prevState,
+          cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
+          copyright,
+          body: html
+        };
       });
       setStatusMessage('');
     }

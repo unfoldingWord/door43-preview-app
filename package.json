@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "1.0.11",
+  "version": "1.0.20",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,7 +24,7 @@
     "@vivliostyle/react": "^2.27.0",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.6.7",
-    "bible-reference-rcl": "^1.4.0",
+    "bible-reference-rcl": "^1.4.1",
     "dompurify": "^3.0.8",
     "jszip": "^3.10.1",
     "lodash": "4.17.21",
@@ -33,7 +33,8 @@
     "pako": "^2.1.0",
     "papaparse": "^5.4.1",
     "prop-types": "^15.8.1",
-    "proskomma-core": "^0.10.5",
+    "proskomma-core": "^0.10.7",
+    "proskomma-json-tools": "0.8.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.4.6",
@@ -46,7 +47,8 @@
     "use-deep-compare-effect": "1.8.1",
     "usfm-js": "^3.4.2",
     "utf8": "^3.0.0",
-    "uw-quote-helpers": "^1.1.2",
+    "uw-quote-helpers": "^1.1.4",
+    "word-aligner-rcl": "^1.1.2",
     "yaml": "^2.3.4"
   },
   "devDependencies": {

@@ -30,6 +30,10 @@ import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 import { AppContext } from '@components/App.context';
 
 const webCss = `
+.tn-book-section-header {
+  break-after: avoid !important;
+}
+
 .tn-scripture-block {
   border: 1px solid black;
   padding: 10px;
@@ -49,21 +53,6 @@ const webCss = `
   margin: 10px 0;
 }
 
-.tn-note-body h4 {
-  font-size: 1.2em;
-  margin: 10px 0;
-}
-
-.tn-note-body h5 {
-  font-size: 1.1em;
-  margin: 10px 0;
-}
-
-.tn-note-body h6 {
-  font-size: 1em;
-  margin: 10px 0;
-}
-
 .tn-note-label,
 .tn-note-quote {
   font-weight: bold;
@@ -74,13 +63,8 @@ const webCss = `
   margin-bottom: 10px;
 }
 
-.section {
-  break-after: page !important;
-}
-
 .article {
   break-after: auto !important;
-  break-inside: avoid !important;
   orphans: 2;
   widows: 2;
 }
@@ -129,6 +113,63 @@ a.header-link:hover::after {
 .tn-verse-twl-list-item a {
   text-decoration: none;
 }
+
+.tn-note-body h4 ~ p,
+.tn-note-body h4 ~ ul,
+.tn-note-body h4 ~ ol {
+  margin-left: 20px;
+}
+
+.tn-note-body h5 ~ p,
+.tn-note-body h5 ~ ul,
+.tn-note-body h5 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h6 ~ p,
+.tn-note-body h6 ~ ul,
+.tn-note-body h6 ~ ol {
+  margin-left: 60px;
+}
+
+.tn-note-body h4 ~ h5 ~ h4 ~ p,
+.tn-note-body h4 ~ h5 ~ h4 ~ ul,
+.tn-note-body h4 ~ h5 ~ h4 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h5 ~ h6 ~ h5 ~ p,
+.tn-note-body h5 ~ h6 ~ h5 ~ ul,
+.tn-note-body h5 ~ h6 ~ h5 ~ ol {
+  margin-left: 40px;
+}
+
+.tn-note-body h4 + * {
+  margin-left: 20px !important;
+}
+
+.tn-note-body h5 + * {
+  margin-left: 40px  !important;
+}
+
+.tn-note-body h6 + * {
+  margin-left: 60px !important;
+}
+
+.tn-note-body h4 {
+  margin-left: 10px !important;
+  font-size: 1.2em !important;
+}
+
+.tn-note-body h5 {
+  margin-left: 30px !important;
+  font-size: 1.1em !important;
+}
+
+.tn-note-body h6 {
+  margin-left: 50px !important;
+  font-size: 1em !important;
+}
 `;
 
 const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
@@ -136,8 +177,8 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -157,8 +198,12 @@ export default function RcTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
-      window.location.hash = b;
+    if (! expandedBooks.includes(b)) {
+      const url = new URL(window.location);
+      url.hash = '';
+      url.searchParams.delete('book');
+      url.searchParams.set('book', b);
+      window.history.replaceState(null, '', url);
       window.location.reload();
     } else if (setNavAnchor) {
       let anchorParts = [b];
@@ -173,7 +218,7 @@ export default function RcTranslationNotes() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: expandedBooks[0] || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -183,42 +228,41 @@ export default function RcTranslationNotes() {
     catalogEntry,
     requiredSubjects,
     setErrorMessage,
-    bookId,
     authToken,
   });
 
   const sourceBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
-    subject: BibleBookData[bookId]?.testament == 'old' ? 'Hebrew Old Testament' : 'Greek New Testament',
-    bookId,
+    subject: BibleBookData[expandedBooks[0]]?.testament == 'old' ? 'Hebrew Old Testament' : 'Greek New Testament',
+    bookId: expandedBooks[0],
     firstOnly: true,
     setErrorMessage,
   });
 
   const sourceUsfms = useFetchBookFiles({
     catalogEntries: sourceBibleCatalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
     setErrorMessage,
   });
 
   const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Aligned Bible',
-    bookId,
+    bookId: expandedBooks[0],
     setErrorMessage,
   });
 
   const targetUsfms = useFetchBookFiles({
     catalogEntries: targetBibleCatalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
     setErrorMessage,
   });
 
-  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
+  const catalogEntries = useMemo(() => (catalogEntry ? [catalogEntry] : []), [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
     setErrorMessage,
   });
 
@@ -278,7 +322,7 @@ export default function RcTranslationNotes() {
 
   const twlTSVBookFiles = useFetchBookFiles({
     catalogEntries: twlCatalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
     setErrorMessage,
   });
 
@@ -294,7 +338,7 @@ export default function RcTranslationNotes() {
   });
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -303,7 +347,13 @@ export default function RcTranslationNotes() {
   }, [navAnchor]);
 
   useEffect(() => {
-    if (catalogEntry && sourceBibleCatalogEntries?.length && targetBibleCatalogEntries?.length && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
+    if (catalogEntry &&
+      sourceBibleCatalogEntries?.length &&
+      targetBibleCatalogEntries?.length &&
+      taCatalogEntries?.length &&
+      twCatalogEntries?.length &&
+      twlCatalogEntries?.length
+    ) {
       setBuiltWith([
         catalogEntry,
         ...targetBibleCatalogEntries,
@@ -324,7 +374,7 @@ export default function RcTranslationNotes() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -335,13 +385,7 @@ export default function RcTranslationNotes() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
-      if (!_bookId) {
-        setErrorMessage('Unable to determine a book ID to render.');
-        return;
-      }
-      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
-      setBookId(_bookId);
+      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == expandedBooks[0]).map((ingredient) => ingredient.title)[0] || expandedBooks[0];
       setBookTitle(title);
 
       setStatusMessage(
@@ -351,9 +395,9 @@ export default function RcTranslationNotes() {
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
+      if (!sb.includes(expandedBooks[0])) {
+        setErrorMessage(`This resource does not support the rendering of the book \`${expandedBooks[0]}\`. Please choose another book to render.`);
+        sb = [expandedBooks[0], ...sb];
       }
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
@@ -364,7 +408,7 @@ export default function RcTranslationNotes() {
     });
     setCanChangeColumns(false);
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setCanChangeColumns, setErrorMessage, setBookId, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, expandedBooks, authToken, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -381,7 +425,7 @@ export default function RcTranslationNotes() {
             title: file,
             body: `${resource.toUpperCase()} ARTICLE NOT FOUND`,
             rcLink,
-            anchor: `nav-${bookId}--${resource}-${file.replace(/\//g, '-')}`,
+            anchor: `nav-${expandedBooks[0]}--${resource}-${file.replace(/\//g, '-')}`,
           };
           const fileParts = file.split('/');
           switch (resource) {
@@ -403,7 +447,7 @@ export default function RcTranslationNotes() {
               break;
           }
         }
-        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+        if (referenceWithLink && !data[resource][rcLink].backRefs.includes(referenceWithLink)) {
           data[resource][rcLink].backRefs.push(referenceWithLink);
         }
       }
@@ -412,8 +456,8 @@ export default function RcTranslationNotes() {
 
     const generateHtml = async () => {
       let html = `
-<div class="section tn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
+<div class="section tn-book-section" id="nav-${expandedBooks[0]}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tn-book-section-header"><a href="#nav-${expandedBooks[0]}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
 `;
       let usfmJSONs = [];
       for (let targetUsfm of targetUsfms) {
@@ -421,41 +465,48 @@ export default function RcTranslationNotes() {
       }
       const rcLinksData = {};
 
-      if (tnTsvDataWithGLQuotes?.['front']?.['intro']) {
+      if ((! renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
-      <div class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
+      <div id="nav-${expandedBooks[0]}-front-intro" class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
-        for (let row of tnTsvDataWithGLQuotes['front']['intro'])
-          html += `
+        for (let row of tnTsvDataWithGLQuotes['front']['intro']) {
+          const link = `nav-${expandedBooks[0]}-front-intro-${row.ID}`;
+          const article = `
         <div class="article tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
-${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
+${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
           </div>
         </div>
 `;
+          searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
+          html += article;
+        }
         html += `
       </div>
 `;
       }
 
-      for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
-        const numVerses = BibleBookData[bookId].chapters[chapterIdx];
+      for (let chapterIdx = 0; chapterIdx < BibleBookData[expandedBooks[0]].chapters.length; chapterIdx++) {
+        const numVerses = BibleBookData[expandedBooks[0]].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.includes(chapterStr)) {
+          continue;
+        }
         html += `
-      <div id="nav-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tn-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+      <div id="nav-${expandedBooks[0]}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
+        <h2 class="header tn-chapter-header"><a href="#nav-${expandedBooks[0]}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
           html += `
         <div class="section tn-chapter-intro-section">
 `;
           for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
-            const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
+            const link = `nav-${expandedBooks[0]}-${chapterStr}-intro-${row.ID}`;
             const article = `
-          <div class="article" id="${link}">
+          <div class="article tn-note-body" id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
-            ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
+            ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], chapterStr)}
           </div>
 `;
             searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
@@ -469,11 +520,11 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
           const verseStr = String(verseIdx + 1);
           const refStr = `${chapterStr}:${verseStr}`;
-          const verseLink = `nav-${bookId}-${chapterStr}-${verseStr}`;
+          const verseLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}`;
           let usfmJSONVerseStr = verseStr;
           html += `
         <div id="${verseLink}" class="section tn-chapter-verse-section">
-          <h3 class="tn-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+          <h3 class="header tn-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -505,10 +556,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            const scriptureLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="article tn-scripture-block" id="${scriptureLink}">
-            <h4 class="tn-scripture-header">
+            <h4 class="header tn-scripture-header">
               <a href="#${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
@@ -522,7 +573,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
             for (let rowIdx in tnTsvDataWithGLQuotes[chapterStr][verseStr]) {
               const row = tnTsvDataWithGLQuotes[chapterStr][verseStr][rowIdx];
-              const noteLink = `nav-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
+              const noteLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${row.ID}`;
               let verseBridge = '';
               if (refStr != row.Reference) {
                 verseBridge += `(${row.Reference})`;
@@ -530,9 +581,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               let article = `
               <div class="article tn-note-article" id="nav-${noteLink}">
 `;
-              if (!row.Quote) {
+              if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `
-                <h4 class="tn-note-header">
+                <h4 class="header tn-note-header">
                   <a href="#nav-${noteLink}" class="header-link">
                   Note: ${verseBridge}
                   </a>
@@ -552,7 +603,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
                     verseBridge += `(${row.Reference})`;
                   }
                   article += `
-                <h4 class="tn-note-header">
+                <h4 class="header tn-note-header">
                   <a href="#${noteLink}" class="header-link">
                   ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
                   </a>
@@ -563,7 +614,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
               article += `
               <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${row.Reference}</span>
               <div class="tn-note-body">
-                ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
+                ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], chapterStr)}
               </div>
 `;
               if (row.SupportReference) {
@@ -591,10 +642,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
           // TW LINKS
           if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
-            const twlLink = `twl-${bookId}-${chapterStr}-${verseStr}`;
+            const twlLink = `twl-${expandedBooks[0]}-${chapterStr}-${verseStr}`;
             let article = `
           <div class="article tn-verse-twls" id="${twlLink}">
-            <h4 class="tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
+            <h4 class="header tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
 `;
             for (let targetidx in targetBibleCatalogEntries) {
               const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
@@ -641,7 +692,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-uta-256.png" alt="uta">
-    <h1 class="cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
+    <h1 class="header cover-header section-header">${taCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -678,7 +729,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
   <div class="article title-page">
     <span class="header-title"></span>
     <img class="title-logo" src="https://cdn.door43.org/assets/uw-icons/logo-utw-256.png" alt="uta">
-    <h1 class="cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
+    <h1 class="header cover-header section-header">${twCatalogEntry.title} - ${bookTitle}</h1>
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
@@ -709,15 +760,15 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
       }
 
       for (let data of Object.values(rcLinksData.ta || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
-        html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
-        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+        html = html.replaceAll(regex, `href="#${data.anchor}"`);
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+        html = html.replaceAll(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       for (let data of Object.values(rcLinksData.tw || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
+        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
+        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);
@@ -730,7 +781,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     catalogEntry,
     html,
     taCatalogEntries,
-    bookId,
+    expandedBooks,
     bookTitle,
     targetBibleCatalogEntries,
     tnTsvDataWithGLQuotes,
@@ -739,6 +790,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     twCatalogEntries,
     twFileContents,
     twlTsvDataWithGLQuotes,
+    renderOptions,
     setHtmlSections,
     setErrorMessage,
     setNavAnchor,
@@ -746,11 +798,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
@@ -763,13 +811,13 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>`,
+        cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
         copyright,
         body: html,
       }));
       setStatusMessage('');
     }
-  }, [html, copyright, bookTitle, setHtmlSections, setStatusMessage]);
+  }, [html, copyright, bookTitle, renderOptions, setHtmlSections, setStatusMessage]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }

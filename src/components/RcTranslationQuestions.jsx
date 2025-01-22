@@ -53,7 +53,6 @@ const webCss = `
 .article.tq-entry,
 .section.tq-verse {
   break-before: auto !important;
-  break-inside: avoid !important;
   break-after: auto !important
 }
 
@@ -155,8 +154,8 @@ const requiredSubjects = ['Aligned Bible'];
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, navAnchor, authToken, builtWith },
-    actions: { setBookId, setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions },
+    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -176,10 +175,14 @@ export default function RcTranslationQuestions() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
-      window.location.hash = b;
+    if (! expandedBooks.includes(b)) {
+      const url = new URL(window.location);
+      url.hash = '';
+      url.searchParams.delete('book');
+      url.searchParams.set('book', b);
+      window.history.replaceState(null, '', url);
       window.location.reload();
-    } else if(setNavAnchor) {
+    } else if (setNavAnchor) {
       let anchorParts = [b];
       if (c != '1' || v != '1') {
         anchorParts.push(c);
@@ -192,7 +195,7 @@ export default function RcTranslationQuestions() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: expandedBooks[0],
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
@@ -209,17 +212,17 @@ export default function RcTranslationQuestions() {
   const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Aligned Bible',
-    bookId,
+    bookId: expandedBooks[0],
   });
 
   const targetUsfmBookFiles = useFetchBookFiles({
     catalogEntries: targetBibleCatalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
   });
 
   const tqTsvBookFiles = useFetchBookFiles({
     catalogEntries,
-    bookId,
+    bookId: expandedBooks[0],
   });
 
   const tqTsvData = usePivotTsvFileOnReference({
@@ -242,7 +245,7 @@ export default function RcTranslationQuestions() {
 
       let repoFileList = null;
       try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).tree.map((tree) => tree.path);
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
       } catch (e) {
         console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
       }
@@ -253,13 +256,7 @@ export default function RcTranslationQuestions() {
         return;
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
-      if (!_bookId) {
-        setErrorMessage('Unable to determine a book ID to render.');
-        return;
-      }
-      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
-      setBookId(_bookId);
+      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == expandedBooks[0]).map((ingredient) => ingredient.title)[0] || expandedBooks[0];
       setBookTitle(title);
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss, print: ''}}});
       setCanChangeColumns(false);
@@ -270,9 +267,9 @@ export default function RcTranslationQuestions() {
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
+      if (!sb.includes(expandedBooks[0])) {
+        setErrorMessage(`This resource does not support the rendering of the book \`${expandedBooks[0]}\`. Please choose another book to render.`);
+        sb = [expandedBooks[0], ...sb];
       }
 
       setSupportedBooks(sb);
@@ -280,7 +277,7 @@ export default function RcTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookId, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (navAnchor && ! navAnchor.includes('--')) {
@@ -294,14 +291,14 @@ export default function RcTranslationQuestions() {
   useEffect(() => {
     const generateHtml = async () => {
       let html = `
-<div class="section tq-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
-  <h1 class="header tq-book-section-header"><a href="#nav-${bookId}" class="header-link">${bookTitle}</a></h1>
+<div class="section tq-book-section" id="nav-${expandedBooks[0]}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
+  <h1 class="header tq-book-section-header"><a href="#nav-${expandedBooks[0]}" class="header-link">${bookTitle}</a></h1>
 `;
       let usfmJSONs = [];
       for (let targetUsfm of targetUsfmBookFiles) {
         usfmJSONs.push(usfm.toJSON(targetUsfm));
       }
-      if (tqTsvData?.front?.intro) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tqTsvData?.front?.intro) {
         html += `
       <div class="section tq-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
@@ -310,8 +307,8 @@ export default function RcTranslationQuestions() {
         <div class="tq-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tq-question-body">
-            ${convertNoteFromMD2HTML(row.Question, bookId, 'front')}
-            ${convertNoteFromMD2HTML(row.Response, bookId, 'front')}
+            ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
+            ${convertNoteFromMD2HTML(row.Response, expandedBooks[0], 'front')}
           </div>
         </div>
 `;
@@ -320,24 +317,27 @@ export default function RcTranslationQuestions() {
       </div>
 `;
       }
-      for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
-        const numVerses = BibleBookData[bookId].chapters[chapterIdx];
+      for (let chapterIdx = 0; chapterIdx < BibleBookData[expandedBooks[0]].chapters.length; chapterIdx++) {
+        const numVerses = BibleBookData[expandedBooks[0]].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
+        if (renderOptions.chapters && !renderOptions.chapters.incldues(chapterStr)) {
+          continue;
+        }
         html += `
-      <div id="nav-${bookId}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
-        <h2 class="tq-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
+      <div id="nav-${expandedBooks[0]}-${chapterStr}" class="section tq-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
+        <h2 class="header tq-chapter-header"><a href="#nav-${expandedBooks[0]}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
         if (tqTsvData?.[chapterStr]?.intro) {
           html += `
         <div class="section tq-chapter-intro-section">
 `;
           for (let row of tqTsvData[chapterStr].intro) {
-            const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
+            const link = `nav-${expandedBooks[0]}-${chapterStr}-intro-${row.ID}`;
             const article = `
           <div id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
-            ${convertNoteFromMD2HTML(row.Question, bookId, chapterStr)}
-            ${convertNoteFromMD2HTML(row.Response, bookId, chapterStr)}
+            ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], chapterStr)}
+            ${convertNoteFromMD2HTML(row.Response, expandedBooks[0], chapterStr)}
           </div>
 `;
             html += article;
@@ -350,11 +350,11 @@ export default function RcTranslationQuestions() {
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
           const verseStr = String(verseIdx + 1);
           const refStr = `${chapterStr}:${verseStr}`;
-          const verseLink = `nav-${bookId}-${chapterStr}-${verseStr}`;
+          const verseLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}`;
           let usfmJSONVerseStr = verseStr;
           html += `
         <div id="${verseLink}" class="section tq-chapter-verse-section">
-          <h3 class="tq-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
+          <h3 class="header tq-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
@@ -383,10 +383,10 @@ export default function RcTranslationQuestions() {
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            const scriptureLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
             html += `
           <div class="tq-scripture-block" id="${scriptureLink}">
-            <h4 class="tq-scripture-header">
+            <h4 class="header tq-scripture-header">
               <a href="#${scriptureLink}" class="header-link">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
@@ -400,7 +400,7 @@ export default function RcTranslationQuestions() {
           if (tqTsvData?.[chapterStr]?.[verseStr]) {
             for (let rowIdx in tqTsvData[chapterStr][verseStr]) {
               const row = tqTsvData[chapterStr][verseStr][rowIdx];
-              const questionLink = `nav-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
+              const questionLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${row.ID}`;
               let verseBridge = '';
               if (refStr != row.Reference) {
                 verseBridge += `(${row.Reference})`;
@@ -420,7 +420,7 @@ export default function RcTranslationQuestions() {
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
                   <div class="tq-entry-response">
-                    ${convertNoteFromMD2HTML(row.Response, bookId, chapterStr)}
+                    ${convertNoteFromMD2HTML(row.Response, expandedBooks[0], chapterStr)}
                   </div>
 `;
                 }
@@ -459,11 +459,11 @@ export default function RcTranslationQuestions() {
   }, [
     catalogEntry,
     html,
+    expandedBooks,
     targetBibleCatalogEntries,
     tqTsvBookFiles,
     targetUsfmBookFiles,
     tqTsvData,
-    bookId,
     bookTitle,
     setHtmlSections,
     setStatusMessage,
@@ -492,12 +492,12 @@ export default function RcTranslationQuestions() {
     if (html && copyright) {
       setHtmlSections((prevState) => ({
         ...prevState,
-        cover: `<h3>${bookTitle}</h3>`,
+        cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
         copyright,
         body: html,
       }));
     }
-  }, [html, copyright, bookTitle, setHtmlSections]);
+  }, [html, copyright, bookTitle, renderOptions, setHtmlSections]);
 
   return <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />;
 }
