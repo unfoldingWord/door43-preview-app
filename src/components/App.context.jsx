@@ -531,7 +531,7 @@ export function AppContextProvider({ children }) {
     if (!noCache && htmlSections.body != '' && (JSON.stringify(htmlSections) !== JSON.stringify(cachedBook?.htmlSections) || renderMessage)) {
       sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, builtWith, supportedBooks]);
+  }, [htmlSections, catalogEntry, cachedBook, bookId, urlInfo, noCache, renderMessage, builtWith, supportedBooks]);
 
   // create the value for the context provider
   const context = {

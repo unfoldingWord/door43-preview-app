@@ -114,7 +114,7 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       uw-quote-helpers:
-        specifier: ^1.1.2
+        specifier: ^1.1.4
         version: 1.1.4(usfm-js@3.4.2)
       yaml:
         specifier: ^2.3.4

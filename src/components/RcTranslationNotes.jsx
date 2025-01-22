@@ -29,6 +29,8 @@ import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 // Context imports
 import { AppContext } from '@components/App.context';
 
+import { Writable } from 'stream';
+
 const webCss = `
 .tn-scripture-block {
   border: 1px solid black;
@@ -214,7 +216,7 @@ export default function RcTranslationNotes() {
     setErrorMessage,
   });
 
-  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
+  const catalogEntries = useMemo(() => (catalogEntry ? [catalogEntry] : []), [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -232,6 +234,7 @@ export default function RcTranslationNotes() {
     targetUsfms,
     quoteTokenDelimiter,
   });
+  console.log(tnTsvDataWithGLQuotes);
 
   const taCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
@@ -294,7 +297,7 @@ export default function RcTranslationNotes() {
   });
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -303,7 +306,14 @@ export default function RcTranslationNotes() {
   }, [navAnchor]);
 
   useEffect(() => {
-    if (catalogEntry && sourceBibleCatalogEntries?.length && targetBibleCatalogEntries?.length && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
+    if (
+      catalogEntry &&
+      sourceBibleCatalogEntries?.length &&
+      targetBibleCatalogEntries?.length &&
+      taCatalogEntries?.length &&
+      twCatalogEntries?.length &&
+      twlCatalogEntries?.length
+    ) {
       setBuiltWith([
         catalogEntry,
         ...targetBibleCatalogEntries,
@@ -403,30 +413,43 @@ export default function RcTranslationNotes() {
               break;
           }
         }
-        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+        if (referenceWithLink && !data[resource][rcLink].backRefs.includes(referenceWithLink)) {
           data[resource][rcLink].backRefs.push(referenceWithLink);
         }
       }
       return data;
     };
 
-    const generateHtml = async () => {
-      let html = `
+    const rcLinksData = {};
+
+    class HtmlGenerator extends Writable {
+      constructor(options) {
+        super(options);
+        this.data = '';
+      }
+
+      _write(chunk, encoding, callback) {
+        this.data += chunk;
+        callback();
+      }
+
+      generateHtml() {
+        console.log('GENERATING HTML!!');
+        let html = `
 <div class="section tn-book-section" id="nav-${bookId}" data-toc-title="${catalogEntry.title} - ${bookTitle}">
   <h1 class="header tn-book-section-header"><a href="#nav-${bookId}" class="header-link">${catalogEntry.title} - ${bookTitle}</a></h1>
 `;
-      let usfmJSONs = [];
-      for (let targetUsfm of targetUsfms) {
-        usfmJSONs.push(usfm.toJSON(targetUsfm));
-      }
-      const rcLinksData = {};
+        let usfmJSONs = [];
+        for (let targetUsfm of targetUsfms) {
+          usfmJSONs.push(usfm.toJSON(targetUsfm));
+        }
 
-      if (tnTsvDataWithGLQuotes?.['front']?.['intro']) {
-        html += `
+        if (tnTsvDataWithGLQuotes?.['front']?.['intro']) {
+          html += `
       <div class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
-        for (let row of tnTsvDataWithGLQuotes['front']['intro'])
-          html += `
+          for (let row of tnTsvDataWithGLQuotes['front']['intro'])
+            html += `
         <div class="article tn-front-intro-note">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
@@ -434,79 +457,79 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
           </div>
         </div>
 `;
-        html += `
+          html += `
       </div>
 `;
-      }
+        }
 
-      for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
-        const numVerses = BibleBookData[bookId].chapters[chapterIdx];
-        const chapterStr = String(chapterIdx + 1);
-        html += `
+        for (let chapterIdx = 0; chapterIdx < BibleBookData[bookId].chapters.length; chapterIdx++) {
+          const numVerses = BibleBookData[bookId].chapters[chapterIdx];
+          const chapterStr = String(chapterIdx + 1);
+          html += `
       <div id="nav-${bookId}-${chapterStr}" class="section tn-chapter-section" data-toc-title="${bookTitle} ${chapterStr}">
         <h2 class="tn-chapter-header"><a href="#nav-${bookId}-${chapterStr}" class="header-link">${bookTitle} ${chapterStr}</a></h2>
 `;
-        if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
-          html += `
+          if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
+            html += `
         <div class="section tn-chapter-intro-section">
 `;
-          for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
-            const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
-            const article = `
+            for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
+              const link = `nav-${bookId}-${chapterStr}-intro-${row.ID}`;
+              const article = `
           <div class="article" id="${link}">
             <span class="header-title">${catalogEntry.title} :: ${bookTitle} Introduction</span>
             ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
           </div>
 `;
-            searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
-            html += article;
-          }
-          html += `
+              searchForRcLinks(rcLinksData, article, `<a href="#${link}">${row.Reference}</a>`);
+              html += article;
+            }
+            html += `
         </div>
 `;
-        }
+          }
 
-        for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
-          const verseStr = String(verseIdx + 1);
-          const refStr = `${chapterStr}:${verseStr}`;
-          const verseLink = `nav-${bookId}-${chapterStr}-${verseStr}`;
-          let usfmJSONVerseStr = verseStr;
-          html += `
+          for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
+            const verseStr = String(verseIdx + 1);
+            const refStr = `${chapterStr}:${verseStr}`;
+            const verseLink = `nav-${bookId}-${chapterStr}-${verseStr}`;
+            let usfmJSONVerseStr = verseStr;
+            html += `
         <div id="${verseLink}" class="section tn-chapter-verse-section">
           <h3 class="tn-verse-header"><a href="#${verseLink}" class="header-link">${bookTitle} ${chapterStr}:${verseStr}</a></h3>
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
-          let scripture = {};
-          for (let targetIdx in targetBibleCatalogEntries) {
-            const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
-            if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
-              continue;
-            }
-            if (!(verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
-              for (let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
-                if (v.includes('-') || v.includes(',')) {
-                  let verses = [];
-                  const seperateVerseSpans = v.split(',');
-                  for (let span of seperateVerseSpans) {
-                    span = span.trim();
-                    if (span.includes('-')) {
-                      const [start, end] = span.split('-').map(Number);
-                      for (let i = start; i <= end; i++) {
-                        verses.push(String(i));
+            let scripture = {};
+            for (let targetIdx in targetBibleCatalogEntries) {
+              const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+              if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
+                continue;
+              }
+              if (!(verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
+                for (let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
+                  if (v.includes('-') || v.includes(',')) {
+                    let verses = [];
+                    const seperateVerseSpans = v.split(',');
+                    for (let span of seperateVerseSpans) {
+                      span = span.trim();
+                      if (span.includes('-')) {
+                        const [start, end] = span.split('-').map(Number);
+                        for (let i = start; i <= end; i++) {
+                          verses.push(String(i));
+                        }
+                      } else {
+                        verses.push(span);
                       }
-                    } else {
-                      verses.push(span);
                     }
-                  }
-                  if (verses.includes(verseStr)) {
-                    usfmJSONVerseStr = v;
+                    if (verses.includes(verseStr)) {
+                      usfmJSONVerseStr = v;
+                    }
                   }
                 }
               }
-            }
-            scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
-            html += `
+              scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
+              const scriptureLink = `nav-${bookId}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+              html += `
           <div class="article tn-scripture-block" id="${scriptureLink}">
             <h4 class="tn-scripture-header">
               <a href="#${scriptureLink}" class="header-link">
@@ -518,125 +541,125 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
             </div>
           </div>
 `;
-          }
-          if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
-            for (let rowIdx in tnTsvDataWithGLQuotes[chapterStr][verseStr]) {
-              const row = tnTsvDataWithGLQuotes[chapterStr][verseStr][rowIdx];
-              const noteLink = `nav-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
-              let verseBridge = '';
-              if (refStr != row.Reference) {
-                verseBridge += `(${row.Reference})`;
-              }
-              let article = `
+            }
+            if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
+              for (let rowIdx in tnTsvDataWithGLQuotes[chapterStr][verseStr]) {
+                const row = tnTsvDataWithGLQuotes[chapterStr][verseStr][rowIdx];
+                const noteLink = `nav-${bookId}-${chapterStr}-${verseStr}-${row.ID}`;
+                let verseBridge = '';
+                if (refStr != row.Reference) {
+                  verseBridge += `(${row.Reference})`;
+                }
+                let article = `
               <div class="article tn-note-article" id="nav-${noteLink}">
 `;
-              if (!row.Quote) {
-                article += `
+                if (!row.Quote) {
+                  article += `
                 <h4 class="tn-note-header">
                   <a href="#nav-${noteLink}" class="header-link">
                   Note: ${verseBridge}
                   </a>
                 </h4>
 `;
-              } else {
-                for (let targetIdx in targetBibleCatalogEntries) {
-                  const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
-                  const glQuoteCol = `GLQuote${targetIdx}`;
-                  let quote = row[glQuoteCol]
-                    ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter)
-                    : row.Quote
-                    ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>`
-                    : '';
-                  let verseBridge = '';
-                  if (refStr != row.Reference) {
-                    verseBridge += `(${row.Reference})`;
-                  }
-                  article += `
+                } else {
+                  for (let targetIdx in targetBibleCatalogEntries) {
+                    const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+                    const glQuoteCol = `GLQuote${targetIdx}`;
+                    let quote = row[glQuoteCol]
+                      ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter)
+                      : row.Quote
+                      ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>`
+                      : '';
+                    let verseBridge = '';
+                    if (refStr != row.Reference) {
+                      verseBridge += `(${row.Reference})`;
+                    }
+                    article += `
                 <h4 class="tn-note-header">
                   <a href="#${noteLink}" class="header-link">
                   ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
                   </a>
                 </h4>
 `;
+                  }
                 }
-              }
-              article += `
+                article += `
               <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${row.Reference}</span>
               <div class="tn-note-body">
                 ${convertNoteFromMD2HTML(row.Note, bookId, chapterStr)}
               </div>
 `;
-              if (row.SupportReference) {
-                article += `
+                if (row.SupportReference) {
+                  article += `
           <div class="tn-note-support-reference">
             <span class="tn-note-label">Support Reference:&nbsp;</span>
               [[${row.SupportReference}]]
           </div>
 `;
-              }
-              article += `
+                }
+                article += `
         <hr style="width: 75%"/>
       </div>
 `;
-              html += article;
-              searchForRcLinks(rcLinksData, article, `<a href="#${noteLink}">${row.Reference}</a>`);
-            }
-          } else {
-            html += `
+                html += article;
+                searchForRcLinks(rcLinksData, article, `<a href="#${noteLink}">${row.Reference}</a>`);
+              }
+            } else {
+              html += `
           <div class="article tn-verse-no-content">
             (There are no notes for this verse)
           </div>
 `;
-          }
+            }
 
-          // TW LINKS
-          if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
-            const twlLink = `twl-${bookId}-${chapterStr}-${verseStr}`;
-            let article = `
+            // TW LINKS
+            if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
+              const twlLink = `twl-${bookId}-${chapterStr}-${verseStr}`;
+              let article = `
           <div class="article tn-verse-twls" id="${twlLink}">
             <h4 class="tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
 `;
-            for (let targetidx in targetBibleCatalogEntries) {
-              const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
-              const glQuoteCol = `GLQuote${targetidx}`;
-              article += `
+              for (let targetidx in targetBibleCatalogEntries) {
+                const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
+                const glQuoteCol = `GLQuote${targetidx}`;
+                article += `
             <h5 class="tn-verse-twl-bible">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</h4>
             <ul class="tn-verse-twl-list">
 `;
-              for (let row of twlTsvDataWithGLQuotes[chapterStr][verseStr]) {
-                let glQuote = row[glQuoteCol];
-                glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + ' (ORIG QUOTE)';
-                article += `
+                for (let row of twlTsvDataWithGLQuotes[chapterStr][verseStr]) {
+                  let glQuote = row[glQuoteCol];
+                  glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + ' (ORIG QUOTE)';
+                  article += `
                 <li class="tn-verse-twl-list-item"><a href="${row.TWLink}">${glQuote}</a></li>
+`;
+                }
+                article += `
+            </ul>
 `;
               }
               article += `
-            </ul>
-`;
-            }
-            article += `
           </div>
 `;
-            html += article;
-            searchForRcLinks(rcLinksData, article, `<a href="#${verseLink}">${chapterStr}:${verseStr}</a>`);
-          }
-          html += `
+              html += article;
+              searchForRcLinks(rcLinksData, article, `<a href="#${verseLink}">${chapterStr}:${verseStr}</a>`);
+            }
+            html += `
       <hr style="width: 100%"/>
     </div>
 `;
-        }
-        html += `
+          }
+          html += `
   </div>
 `;
-      }
+        }
 
-      html += `
+        html += `
 </div>
 `;
-      if (rcLinksData.ta && taCatalogEntries.length) {
-        const taCatalogEntry = taCatalogEntries[0];
-        // TA ARTICLES
-        html += `
+        if (rcLinksData.ta && taCatalogEntries.length) {
+          const taCatalogEntry = taCatalogEntries[0];
+          // TA ARTICLES
+          html += `
 <div class="appendex ta section" id="appendex-ta" data-toc-title="Appendex: ${encodeHTML(taCatalogEntry.title)}">
   <div class="article title-page">
     <span class="header-title"></span>
@@ -645,10 +668,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     <h3 class="cover-version">${taCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
-        Object.values(rcLinksData.ta)
-          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
-          .forEach((taArticle) => {
-            const article = `
+          Object.values(rcLinksData.ta)
+            .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+            .forEach((taArticle) => {
+              const article = `
   <div class="article" id="${taArticle.anchor}" data-toc-title="${encodeHTML(taArticle.title)}">
     <h2 class="header article-header">
       <a href="#${taArticle.anchor}" class="header-link">${taArticle.title}</a>
@@ -663,17 +686,17 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     </div>
   </div>
 `;
-            html += article;
-            searchForRcLinks(rcLinksData, article);
-          });
-        html += `
+              html += article;
+              searchForRcLinks(rcLinksData, article);
+            });
+          html += `
 </div>
 `;
-      }
-      if (rcLinksData.tw && twCatalogEntries.length) {
-        const twCatalogEntry = twCatalogEntries[0];
-        // TW ARTICLES
-        html += `
+        }
+        if (rcLinksData.tw && twCatalogEntries.length) {
+          const twCatalogEntry = twCatalogEntries[0];
+          // TW ARTICLES
+          html += `
 <div class="appendex tw section" id="appendex-tw" data-toc-title="Appendex: ${encodeHTML(twCatalogEntry.title)}">
   <div class="article title-page">
     <span class="header-title"></span>
@@ -682,10 +705,10 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
-        Object.values(rcLinksData.tw)
-          .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
-          .forEach((twArticle) => {
-            const article = `
+          Object.values(rcLinksData.tw)
+            .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
+            .forEach((twArticle) => {
+              const article = `
   <div class="article" id="${twArticle.anchor}" data-toc-title="${encodeHTML(twArticle.title)}">
     <h2 class="header article-header">
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
@@ -700,14 +723,19 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
     </div>
   </div>
 `;
-            html += article;
-            searchForRcLinks(rcLinksData, article);
-          });
-        html += `
+              html += article;
+              searchForRcLinks(rcLinksData, article);
+            });
+          html += `
 </div>
 `;
+        }
       }
+    }
 
+    if (!html && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes && taFileContents && twFileContents) {
+      const htmlGenerator = new HtmlGenerator();
+      let html = htmlGenerator.generateHtml();
       for (let data of Object.values(rcLinksData.ta || {})) {
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
@@ -720,11 +748,9 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
         regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]+\//, 'rc://[^/]+/')}\\]+`, 'g');
         html = html.replace(regex, `<a href="${data.anchor}">${data.title}</a>`);
       }
+      console.log('GENERATED HTML!!');
+      console.log(html);
       setHtml(html);
-    };
-
-    if (!html && targetBibleCatalogEntries && tnTsvDataWithGLQuotes && targetUsfms?.length && twlTsvDataWithGLQuotes && taFileContents && twFileContents) {
-      generateHtml();
     }
   }, [
     catalogEntry,
@@ -746,11 +772,7 @@ ${convertNoteFromMD2HTML(row.Note, bookId, 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
