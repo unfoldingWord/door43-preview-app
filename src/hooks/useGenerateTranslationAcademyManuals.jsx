@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import useGenerateTranslationAcademyFileContents from './useGenerateTranslationAcademyFileContents';
 
-export default function useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage }) {
+export default function useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData }) {
   const [taManuals, setTaManuals] = useState();
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
     catalogEntry,
     zipFileData,
-    setErrorMessage,
   });
 
   const addPropertiesToTocSections = (manual, sections) => {

@@ -2,10 +2,11 @@ import { useState, useEffect, useContext } from 'react';
 import { getRepoContentsContent } from '@helpers/dcsApi';
 import { AppContext } from '@components/App.context';
 
-export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMessage }) {
+export default function useFetchBookFiles({ catalogEntries, bookId, canFetch = true }) {
   const [bookFiles, setBookFiles] = useState();
   const {
     state: { authToken },
+    actions: { setErrorMessage }
   } = useContext(AppContext);
 
   useEffect(() => {
@@ -43,10 +44,10 @@ export default function useFetchBookFiles({ catalogEntries, bookId, setErrorMess
       }
     };
 
-    if (catalogEntries && catalogEntries.length) {
+    if (canFetch && catalogEntries && catalogEntries.length) {
       fetchBookFileContents();
     }
-  }, [catalogEntries, bookId, authToken, setErrorMessage]);
+  }, [catalogEntries, bookId, authToken, canFetch, setErrorMessage]);
 
   return bookFiles;
 }

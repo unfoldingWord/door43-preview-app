@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { getZipFileDataForCatalogEntry } from '@helpers/zip';
+import { AppContext } from '@components/App.context';
 
-export default function useFetchZipFileData({ catalogEntry, setErrorMessage, authToken = '' }) {
+export default function useFetchZipFileData({ catalogEntry, canFetch = true }) {
   const [zipFileData, setZipFileData] = useState();
+  const {
+    state: { authToken },
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const loadZipFileData = async () => {
@@ -14,10 +19,10 @@ export default function useFetchZipFileData({ catalogEntry, setErrorMessage, aut
       });
     };
 
-    if (catalogEntry) {
+    if (canFetch && catalogEntry) {
       loadZipFileData();
     }
-  }, [catalogEntry, authToken]);
+  }, [canFetch, catalogEntry, authToken, setErrorMessage]);
 
   return zipFileData;
 }

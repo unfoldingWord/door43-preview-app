@@ -137,7 +137,7 @@ const requiredSubjects = ['Open Bible Stories', 'Translation Academy', 'Translat
 
 export default function RcObsTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken, builtWith, renderOptions },
+    state: { urlInfo, catalogEntry, navAnchor, authToken, builtWith, renderOptions, renderNewCopy },
     actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -182,8 +182,6 @@ export default function RcObsTranslationNotes() {
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
     requiredSubjects,
-    setErrorMessage,
-    authToken,
   });
 
   const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
@@ -191,7 +189,7 @@ export default function RcObsTranslationNotes() {
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
     bookId: 'obs',
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const tnTsvData = usePivotTsvFileOnReference({
@@ -203,66 +201,54 @@ export default function RcObsTranslationNotes() {
     subject: 'Open Bible Stories',
     bookId: 'obs',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const obsZipFileData = useFetchZipFileData({
     catalogEntry: obsCatalogEntries?.[0],
-    authToken,
-    setErrorMessage,
   });
 
-  const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData, setErrorMessage });
+  const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData });
 
   const taCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Academy',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const taZipFileData = useFetchZipFileData({
-    authToken,
     catalogEntry: taCatalogEntries?.[0],
-    setErrorMessage,
   });
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
     catalogEntry: taCatalogEntries[0],
     zipFileData: taZipFileData,
-    setErrorMessage,
   });
 
   const twCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Words',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const twZipFileData = useFetchZipFileData({
-    authToken,
     catalogEntry: twCatalogEntries?.[0],
-    setErrorMessage,
   });
 
   const twFileContents = useGenerateTranslationWordsFileContents({
     catalogEntry: twCatalogEntries?.[0],
     zipFileData: twZipFileData,
-    setErrorMessage,
   });
 
   const twlCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'TSV OBS Translation Words Links',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const twlTSVBookFiles = useFetchBookFiles({
     catalogEntries: twlCatalogEntries,
     bookId: 'obs',
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const twlTsvData = usePivotTsvFileOnReference({
@@ -637,10 +623,10 @@ ${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {

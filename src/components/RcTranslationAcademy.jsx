@@ -110,14 +110,14 @@ const printCss = `
 
 export default function RcTranslationAcademy() {
   const {
-    state: { urlInfo, catalogEntry, navAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
+    state: { catalogEntry, navAnchor, authToken, builtWith, renderNewCopy },
+    actions: { setStatusMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
 
-  const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
+  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: renderNewCopy });
 
-  let taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData, setErrorMessage });
+  let taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData });
 
   const html = useGenerateTranslationAcademyHtml({ catalogEntry, taManuals });
 
@@ -151,10 +151,10 @@ export default function RcTranslationAcademy() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {

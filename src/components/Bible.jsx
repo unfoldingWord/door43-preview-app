@@ -102,10 +102,10 @@ const renderFlags = {
 
 const pk = new Proskomma();
 
-const parseHtml = (html, book, showChapters=true) => {
+const parseHtml = (html, book, showChapters = true) => {
   const titleMatch = html.match(/<p [^>]*>(.*?)<\/p>/);
   const title = titleMatch ? titleMatch[1] : '';
-  html = html.replace(/<p /, `<p id="nav-${book}" `)
+  html = html.replace(/<p /, `<p id="nav-${book}" `);
   html = html.replaceAll(
     /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
     `<span id="nav-${book}-$1-$2"$3><a href="#nav-${book}-$1-$2" class="header-link">$4</a></span>`
@@ -134,7 +134,6 @@ const parseHtml = (html, book, showChapters=true) => {
   return html;
 };
 
-
 export default function Bible() {
   const {
     state: {
@@ -150,6 +149,7 @@ export default function Bible() {
       htmlSections,
       errorMessages,
       cachedHtmlSections,
+      renderNewCopy,
       view,
     },
     actions: {
@@ -165,6 +165,7 @@ export default function Bible() {
       setCanChangeColumns,
       setPrintOptions,
       setExtraDownloadButtons,
+      setIsDefaultBook,
     },
   } = useContext(AppContext);
 
@@ -174,8 +175,7 @@ export default function Bible() {
   const [usfmMap, setUsfmMap] = useState(new Map());
 
   const onBibleReferenceChange = (b, c, v) => {
-    console.log(b, c, v, books.length, books);
-    if (! expandedBooks.includes(b)) {
+    if (expandedBooks.length && !expandedBooks.includes(b)) {
       const url = new URL(window.location);
       url.hash = '';
       url.searchParams.delete('book');
@@ -235,7 +235,9 @@ export default function Bible() {
         setErrorMessage('There are no books in this resource to render.');
         return;
       }
-      console.log("sb", sb);
+      if (expandedBooks.length === 1 && sb?.[0] == expandedBooks[0]) {
+        setIsDefaultBook(true);
+      }
 
       setStatusMessage(
         <>
@@ -245,7 +247,7 @@ export default function Bible() {
         </>
       );
 
-      for(const _book of expandedBooks) {
+      for (const _book of expandedBooks) {
         if (!sb.includes(_book)) {
           setErrorMessage(`This resource does not support the rendering of the book \`${_book}\`. Please choose another book to render.`);
           sb = [_book, ...sb];
@@ -278,12 +280,13 @@ export default function Bible() {
     setSupportedBooks,
     setNoCache,
     setRenderMessage,
+    setIsDefaultBook,
   ]);
 
   useEffect(() => {
     const handleUSFMClick = () => {
       const fileName = `${catalogEntry.repo.name}_${catalogEntry.branch_or_tag_name}_${books.join('-')}.usfm`;
-      const fileContent = Array.from(usfmMap.values()).join("\n\n\n");
+      const fileContent = Array.from(usfmMap.values()).join('\n\n\n');
       const blob = new Blob([fileContent], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -295,14 +298,14 @@ export default function Bible() {
 
     if (catalogEntry && usfmMap && books.length) {
       setExtraDownloadButtons((prevButtons) => {
-        const noUsfmButtons = prevButtons.filter(buttonData => buttonData.label !== "USFM");
+        const noUsfmButtons = prevButtons.filter((buttonData) => buttonData.label !== 'USFM');
         const newButton = {
           label: 'USFM',
           onClick: handleUSFMClick,
           tooltip: 'Download the USFM used to render this book (no alignments)',
         };
         // Check if the new button is already in the list to avoid unnecessary updates
-        const isButtonPresent = noUsfmButtons.some(button => button.label === newButton.label);
+        const isButtonPresent = noUsfmButtons.some((button) => button.label === newButton.label);
         if (!isButtonPresent) {
           return [...noUsfmButtons, newButton];
         }
@@ -333,7 +336,7 @@ export default function Bible() {
         const filePath = ingredient.path.replace(/^\.\//, '');
         let usfm = '';
         try {
-          usfm = await getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false)
+          usfm = await getRepoContentsContent(catalogEntry.repo.url, filePath, catalogEntry.commit_sha, authToken, false);
         } catch (e) {
           console.log(`Error calling getRepoContentsContent(${catalogEntry.repo.url}, ${filePath}, ${catalogEntry.commit_sha}): `, e);
           setErrorMessage(`Unable to get content for book \`${ingredient.identifier}\` from DCS`);
@@ -349,7 +352,7 @@ export default function Bible() {
             usfm
           );
           if (!res.id) {
-            console.log('Failed to import book for rendering.');
+            console.log(`Failed to import book for rendering.`);
             continue;
           } else {
             docIds.push(res.id);
@@ -357,27 +360,22 @@ export default function Bible() {
         } catch (e) {
           console.log(`Error calling pk.importDocument(): `, e);
         }
-        try {
-          const output = {};
-          renderer.renderDocument({
-            config,
-            docId: res.id,
-            output,
-          });
-          htmls.push(parseHtml(output.paras, ingredient.identifier, books.length  < 3));
-        } catch (err) {
-          console.log('Renderer', err);
-          throw err;
-        }
+        const output = {};
+        renderer.renderDocument({
+          config,
+          docId: res.id,
+          output,
+        });
+        htmls.push(parseHtml(output.paras, ingredient.identifier, books.length < 3));
       }
       setUsfmMap(usfms);
       setHtml(htmls.join('\n'));
     };
 
-    if (!html && catalogEntry && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
+    if (!html && catalogEntry && renderNewCopy && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
-  }, [html, books, supportedBooks, catalogEntry, expandedBooks, authToken, errorMessages, setBookTitle, setErrorMessage]);
+  }, [html, books, renderNewCopy, supportedBooks, catalogEntry, expandedBooks, authToken, errorMessages, setBookTitle, setErrorMessage]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
@@ -385,10 +383,10 @@ export default function Bible() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     const numberSpans = document.querySelectorAll('.footnote-number');
@@ -449,7 +447,7 @@ export default function Bible() {
           cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
           copyright,
           body: html,
-          css: { web: webCss}
+          css: { web: webCss },
         };
       });
       setStatusMessage('');
@@ -472,7 +470,7 @@ export default function Bible() {
       setHtmlSections((prevState) => {
         return {
           ...prevState,
-          webView: `<div>${usfms.join("\n\n<hr/>\n\n").replace(/\n/g, '<br/>')}</div>`,
+          webView: `<div>${usfms.join('\n\n<hr/>\n\n').replace(/\n/g, '<br/>')}</div>`,
         };
       });
     } else {
@@ -483,25 +481,30 @@ export default function Bible() {
         };
       });
     }
-  }, [showUsfmAsHtml, usfmMap, setHtmlSections])
+  }, [showUsfmAsHtml, usfmMap, setHtmlSections]);
 
   return (
     <ThemeProvider theme={theme}>
       <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} />
-      {view === "web" && usfmMap.size ? <Tooltip title="Shows the raw unaligned USFM" arrow>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showUsfmAsHtml}
-              onChange={() => {setShowUsfmAsHtml(!showUsfmAsHtml); setNoCache(true);}}
-              name="showUsfmAsHtml"
-              color="primary"
-              style={{ padding: 0 }}
-            />
-          }
-          label="USFM"
-        />
-      </Tooltip> : null}
+      {view === 'web' && usfmMap.size ? (
+        <Tooltip title="Shows the raw unaligned USFM" arrow>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showUsfmAsHtml}
+                onChange={() => {
+                  setShowUsfmAsHtml(!showUsfmAsHtml);
+                  setNoCache(true);
+                }}
+                name="showUsfmAsHtml"
+                color="primary"
+                style={{ padding: 0 }}
+              />
+            }
+            label="USFM"
+          />
+        </Tooltip>
+      ) : null}
     </ThemeProvider>
   );
 }

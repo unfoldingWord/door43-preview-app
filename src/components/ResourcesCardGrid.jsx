@@ -49,7 +49,7 @@ export const ResourcesCardGrid = () => {
   } = useContext(AppContext);
 
   const [isFetchingEntries, setIsFetchingEntries] = useState(false);
-  const [stage, setStage] = useState('prod');
+const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
   const [owners, setOwners] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [subjects, setSubjects] = useState([]);

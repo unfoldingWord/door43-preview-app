@@ -154,8 +154,8 @@ const requiredSubjects = ['Aligned Bible'];
 
 export default function RcTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions, renderNewCopy },
+    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith, setIsDefaultBook },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -205,7 +205,6 @@ export default function RcTranslationQuestions() {
 
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
-    authToken,
     requiredSubjects,
   });
 
@@ -218,6 +217,7 @@ export default function RcTranslationQuestions() {
   const targetUsfmBookFiles = useFetchBookFiles({
     catalogEntries: targetBibleCatalogEntries,
     bookId: expandedBooks[0],
+    canFetch: renderNewCopy,
   });
 
   const tqTsvBookFiles = useFetchBookFiles({
@@ -274,10 +274,13 @@ export default function RcTranslationQuestions() {
 
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
+      if (sb[0] === expandedBooks[0]) {
+        setIsDefaultBook(true)
+      }
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, authToken, expandedBooks, setIsDefaultBook, setBookTitle, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (navAnchor && ! navAnchor.includes('--')) {
@@ -465,6 +468,7 @@ export default function RcTranslationQuestions() {
     targetUsfmBookFiles,
     tqTsvData,
     bookTitle,
+    renderOptions,
     setHtmlSections,
     setStatusMessage,
     setErrorMessage,
@@ -482,10 +486,10 @@ export default function RcTranslationQuestions() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length, renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
 
   useEffect(() => {

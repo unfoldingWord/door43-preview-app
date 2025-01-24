@@ -106,15 +106,15 @@ const printCss = `
 
 export default function RcTranslationWords() {
   const {
-    state: { catalogEntry, builtWith, navAnchor, authToken },
-    actions: { setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setBuiltWith },
+    state: { catalogEntry, builtWith, navAnchor, authToken, renderNewCopy },
+    actions: { setStatusMessage, setHtmlSections, setNavAnchor, setBuiltWith },
   } = useContext(AppContext);
 
   const [copyright, setCopyright] = useState('');
 
-  const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
+  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: renderNewCopy });
 
-  const twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData, setErrorMessage });
+  const twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData });
 
   const html = useGenerateTranslationWordsHtml({ catalogEntry, taManuals: twManuals });
 
@@ -148,10 +148,10 @@ export default function RcTranslationWords() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {

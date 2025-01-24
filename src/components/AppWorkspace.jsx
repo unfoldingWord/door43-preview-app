@@ -71,7 +71,6 @@ export default function AppWorkspace() {
       bookTitle,
       view,
       expandedBooks,
-      books,
     },
     actions: { clearErrorMessage, setIsOpenPrint, setNavAnchor, setDocumentReady, setView },
   } = useContext(AppContext);

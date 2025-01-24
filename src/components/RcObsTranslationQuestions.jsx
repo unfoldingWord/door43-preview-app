@@ -163,7 +163,7 @@ const requiredSubjects = ['Open Bible Stories'];
 
 export default function RcObsTranslationQuestions() {
   const {
-    state: { urlInfo, catalogEntry, bookTitle, navAnchor, authToken, builtWith, renderOptions },
+    state: { urlInfo, catalogEntry, bookTitle, navAnchor, authToken, builtWith, renderOptions, renderNewCopy },
     actions: { setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
   } = useContext(AppContext);
 
@@ -208,8 +208,6 @@ export default function RcObsTranslationQuestions() {
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
     requiredSubjects,
-    setErrorMessage,
-    authToken,
   });
 
   const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
@@ -217,7 +215,7 @@ export default function RcObsTranslationQuestions() {
   const tqTsvBookFiles = useFetchBookFiles({
     catalogEntries,
     bookId: 'obs',
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const tqTsvData = usePivotTsvFileOnReference({
@@ -229,15 +227,13 @@ export default function RcObsTranslationQuestions() {
     subject: 'Open Bible Stories',
     bookId: 'obs',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const obsZipFileData = useFetchZipFileData({
     catalogEntry: obsCatalogEntries?.[0],
-    authToken,
   });
 
-  const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData, setErrorMessage });
+  const obsData = useGetOBSData({ catalogEntry: obsCatalogEntries?.[0], zipFileData: obsZipFileData });
 
   useEffect(() => {
     if (catalogEntry && obsCatalogEntries.length) {
@@ -272,7 +268,7 @@ export default function RcObsTranslationQuestions() {
     };
 
     setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, authToken, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
+  }, [urlInfo, catalogEntry, setStatusMessage, setErrorMessage, setHtmlSections, setCanChangeColumns, setSupportedBooks]);
 
   useEffect(() => {
     if (navAnchor && ! navAnchor.includes('--')) {
@@ -436,10 +432,10 @@ export default function RcObsTranslationQuestions() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
 
   useEffect(() => {

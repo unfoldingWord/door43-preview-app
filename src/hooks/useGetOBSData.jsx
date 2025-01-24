@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { getOBSData } from '@helpers/obs_helpers';
+import { AppContext } from '@components/App.context';
 
-export default function useGetOBSData({ catalogEntry, zipFileData, setErrorMessage }) {
+export default function useGetOBSData({ catalogEntry, zipFileData }) {
   const [obsData, setObsData] = useState();
+  const {
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const fetchOBSData = async () => {

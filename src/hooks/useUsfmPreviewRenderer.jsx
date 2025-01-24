@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import usePkBookPreviewRenderer from '@hooks/usePkBookPreviewRenderer';
 import { Proskomma } from 'proskomma-core';
+import { AppContext } from '@components/App.context';
 
-export default function useUsfmPreviewRenderer(props) {
-  const { bookId, usfmText, verbose, extInfo, renderFlags, htmlRender, renderStyles, chapters, setErrorMessage } = props;
+export default function useUsfmPreviewRenderer({ bookId, usfmText, verbose, extInfo, renderFlags, htmlRender, renderStyles, chapters }) {
+  const {
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   const [docId, setDocId] = useState();
   // eslint-disable-next-line no-unused-vars

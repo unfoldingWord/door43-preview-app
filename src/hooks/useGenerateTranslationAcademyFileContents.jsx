@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import markdownit from 'markdown-it';
 import yaml from 'yaml';
+import { AppContext } from '@components/App.context';
 
-export default function useGenerateTranslationAcademyFileContents({ catalogEntry, zipFileData, setErrorMessage }) {
+export default function useGenerateTranslationAcademyFileContents({ catalogEntry, zipFileData }) {
   const [taFileContents, setTaFileContents] = useState();
+  const {
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const getFileContents = async () => {
