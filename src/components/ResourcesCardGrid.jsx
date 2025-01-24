@@ -1,5 +1,5 @@
 // React imports
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useRef } from 'react';
 
 // Material UI imports
 import {
@@ -35,8 +35,6 @@ import { AppContext } from '@components/App.context';
 import { API_PATH } from '@common/constants';
 
 const DEFAULT_LIMIT = 50;
-const DEFAULT_LANGS = ['en'];
-const DEFAULT_OWNERS = ['unfoldingWord'];
 const DEFAULT_SUBJECTS = [];
 const DEFAULT_SORT = 'released';
 const DEFAULT_ORDER = 'desc';
@@ -49,7 +47,8 @@ export const ResourcesCardGrid = () => {
   } = useContext(AppContext);
 
   const [isFetchingEntries, setIsFetchingEntries] = useState(false);
-const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
+  const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
+  const [topic, setTopic] = useState(urlInfo?.owner ? '' : 'tc-ready');
   const [owners, setOwners] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -66,6 +65,7 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
   const [error, setError] = useState();
 
   const [openSortModal, setOpenSortModal] = useState(false);
+  const loadMoreRef = useRef(null);
 
   useEffect(() => {
     const setDefaultsAndSearch = async () => {
@@ -75,16 +75,12 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
         setSelectedLanguages([urlInfo?.lang]);
       } else if (urlParams.get('lang')) {
         setSelectedLanguages(urlParams.getAll('lang'));
-      } else if (!urlInfo.owner && ! paramsCount) {
-        setSelectedLanguages(DEFAULT_LANGS);
       }
 
       if (urlInfo.owner) {
         setSelectedOwners([urlInfo.owner]);
       } else if (urlParams.get('owner')) {
         setSelectedOwners(urlParams.getAll('owner'));
-      } else if (!urlInfo.lang  && ! paramsCount) {
-        setSelectedOwners(DEFAULT_OWNERS);
       }
 
       if (urlParams.get('subject')) {
@@ -95,6 +91,10 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
 
       if (urlParams.get('stage')) {
         setStage(urlParams.get('stage'));
+      }
+
+      if (urlParams.has('topic')) {
+        setTopic(urlParams.get('topic'));
       }
 
       if (urlParams.get('sort')) {
@@ -186,6 +186,9 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
       selectedLanguages.forEach((l) => params.append('lang', l));
       selectedSubjects.forEach((s) => params.append('subject', s));
       params.append('stage', stage);
+      if (topic) {
+        params.append('topic', topic);
+      }
       params.append('sort', sort);
       params.append('order', order);
 
@@ -234,6 +237,27 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
     }
   }, [serverInfo, searchClicked, isFetchingEntries, loadMoreClicked, selectedLanguages, selectedOwners, selectedSubjects, order, page, sort, stage]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadMoreClicked && !isFetchingEntries) {
+          setLoadMoreClicked(true);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [loadMoreClicked, isFetchingEntries]);
+
   const handleOpenSortModal = () => {
     setOpenSortModal(true);
   };
@@ -251,7 +275,7 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
   if (!gotAllEntries && !searchClicked && !error && catalogEntries.length > 0 && !loadMoreClicked) {
     extraItem = (
     <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+      <div ref={loadMoreRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
         <Button onClick={() => setLoadMoreClicked(true)} disabled={loadMoreClicked} style={{ textAlign: 'center', fontWeight: "bold" }}>
           Load more...
         </Button>
@@ -274,189 +298,164 @@ const [stage, setStage] = useState(urlInfo?.owner ? 'latest' : 'prod');
           component="form"
           sx={{
             '& > :not(style)': { m: 1 },
+            display: 'flex',
+            flexWrap: 'wrap',
           }}
           noValidate
         >
-          {<Autocomplete
-            id="language-select"
-            multiple
-            freeSolo
-            autoHighlight
-            clearOnEscape
-            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-            value={selectedLanguages}
-            options={languages.map((l) => l.lc)}
-            getOptionLabel={(option) => {
-              let ln = '';
-              for (let i = 0; i < languages.length; i++) {
-                if (languages[i].lc == option) {
-                  ln = languages[i].ln;
-                  break;
-                }
-              }
-              return `${ln} (${option})`;
-            }}
-            renderInput={(params) => <TextField {...params} label="Language" variant="outlined" />}
-            // isOptionEqualToValue={(option, value) => option.lc === value}
-            onChange={(event, selected) => {
-              setSelectedLanguages(selected);
-              urlParams.delete('lang');
-              if (selected.length) {
-                selected.forEach((item) => {
-                  urlParams.append('lang', item);
-                });
-              } else {
-                urlParams.append('lang', '');
-              }
-              window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-            }}
-          />}
-          {! urlInfo?.owner && <Autocomplete
-            id="owner-select"
-            multiple
-            freeSolo
-            autoHighlight
-            clearOnEscape
-            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-            options={owners.map((o) => o.username)}
-            value={selectedOwners}
-            renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
-            onChange={(event, selected) => {
-              setSelectedOwners(selected);
-              urlParams.delete('owner');
-              if (selected.length) {
-                selected.forEach((item) => {
-                  urlParams.append('owner', item);
-                });
-              } else {
-                urlParams.append('owner', '');
-              }
-              window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-            }}
-          />}
-          <Autocomplete
-            id="subject-select"
-            multiple
-            freeSolo
-            autoHighlight
-            clearOnEscape
-            sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-            options={subjects}
-            value={selectedSubjects}
-            renderInput={(params) => <TextField {...params} label="Subject" variant="outlined" />}
-            onChange={(event, selected) => {
-              setSelectedSubjects(selected);
-              urlParams.delete('subject');
-              if (selected.length) {
-                selected.forEach((item) => {
-                  urlParams.append('subject', item);
-                });
-              } else {
-                urlParams.append('subject', '');
-              }
-              window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-            }}
-          />
-
-          <Button
-            onClick={() => {
-              setSearchClicked(true);
-              setCatalogEntries([]);
-            }}
-            disabled={searchClicked}
-          >
-            <SearchIcon /> Search
-          </Button>
-
-          <div style={{ display: 'inline-block' }}>
-            <IconButton onClick={handleOpenSortModal}>
-              <FilterListIcon />
-            </IconButton>
-          </div>
-
-          <Dialog open={openSortModal} onClose={handleCloseSortModal}>
-            <DialogTitle>Sort by</DialogTitle>
-            <DialogContent>
-              <FormControl fullWidth>
-                <Select
-                  labelId="sort-label"
-                  id="sort-select"
-                  value={sort}
-                  onChange={(event) => {
-                    setSort(event.target.value);
-                    urlParams.set('sort', event.target.value);
-                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                  }}
-                >
-                  <MenuItem value="released">Release Date</MenuItem>
-                  <MenuItem value="lang">Language</MenuItem>
-                  <MenuItem value="title">Title</MenuItem>
-                  <MenuItem value="subject">Subject</MenuItem>
-                </Select>
-                <ToggleButtonGroup
-                  value={order}
-                  exclusive
-                  onChange={(event, newOrder) => {
-                    if (!newOrder) {
-                      return;
+          <Grid container alignItems="center" spacing={1}>
+            <Grid item>
+              {<Autocomplete
+                id="language-select"
+                multiple
+                freeSolo
+                autoHighlight
+                clearOnEscape
+                sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+                value={selectedLanguages}
+                options={languages.map((l) => l.lc)}
+                getOptionLabel={(option) => {
+                  let ln = '';
+                  for (let i = 0; i < languages.length; i++) {
+                    if (languages[i].lc == option) {
+                      ln = languages[i].ln;
+                      break;
                     }
-                    setOrder(newOrder);
-                    urlParams.set('order', newOrder);
-                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                  }}
-                  aria-label="Sort Order"
-                  sx={{paddingTop: "10px", textAlign: "center", display: "block"}}
-                >
-                  <Tooltip title="Ascending" arrow>
-                    <ToggleButton value="asc" aria-label="Ascending">
-                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
-                    </ToggleButton>
-                  </Tooltip>
-                  <Tooltip title="Descending" arrow>
-                    <ToggleButton value="desc" aria-label="Descending">
-                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
-                    </ToggleButton>
-                  </Tooltip>
-                </ToggleButtonGroup>
-              </FormControl>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseSortModal}>Close</Button>
+                  }
+                  return `${ln} (${option})`;
+                }}
+                renderInput={(params) => <TextField {...params} label="Language" variant="outlined" />}
+                // isOptionEqualToValue={(option, value) => option.lc === value}
+                onChange={(event, selected) => {
+                  setSelectedLanguages(selected);
+                  urlParams.delete('lang');
+                  if (selected.length) {
+                    selected.forEach((item) => {
+                      urlParams.append('lang', item);
+                    });
+                  } else {
+                    urlParams.append('lang', '');
+                  }
+                  window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                }}
+              />}
+            </Grid>
+            <Grid item>
+              {!urlInfo?.owner && <Autocomplete
+                id="owner-select"
+                multiple
+                freeSolo
+                autoHighlight
+                clearOnEscape
+                sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+                options={owners.map((o) => o.username)}
+                value={selectedOwners}
+                renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
+                onChange={(event, selected) => {
+                  setSelectedOwners(selected);
+                  urlParams.delete('owner');
+                  if (selected.length) {
+                    selected.forEach((item) => {
+                      urlParams.append('owner', item);
+                    });
+                  } else {
+                    urlParams.append('owner', '');
+                  }
+                  window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                }}
+              />}
+            </Grid>
+            <Grid item>
+              <Autocomplete
+                id="subject-select"
+                multiple
+                freeSolo
+                autoHighlight
+                clearOnEscape
+                sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+                options={subjects}
+                value={selectedSubjects}
+                renderInput={(params) => <TextField {...params} label="Subject" variant="outlined" />}
+                onChange={(event, selected) => {
+                  setSelectedSubjects(selected);
+                  urlParams.delete('subject');
+                  if (selected.length) {
+                    selected.forEach((item) => {
+                      urlParams.append('subject', item);
+                    });
+                  } else {
+                    urlParams.append('subject', '');
+                  }
+                  window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                }}
+              />
+            </Grid>
+            <Grid item sx={{ p: 0, m: 0 }}>
+              <Tooltip title="Show only releases" arrow>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={stage == 'prod'}
+                      onChange={(event) => {
+                        const s = event.target.checked ? 'prod' : 'latest';
+                        setStage(s);
+                        setCatalogEntries([]);
+                        setSearchClicked(true);
+                        urlParams.set('stage', s);
+                        window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                      }}
+                      name="onlyReleases"
+                      color="primary"
+                    />
+                  }
+                  label="Releases"
+                />
+              </Tooltip>
+            </Grid>
+            <Grid item sx={{ p: 0, m: 0 }}>
+              <Tooltip title="Show only resources that have been marked ready for use with translationCore apps" arrow>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={topic === 'tc-ready'}
+                      onChange={(event) => {
+                        const t = event.target.checked ? 'tc-ready' : '';
+                        setTopic(t);
+                        setCatalogEntries([]);
+                        setSearchClicked(true);
+                        urlParams.set('topic', t);
+                        window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                      }}
+                      name="onlyTcReady"
+                      color="primary"
+                    />
+                  }
+                  label="tC-Ready"
+                />
+              </Tooltip>
+            </Grid>
+            <Grid item>
+              <IconButton onClick={handleOpenSortModal}>
+                <FilterListIcon />
+              </IconButton>
+            </Grid>
+            <Grid item>
               <Button
                 onClick={() => {
-                  // Apply filter and sort logic here
-                  handleCloseSortModal(true);
+                  setSearchClicked(true);
+                  setCatalogEntries([]);
                 }}
+                disabled={searchClicked}
               >
-                Apply
+                <SearchIcon /> Search
               </Button>
-            </DialogActions>
-          </Dialog>
-          <Tooltip title="Show only releases" arrow>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={stage == 'prod'}
-                  onChange={(event) => {
-                    const s = event.target.checked ? 'prod' : 'latest';
-                    setStage(s);
-                    setCatalogEntries([]);
-                    setSearchClicked(true);
-                    urlParams.set('stage', s);
-                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                  }}
-                  name="onlyReleases"
-                  color="primary"
-                />
-             }
-              label="Releases"
-            />
-          </Tooltip>
+            </Grid>
+          </Grid>
         </Box>
       </AppBar>
       <Box sx={{ flexGrow: 1, margin: "30px" }}>
         <Grid container spacing={2}>
-          <CatalogEntriesGrid catalogEntries={catalogEntries} stage={stage} extraItem={extraItem} />
+          <CatalogEntriesGrid catalogEntries={catalogEntries} stage={stage} topic={topic} extraItem={extraItem} />
         </Grid>
       </Box>
       {error && (
