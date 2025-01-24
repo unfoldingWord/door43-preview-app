@@ -2,21 +2,7 @@
 import { useEffect, useState, useContext, useRef } from 'react';
 
 // Material UI imports
-import {
-  Box,
-  Grid,
-  AppBar,
-  Button,
-  IconButton,
-  TextField,
-  Autocomplete,
-  Typography,
-  Tooltip,
-  FormControlLabel,
-  Checkbox,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
+import { Box, Grid, AppBar, Button, IconButton, TextField, Autocomplete, Typography, Tooltip, FormControlLabel, Checkbox, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
 
@@ -85,7 +71,7 @@ export const ResourcesCardGrid = () => {
 
       if (urlParams.get('subject')) {
         setSelectedSubjects(urlParams.getAll('subject'));
-      } else if (!urlInfo.owner && ! urlInfo.lang   && ! paramsCount) {
+      } else if (!urlInfo.owner && !urlInfo.lang && !paramsCount) {
         setSelectedSubjects(DEFAULT_SUBJECTS);
       }
 
@@ -274,20 +260,22 @@ export const ResourcesCardGrid = () => {
 
   if (!gotAllEntries && !searchClicked && !error && catalogEntries.length > 0 && !loadMoreClicked) {
     extraItem = (
-    <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
-      <div ref={loadMoreRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
-        <Button onClick={() => setLoadMoreClicked(true)} disabled={loadMoreClicked} style={{ textAlign: 'center', fontWeight: "bold" }}>
-          Load more...
-        </Button>
-      </div>
-    </Grid>);
+      <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
+        <div ref={loadMoreRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center' }}>
+          <Button onClick={() => setLoadMoreClicked(true)} disabled={loadMoreClicked} style={{ textAlign: 'center', fontWeight: 'bold' }}>
+            Load more...
+          </Button>
+        </div>
+      </Grid>
+    );
   } else if (loadMoreClicked || searchClicked) {
     extraItem = (
-    <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', justifyContent: 'center', textAlign: 'center'}}>
-        <CircularProgress style={{textAlign: 'center', width: '100%'}} />
-      </div>
-    </Grid>);
+      <Grid item xs={12} sm={6} md={4} lg={3} key="load-more" alignItems="stretch">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', justifyContent: 'center', textAlign: 'center' }}>
+          <CircularProgress style={{ textAlign: 'center', width: '100%' }} />
+        </div>
+      </Grid>
+    );
   }
 
   return (
@@ -305,65 +293,69 @@ export const ResourcesCardGrid = () => {
         >
           <Grid container alignItems="center" spacing={1}>
             <Grid item>
-              {<Autocomplete
-                id="language-select"
-                multiple
-                freeSolo
-                autoHighlight
-                clearOnEscape
-                sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-                value={selectedLanguages}
-                options={languages.map((l) => l.lc)}
-                getOptionLabel={(option) => {
-                  let ln = '';
-                  for (let i = 0; i < languages.length; i++) {
-                    if (languages[i].lc == option) {
-                      ln = languages[i].ln;
-                      break;
+              {
+                <Autocomplete
+                  id="language-select"
+                  multiple
+                  freeSolo
+                  autoHighlight
+                  clearOnEscape
+                  sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+                  value={selectedLanguages}
+                  options={languages.map((l) => l.lc)}
+                  getOptionLabel={(option) => {
+                    let ln = '';
+                    for (let i = 0; i < languages.length; i++) {
+                      if (languages[i].lc == option) {
+                        ln = languages[i].ln;
+                        break;
+                      }
                     }
-                  }
-                  return `${ln} (${option})`;
-                }}
-                renderInput={(params) => <TextField {...params} label="Language" variant="outlined" />}
-                // isOptionEqualToValue={(option, value) => option.lc === value}
-                onChange={(event, selected) => {
-                  setSelectedLanguages(selected);
-                  urlParams.delete('lang');
-                  if (selected.length) {
-                    selected.forEach((item) => {
-                      urlParams.append('lang', item);
-                    });
-                  } else {
-                    urlParams.append('lang', '');
-                  }
-                  window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                }}
-              />}
+                    return `${ln} (${option})`;
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Language" variant="outlined" />}
+                  // isOptionEqualToValue={(option, value) => option.lc === value}
+                  onChange={(event, selected) => {
+                    setSelectedLanguages(selected);
+                    urlParams.delete('lang');
+                    if (selected.length) {
+                      selected.forEach((item) => {
+                        urlParams.append('lang', item);
+                      });
+                    } else {
+                      urlParams.append('lang', '');
+                    }
+                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                  }}
+                />
+              }
             </Grid>
             <Grid item>
-              {!urlInfo?.owner && <Autocomplete
-                id="owner-select"
-                multiple
-                freeSolo
-                autoHighlight
-                clearOnEscape
-                sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
-                options={owners.map((o) => o.username)}
-                value={selectedOwners}
-                renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
-                onChange={(event, selected) => {
-                  setSelectedOwners(selected);
-                  urlParams.delete('owner');
-                  if (selected.length) {
-                    selected.forEach((item) => {
-                      urlParams.append('owner', item);
-                    });
-                  } else {
-                    urlParams.append('owner', '');
-                  }
-                  window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                }}
-              />}
+              {!urlInfo?.owner && (
+                <Autocomplete
+                  id="owner-select"
+                  multiple
+                  freeSolo
+                  autoHighlight
+                  clearOnEscape
+                  sx={{ width: 'auto', minWidth: '300px', display: 'inline-block' }}
+                  options={owners.map((o) => o.username)}
+                  value={selectedOwners}
+                  renderInput={(params) => <TextField {...params} label="Owner" variant="outlined" />}
+                  onChange={(event, selected) => {
+                    setSelectedOwners(selected);
+                    urlParams.delete('owner');
+                    if (selected.length) {
+                      selected.forEach((item) => {
+                        urlParams.append('owner', item);
+                      });
+                    } else {
+                      urlParams.append('owner', '');
+                    }
+                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                  }}
+                />
+              )}
             </Grid>
             <Grid item>
               <Autocomplete
@@ -435,9 +427,11 @@ export const ResourcesCardGrid = () => {
               </Tooltip>
             </Grid>
             <Grid item>
-              <IconButton onClick={handleOpenSortModal}>
-                <SortIcon />
-              </IconButton>
+              <Tooltip title="Sort Order" arrow>
+                <IconButton onClick={handleOpenSortModal}>
+                  <SortIcon sx={{ color: '#1976d2', margin: 1, fontSize: '1.5em', fontWeight: 'bold' }} />
+                </IconButton>
+              </Tooltip>
             </Grid>
             <Grid item>
               <Button
@@ -446,14 +440,26 @@ export const ResourcesCardGrid = () => {
                   setCatalogEntries([]);
                 }}
                 disabled={searchClicked}
+                sx={{
+                  backgroundColor: '#1976d2',
+                  color: '#f0f0f0',
+                  boxShadow: '0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12)',
+                  '&:hover': {
+                    backgroundColor: '#1565c0',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#1976d2',
+                    color: '#b0b0b0',
+                  },
+                }}
               >
-                <SearchIcon /> Search
+                <SearchIcon sx={{ color: '#f0f0f0' }} /> Search
               </Button>
             </Grid>
           </Grid>
         </Box>
       </AppBar>
-      <Box sx={{ flexGrow: 1, margin: "30px" }}>
+      <Box sx={{ flexGrow: 1, margin: '30px' }}>
         <Grid container spacing={2}>
           <CatalogEntriesGrid catalogEntries={catalogEntries} stage={stage} topic={topic} extraItem={extraItem} />
         </Grid>
@@ -463,64 +469,72 @@ export const ResourcesCardGrid = () => {
           {error}
         </Typography>
       )}
-                <Dialog open={openSortModal} onClose={handleCloseSortModal}>
-            <DialogTitle>Sort by</DialogTitle>
-            <DialogContent>
-              <FormControl fullWidth>
-                <Select
-                  labelId="sort-label"
-                  id="sort-select"
-                  value={sort}
-                  onChange={(event) => {
-                    setSort(event.target.value);
-                    urlParams.set('sort', event.target.value);
-                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                  }}
-                >
-                  <MenuItem value="released">Release Date</MenuItem>
-                  <MenuItem value="lang">Language</MenuItem>
-                  <MenuItem value="title">Title</MenuItem>
-                  <MenuItem value="subject">Subject</MenuItem>
-                </Select>
-                <ToggleButtonGroup
-                  value={order}
-                  exclusive
-                  onChange={(event, newOrder) => {
-                    if (!newOrder) {
-                      return;
-                    }
-                    setOrder(newOrder);
-                    urlParams.set('order', newOrder);
-                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
-                  }}
-                  aria-label="Sort Order"
-                  sx={{paddingTop: "10px", textAlign: "center", display: "block"}}
-                >
-                  <Tooltip title="Ascending" arrow>
-                    <ToggleButton value="asc" aria-label="Ascending">
-                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
-                    </ToggleButton>
-                  </Tooltip>
-                  <Tooltip title="Descending" arrow>
-                    <ToggleButton value="desc" aria-label="Descending">
-                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
-                    </ToggleButton>
-                  </Tooltip>
-                </ToggleButtonGroup>
-              </FormControl>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseSortModal}>Close</Button>
-              <Button
-                onClick={() => {
-                  // Apply filter and sort logic here
-                  handleCloseSortModal(true);
-                }}
-                >
-                Apply
-                </Button>
-                </DialogActions>
-                </Dialog>                 
+      <Dialog open={openSortModal} onClose={handleCloseSortModal}>
+        <DialogTitle>Sort by</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth>
+            <Select
+              labelId="sort-label"
+              id="sort-select"
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                urlParams.set('sort', event.target.value);
+                window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+              }}
+            >
+              <MenuItem value="released">Release Date</MenuItem>
+              <MenuItem value="lang">Language</MenuItem>
+              <MenuItem value="title">Title</MenuItem>
+              <MenuItem value="subject">Subject</MenuItem>
+            </Select>
+            <ToggleButtonGroup
+              value={order}
+              exclusive
+              onChange={(event, newOrder) => {
+                if (!newOrder) {
+                  return;
+                }
+                setOrder(newOrder);
+                urlParams.set('order', newOrder);
+                window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+              }}
+              aria-label="Sort Order"
+              sx={{ paddingTop: '10px', textAlign: 'center', display: 'block' }}
+            >
+              <Tooltip title="Ascending" arrow>
+                <ToggleButton value="asc" aria-label="Ascending">
+                  <Typography variant="caption">
+                    {sort == 'released' ? '2001' : 'A'}
+                    <ArrowUpwardIcon />
+                    {sort == 'released' ? new Date().getFullYear() : 'Z'}
+                  </Typography>
+                </ToggleButton>
+              </Tooltip>
+              <Tooltip title="Descending" arrow>
+                <ToggleButton value="desc" aria-label="Descending">
+                  <Typography variant="caption">
+                    {sort == 'released' ? new Date().getFullYear() : 'Z'}
+                    <ArrowDownwardIcon />
+                    {sort == 'released' ? '2001' : 'A'}
+                  </Typography>
+                </ToggleButton>
+              </Tooltip>
+            </ToggleButtonGroup>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSortModal}>Close</Button>
+          <Button
+            onClick={() => {
+              // Apply filter and sort logic here
+              handleCloseSortModal(true);
+            }}
+          >
+            Apply
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
