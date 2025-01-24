@@ -11,17 +11,17 @@ import {
   TextField,
   Autocomplete,
   Typography,
-  ToggleButtonGroup,
-  ToggleButton,
   Tooltip,
   FormControlLabel,
   Checkbox,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/joy/CircularProgress';
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, FormControl, Select, MenuItem } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
@@ -436,7 +436,7 @@ export const ResourcesCardGrid = () => {
             </Grid>
             <Grid item>
               <IconButton onClick={handleOpenSortModal}>
-                <FilterListIcon />
+                <SortIcon />
               </IconButton>
             </Grid>
             <Grid item>
@@ -463,6 +463,64 @@ export const ResourcesCardGrid = () => {
           {error}
         </Typography>
       )}
+                <Dialog open={openSortModal} onClose={handleCloseSortModal}>
+            <DialogTitle>Sort by</DialogTitle>
+            <DialogContent>
+              <FormControl fullWidth>
+                <Select
+                  labelId="sort-label"
+                  id="sort-select"
+                  value={sort}
+                  onChange={(event) => {
+                    setSort(event.target.value);
+                    urlParams.set('sort', event.target.value);
+                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                  }}
+                >
+                  <MenuItem value="released">Release Date</MenuItem>
+                  <MenuItem value="lang">Language</MenuItem>
+                  <MenuItem value="title">Title</MenuItem>
+                  <MenuItem value="subject">Subject</MenuItem>
+                </Select>
+                <ToggleButtonGroup
+                  value={order}
+                  exclusive
+                  onChange={(event, newOrder) => {
+                    if (!newOrder) {
+                      return;
+                    }
+                    setOrder(newOrder);
+                    urlParams.set('order', newOrder);
+                    window.history.replaceState({ id: '100' }, '', `${window.location.href.split('?')[0]}?${urlParams.toString()}`);
+                  }}
+                  aria-label="Sort Order"
+                  sx={{paddingTop: "10px", textAlign: "center", display: "block"}}
+                >
+                  <Tooltip title="Ascending" arrow>
+                    <ToggleButton value="asc" aria-label="Ascending">
+                      <Typography variant="caption">{sort == "released" ? "2001" : "A"}<ArrowUpwardIcon />{sort == "released" ? new Date().getFullYear() : "Z"}</Typography>
+                    </ToggleButton>
+                  </Tooltip>
+                  <Tooltip title="Descending" arrow>
+                    <ToggleButton value="desc" aria-label="Descending">
+                      <Typography variant="caption">{sort == "released" ? new Date().getFullYear() : "Z"}<ArrowDownwardIcon />{sort == "released" ? "2001" : "A"}</Typography>
+                    </ToggleButton>
+                  </Tooltip>
+                </ToggleButtonGroup>
+              </FormControl>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseSortModal}>Close</Button>
+              <Button
+                onClick={() => {
+                  // Apply filter and sort logic here
+                  handleCloseSortModal(true);
+                }}
+                >
+                Apply
+                </Button>
+                </DialogActions>
+                </Dialog>                 
     </>
   );
 };
