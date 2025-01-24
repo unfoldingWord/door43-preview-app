@@ -30,7 +30,7 @@ export async function ts2usfm(catalogEntry, ingredient, zipFileData) {
 \\mt ${bookTitle}
 
 `;
-    for (const chapterIdx in chapters) {
+    for (let chapterIdx = 0; chapterIdx < chapters.length; ++chapterIdx) {
       const chapter = chapterIdx + 1;
       const numVerses = chapters[chapterIdx];
       for (let verse = 1; verse <= numVerses; verse++) {

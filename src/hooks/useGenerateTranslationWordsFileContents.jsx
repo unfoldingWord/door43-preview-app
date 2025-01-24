@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import markdownit from 'markdown-it';
+import { AppContext } from '@components/App.context';
 
-export default function useGenerateTranslationWordsFileContents({ catalogEntry, zipFileData, setErrorMessage }) {
+export default function useGenerateTranslationWordsFileContents({ catalogEntry, zipFileData }) {
   const [twFileContents, setTwFileContents] = useState();
+  const {
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const getFileContents = async () => {

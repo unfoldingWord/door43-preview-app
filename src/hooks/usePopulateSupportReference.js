@@ -4,7 +4,7 @@ import useFetchZipFileData from '@hooks/useFetchZipFileData';
 export function usePopulateSupportReferences({ catalogEntry, supportReferences }) {
   const [populatedSupportReferences, setPopulatedSupportReferences] = useState({});
 
-  const zipFileData = useFetchZipFileData({ catalogEntry, authToken });
+  const zipFileData = useFetchZipFileData({ catalogEntry });
 
   useEffect(() => {
     const handlePopulatingSupportReferences = async () => {

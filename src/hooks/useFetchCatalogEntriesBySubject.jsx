@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { AppContext } from '@components/App.context';
 
-export default function useFetchCatalogEntriesBySubject({ catalogEntries, subject, bookId, firstOnly, setErrorMessage }) {
+export default function useFetchCatalogEntriesBySubject({ catalogEntries, subject, bookId, firstOnly }) {
   const [matchingCatalogEntries, setMatchingCatalogEntries] = useState([]);
+  const {
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const determineCatalogEntryBySubject = () => {

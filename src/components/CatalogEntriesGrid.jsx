@@ -76,7 +76,7 @@ const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCata
                 <a
                   key="title"
                   style={{ textDecoration: 'none', fontSize: '1.3em' }}
-                  href={`/u/${entry.full_name}/${entriesToShow[0].branch_or_tag_name}${subjectsUsingBooks.includes(entry.subject) ? `#${bookId}` : ''}`}
+                  href={`/u/${entry.full_name}/${entriesToShow[0].branch_or_tag_name}${subjectsUsingBooks.includes(entry.subject) ? (bookId ? `#${bookId}` : '') : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

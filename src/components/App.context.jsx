@@ -58,6 +58,7 @@ export function AppContextProvider({ children }) {
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
   const [fetchingCachedBook, setFetchingCachedBook] = useState(false);
   const [renderMessage, setRenderMessage] = useState(''); // Gives reason for rendering, also a flag that a new render is needed
+  const [renderNewCopy, setRenderNewCopy] = useState(false);
   const [noCache, setNoCache] = useState(false);
   const [fetchingCatalogEntry, setFetchingCatalogEntry] = useState(false);
   const [fetchingRepo, setFetchingRepo] = useState(false);
@@ -68,7 +69,8 @@ export function AppContextProvider({ children }) {
   const [view, setView] = useState('web');
   const [books, setBooks] = useState([]);
   const [expandedBooks, setExpandedBooks] = useState([]);
-  const [cachedFileID, setCachedFileID] = useState('');
+  const [cachedFileSuffix, setCachedFileSuffix] = useState('');
+  const [isDefaultBook, setIsDefaultBook] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -177,12 +179,14 @@ export function AppContextProvider({ children }) {
     }
 
     // Get Book(s) Info
-    const lastBookIdCookie = document.cookie.split('; ').find((row) => row.startsWith('lastBookId'));
     let _lastBookId = '';
-    if (lastBookIdCookie) {
-      _lastBookId = lastBookIdCookie.split('=')[1];
+    if (info.owner && info.repo) {
+      const lastBookIdCookie = document.cookie.split('; ').find((row) => row.startsWith(`${info.owner}-${info.repo}-lastBookId`));
+      console.log('lastBookIdCookie:', lastBookIdCookie);
+      if (lastBookIdCookie) {
+        _lastBookId = lastBookIdCookie.split('=')[1];
+      }
     }
-    console.log("lastBookIdCookie:", lastBookIdCookie);
 
     let _books = [];
     const _expandedBooks = [];
@@ -193,12 +197,10 @@ export function AppContextProvider({ children }) {
     if (hashBookId && hashBookId in BibleBookData && !_books.includes(hashBookId)) {
       _books.push(hashBookId);
     }
-    console.log(_lastBookId, _books);
     if (_lastBookId && !_books.length) {
-      console.log("HERE", _lastBookId)
       _books = _lastBookId.split('-');
     }
-    console.log("BOOKS AFTER LAST BOOK", _books);
+    console.log('BOOKS AFTER LAST BOOK', _books);
 
     for (let book of _books) {
       if (['nt', 'new', 'ot', 'old', 'all'].includes(book)) {
@@ -242,6 +244,7 @@ export function AppContextProvider({ children }) {
       url.searchParams.get('force-render') === 'true'
     ) {
       setRenderMessage('Rerender requested. Generating new copy, ignoring cache.');
+      setRenderNewCopy(true);
     }
     if (
       url.searchParams.get('nocache') === '1' ||
@@ -286,12 +289,12 @@ export function AppContextProvider({ children }) {
     const setLastBookIdCookie = () => {
       const expirationDate = new Date();
       expirationDate.setDate(expirationDate.getDate() + 14); // 2 weeks from now
-      document.cookie = `lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}; path=/u/${urlInfo.owner}`;
+      document.cookie = `${urlInfo.owner}-${urlInfo.repo}-lastBookId=${lastBookId}; expires=${expirationDate.toUTCString()}; path=/u/${urlInfo.owner}/${urlInfo.repo}`;
     };
-    if (lastBookId) {
+    if (urlInfo && urlInfo.owner && urlInfo.repo && lastBookId && lastBookId != 'default' && !lastBookId.includes('-')) {
       setLastBookIdCookie();
     }
-  }, [lastBookId]);
+  }, [lastBookId, urlInfo]);
 
   useEffect(() => {
     const fetchOwner = async () => {
@@ -383,7 +386,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const fetchCachedBook = async () => {
       const response = await fetch(
-        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileID}`,
+        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}`,
         {
           cache: 'default',
           headers: {
@@ -402,88 +405,93 @@ export function AppContextProvider({ children }) {
         setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
         setCachedHtmlSections(cb?.htmlSections);
       } catch (e) {
-        console.error('Invalid URL:', url);
         setCachedBook({});
       }
       setFetchingCachedBook(false);
     };
 
-    if (cachedFileID) {
-      if (renderMessage || noCache) {
+    if (cachedFileSuffix) {
+      if (renderNewCopy || noCache) {
         if (!cachedBook) {
           setCachedBook({});
+          setRenderNewCopy(true);
         }
       } else if (!fetchingCachedBook && !cachedBook) {
         setFetchingCachedBook(true);
         fetchCachedBook();
       }
     }
-  }, [urlInfo, books, cachedFileID, catalogEntry, repo?.default_branch, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, books, renderNewCopy, cachedFileSuffix, catalogEntry, repo?.default_branch, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
 
   useEffect(() => {
-    if (renderMessage || !cachedBook) {
-      return; // just waiting for cache to be checked. Will be {} (true) if checked but not there.
-    }
-    if (!Object.keys(cachedBook).length) {
-      console.log('No cached copy of this resource/book, so rendering first time.');
-      return;
-    }
-    if (!catalogEntry) {
-      return; // Just waiting for catalog entry to be fetched
-    }
-    if (cachedBook.catalogEntry.commit_sha !== catalogEntry.commit_sha) {
-      console.log(
-        `The cached copy's catalog entry's sha and the newly fetched catalog entry sha do not match! Cached: ${cachedBook.catalogEntry.commit_sha}, New: ${catalogEntry.commit_sha}. Rendering new.`
-      );
-      setRenderMessage(
-        `You are viewing a previous rendering (${
-          cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name
-            ? cachedBook.catalogEntry.branch_or_tag_name
-            : cachedBook.catalogEntry.commit_sha.substring(0, 8)
-        }). Please wait while it is updated...`
-      );
-      return;
-    }
-    if (cachedBook.preview_version !== APP_VERSION) {
-      console.log(
-        `The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`
-      );
-      setRenderMessage(
-        `You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated with v${APP_VERSION}...`
-      );
-      return;
-    }
-    if (Object.keys(cachedBook.builtWith).length !== builtWith.length) {
-      console.log(
-        `The number of resources used to build the cached copy and this one do not match: Cached: ${Object.keys(cachedBook.builtWith).length}, New: ${builtWith.length}.`
-      );
-      return;
-    }
-
-    for (let entry of builtWith || []) {
-      if (!(entry.full_name in cachedBook.builtWith) || cachedBook.builtWith[entry.full_name] !== entry.commit_sha) {
-        console.log(
-          `Commit SHA for ${entry.full_name} used to build the cached copy is not the same as the current one to be used. Cached: ${cachedBook.builtWith[entry.full_name]}, New: ${
-            entry.commit_sha
-          }. Rendering new.`
-        );
-        setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`);
+    const determineIfRenderingNewCopyNecessary = () => {
+      if (!Object.keys(cachedBook).length) {
+        console.log('No cached copy of this resource/book, so rendering first time.');
+        setRenderNewCopy(true);
         return;
       }
+      if (cachedBook.catalogEntry.commit_sha !== catalogEntry.commit_sha) {
+        console.log(
+          `The cached copy's catalog entry's sha and the newly fetched catalog entry sha do not match! Cached: ${cachedBook.catalogEntry.commit_sha}, New: ${catalogEntry.commit_sha}. Rendering new.`
+        );
+        setRenderMessage(
+          `You are viewing a previous rendering (${
+            cachedBook.catalogEntry.branch_or_tag_name != catalogEntry.branch_or_tag_name
+              ? cachedBook.catalogEntry.branch_or_tag_name
+              : cachedBook.catalogEntry.commit_sha.substring(0, 8)
+          }). Please wait while it is updated...`
+        );
+        setRenderNewCopy(true);
+        return;
+      }
+      if (cachedBook.preview_version !== APP_VERSION) {
+        console.log(
+          `The cached copy's preview app version and the current version do not match! Cached ver: ${cachedBook.preview_version}, Current ver: ${APP_VERSION}. Rendering new.`
+        );
+        setRenderMessage(
+          `You are viewing a previous rendering made with a previous version of this app (v${cachedBook.preview_version}). Please wait while it is updated with v${APP_VERSION}...`
+        );
+        setRenderNewCopy(true);
+        return;
+      }
+      if (Object.keys(cachedBook.builtWith).length !== builtWith.length) {
+        console.log(
+          `The number of resources used to build the cached copy and this one do not match: Cached: ${Object.keys(cachedBook.builtWith).length}, New: ${builtWith.length}.`
+        );
+        setRenderMessage(`The rendering process for resource has changed. Please wait while it is updated...`);
+        setRenderNewCopy(true);
+        return;
+      }
+
+      for (let entry of builtWith) {
+        if (!(entry.full_name in cachedBook.builtWith) || cachedBook.builtWith[entry.full_name] !== entry.commit_sha) {
+          console.log(
+            `Commit SHA for ${entry.full_name} used to build the cached copy is not the same as the current one to be used. Cached: ${
+              cachedBook.builtWith[entry.full_name]
+            }, New: ${entry.commit_sha}. Rendering new.`
+          );
+          setRenderMessage(`The dependency for rendering this resource, ${entry.full_name}, has been updated on DCS. Please wait while it is updated...`);
+          setRenderNewCopy(true);
+          return;
+        }
+      }
+      console.log('All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.');
+      setHtmlSections(cachedBook.htmlSections);
+    };
+
+    if (catalogEntry && cachedBook && !renderNewCopy && builtWith.length) {
+      determineIfRenderingNewCopyNecessary();
     }
-    console.log('All seems to be the same as the cached copy and what would be used to render the new copy. Using cached copy.');
-    setHtmlSections(cachedBook.htmlSections);
-  }, [cachedBook, catalogEntry, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
+  }, [cachedBook, catalogEntry, renderNewCopy, builtWith, renderMessage, setRenderMessage, setHtmlSections]);
 
   useEffect(() => {
-    if (cachedFileID && cachedFileID != "default") {
-      console.log(cachedFileID);
+    if (cachedFileSuffix && cachedFileSuffix != 'default') {
       const url = new URL(window.location);
       url.searchParams.delete('book');
-      cachedFileID.split('-').forEach(b => url.searchParams.append('book', b));
+      cachedFileSuffix.split('-').forEach((b) => url.searchParams.append('book', b));
       window.history.replaceState(null, '', url);
     }
-  }, [cachedFileID])
+  }, [cachedFileSuffix]);
 
   useEffect(() => {
     let metadataType = ''; // default
@@ -609,6 +617,7 @@ export function AppContextProvider({ children }) {
               break;
             case 'Bible':
               setResourceComponent(() => TsBible);
+              usesBooks = true;
               break;
             default:
               if (catalogEntry) {
@@ -621,6 +630,7 @@ export function AppContextProvider({ children }) {
             case 'Aligned Bible':
             case 'Bible':
               setResourceComponent(() => Bible);
+              usesBooks = true;
               break;
             default:
               if (catalogEntry) {
@@ -629,24 +639,26 @@ export function AppContextProvider({ children }) {
           }
           break;
       }
+      let _cachedFileSuffix = 'default';
       if (usesBooks) {
-        let _cachedFileID = books.join('-');
-        if (!_cachedFileID) {
-          for(const ingredient of (catalogEntry?.ingredients || [])) {
+        _cachedFileSuffix = books.join('-');
+        if (!_cachedFileSuffix) {
+          for (const ingredient of catalogEntry?.ingredients || []) {
             if (ingredient.identifier in BibleBookData) {
               setBooks([ingredient.identifier]);
               setExpandedBooks([ingredient.identifier]);
-              _cachedFileID = ingredient.identifier;
+              _cachedFileSuffix = ingredient.identifier;
               break;
             }
           }
-          if (!_cachedFileID) {
-            _cachedFileID = 'gen';
-          }
         }
-        setCachedFileID(_cachedFileID);
+        setCachedFileSuffix(_cachedFileSuffix);
+      }
+      setCachedFileSuffix(_cachedFileSuffix);
+      if (_cachedFileSuffix === 'default') {
+        setIsDefaultBook(true);
       } else {
-        setCachedFileID('default');
+        setIsDefaultBook(false);
       }
     }
   }, [urlInfo, catalogEntry, books, setErrorMessage]);
@@ -679,11 +691,14 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const sendCachedBook = async () => {
-      uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, cachedFileID, APP_VERSION, catalogEntry, builtWith, htmlSections);
+      uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, cachedFileSuffix, APP_VERSION, catalogEntry, builtWith, htmlSections);
+      if (isDefaultBook && cachedFileSuffix != 'default') {
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
+      }
     };
 
     if (
-      cachedFileID &&
+      cachedFileSuffix &&
       !noCache &&
       !Object.keys(renderOptions).length &&
       htmlSections.body != '' &&
@@ -691,7 +706,7 @@ export function AppContextProvider({ children }) {
     ) {
       sendCachedBook().catch((e) => console.log(e.message));
     }
-  }, [htmlSections, cachedFileID, catalogEntry, renderOptions, renderMessage, cachedBook, urlInfo, noCache, builtWith, supportedBooks]);
+  }, [htmlSections, cachedFileSuffix, catalogEntry, renderOptions, renderMessage, cachedBook, urlInfo, noCache, builtWith, supportedBooks, isDefaultBook]);
 
   // create the value for the context provider
   const context = {
@@ -719,6 +734,7 @@ export function AppContextProvider({ children }) {
       supportedBooks,
       builtWith,
       renderMessage,
+      renderNewCopy,
       pagedJsReadyHtml,
       renderOptions,
       lastBookId,
@@ -727,6 +743,7 @@ export function AppContextProvider({ children }) {
       view,
       books,
       expandedBooks,
+      cachedFileSuffix,
     },
     actions: {
       onPrintClick,
@@ -754,6 +771,8 @@ export function AppContextProvider({ children }) {
       setNoCache,
       setBooks,
       setExpandedBooks,
+      setCachedFileSuffix,
+      setIsDefaultBook,
     },
   };
 

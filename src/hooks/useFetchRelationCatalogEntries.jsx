@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { getRelationCatalogEntries } from '@helpers/dcsCatalog';
+import { AppContext } from '@components/App.context';
 
-export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects, setErrorMessage, authToken }) {
+export default function useFetchRelationCatalogEntries({ catalogEntry, requiredSubjects }) {
   const [relationCatalogEntries, setRelationCatalogEntries] = useState();
+  const {
+    state: { authToken },
+    actions: { setErrorMessage }
+  } = useContext(AppContext);
 
   useEffect(() => {
     const fetchRelationEntries = async () => {

@@ -177,8 +177,8 @@ const quoteTokenDelimiter = ' … ';
 
 export default function RcTranslationNotes() {
   const {
-    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions },
-    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith },
+    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, navAnchor, authToken, builtWith, renderOptions, supportedBooks, errorMessages, renderNewCopy },
+    actions: { setBookTitle, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns, setBuiltWith, setIsDefaultBook },
   } = useContext(AppContext);
 
   const [html, setHtml] = useState();
@@ -198,7 +198,7 @@ export default function RcTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (! expandedBooks.includes(b)) {
+    if (!expandedBooks.includes(b)) {
       const url = new URL(window.location);
       url.hash = '';
       url.searchParams.delete('book');
@@ -227,8 +227,6 @@ export default function RcTranslationNotes() {
   const relationCatalogEntries = useFetchRelationCatalogEntries({
     catalogEntry,
     requiredSubjects,
-    setErrorMessage,
-    authToken,
   });
 
   const sourceBibleCatalogEntries = useFetchCatalogEntriesBySubject({
@@ -236,26 +234,24 @@ export default function RcTranslationNotes() {
     subject: BibleBookData[expandedBooks[0]]?.testament == 'old' ? 'Hebrew Old Testament' : 'Greek New Testament',
     bookId: expandedBooks[0],
     firstOnly: true,
-    setErrorMessage,
   });
 
   const sourceUsfms = useFetchBookFiles({
     catalogEntries: sourceBibleCatalogEntries,
     bookId: expandedBooks[0],
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const targetBibleCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Aligned Bible',
     bookId: expandedBooks[0],
-    setErrorMessage,
   });
 
   const targetUsfms = useFetchBookFiles({
     catalogEntries: targetBibleCatalogEntries,
     bookId: expandedBooks[0],
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const catalogEntries = useMemo(() => (catalogEntry ? [catalogEntry] : []), [catalogEntry]);
@@ -263,7 +259,7 @@ export default function RcTranslationNotes() {
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
     bookId: expandedBooks[0],
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const tnTsvData = usePivotTsvFileOnReference({
@@ -281,49 +277,44 @@ export default function RcTranslationNotes() {
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Academy',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const taZipFileData = useFetchZipFileData({
-    authToken,
     catalogEntry: taCatalogEntries?.[0],
+    canFetch: renderNewCopy,
   });
 
   const taFileContents = useGenerateTranslationAcademyFileContents({
     catalogEntry: taCatalogEntries[0],
     zipFileData: taZipFileData,
-    setErrorMessage,
   });
 
   const twCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'Translation Words',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const twZipFileData = useFetchZipFileData({
-    authToken,
     catalogEntry: twCatalogEntries?.[0],
+    canFetch: renderNewCopy,
   });
 
   const twFileContents = useGenerateTranslationWordsFileContents({
     catalogEntry: twCatalogEntries?.[0],
     zipFileData: twZipFileData,
-    setErrorMessage,
   });
 
   const twlCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
     subject: 'TSV Translation Words Links',
     firstOnly: true,
-    setErrorMessage,
   });
 
   const twlTSVBookFiles = useFetchBookFiles({
     catalogEntries: twlCatalogEntries,
     bookId: expandedBooks[0],
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const twlTsvData = usePivotTsvFileOnReference({
@@ -347,7 +338,53 @@ export default function RcTranslationNotes() {
   }, [navAnchor]);
 
   useEffect(() => {
-    if (catalogEntry &&
+    const setInitialBookIdAndSupportedBooks = async () => {
+      let repoFileList = null;
+      try {
+        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
+      } catch (e) {
+        console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
+      }
+
+      let sb = getSupportedBooks(catalogEntry, repoFileList);
+      if (!sb.length) {
+        setErrorMessage('There are no books in this resource to render.');
+        return;
+      }
+      if (!sb.includes(expandedBooks[0])) {
+        setErrorMessage(`This resource does not support the rendering of the book \`${expandedBooks[0]}\`. Please choose another book to render.`);
+        sb = [expandedBooks[0], ...sb];
+      }
+      setSupportedBooks(sb);
+      if (sb[0] === expandedBooks[0]) {
+        setIsDefaultBook(true);
+      }
+      bibleReferenceActions.applyBooksFilter(sb);
+
+      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == expandedBooks[0]).map((ingredient) => ingredient.title)[0] || expandedBooks[0];
+      setBookTitle(title);
+
+      setStatusMessage(
+        <>
+          Preparing preview for {title}.
+          <br />
+          Please wait...
+        </>
+      );
+    };
+
+    if (catalogEntry && !supportedBooks.length && !errorMessages && expandedBooks.length) {
+      setHtmlSections((prevState) => {
+        return { ...prevState, css: { web: webCss, print: '' } };
+      });
+      setCanChangeColumns(false);
+      setInitialBookIdAndSupportedBooks();
+    }
+  }, [urlInfo, catalogEntry, expandedBooks, errorMessages, supportedBooks, authToken, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks, setIsDefaultBook]);
+
+  useEffect(() => {
+    if (
+      catalogEntry &&
       sourceBibleCatalogEntries?.length &&
       targetBibleCatalogEntries?.length &&
       taCatalogEntries?.length &&
@@ -364,51 +401,6 @@ export default function RcTranslationNotes() {
       ]);
     }
   }, [catalogEntry, sourceBibleCatalogEntries, targetBibleCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
-
-  useEffect(() => {
-    const setInitialBookIdAndSupportedBooks = async () => {
-      if (!catalogEntry) {
-        // setErrorMessage('No catalog entry for this resource found.');
-        return;
-      }
-
-      let repoFileList = null;
-      try {
-        repoFileList = (await getRepoGitTrees(catalogEntry.repo.url, catalogEntry.branch_or_tag_name, authToken, false)).map((tree) => tree.path);
-      } catch (e) {
-        console.log(`Error calling getRepoGitTrees(${catalogEntry.repo.url}, ${catalogEntry.branch_or_tag_name}, false): `, e);
-      }
-
-      let sb = getSupportedBooks(catalogEntry, repoFileList);
-      if (!sb.length) {
-        setErrorMessage('There are no books in this resource to render.');
-        return;
-      }
-
-      const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == expandedBooks[0]).map((ingredient) => ingredient.title)[0] || expandedBooks[0];
-      setBookTitle(title);
-
-      setStatusMessage(
-        <>
-          Preparing preview for {title}.
-          <br />
-          Please wait...
-        </>
-      );
-      if (!sb.includes(expandedBooks[0])) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${expandedBooks[0]}\`. Please choose another book to render.`);
-        sb = [expandedBooks[0], ...sb];
-      }
-      setSupportedBooks(sb);
-      bibleReferenceActions.applyBooksFilter(sb);
-    };
-
-    setHtmlSections((prevState) => {
-      return { ...prevState, css: { web: webCss, print: '' } };
-    });
-    setCanChangeColumns(false);
-    setInitialBookIdAndSupportedBooks();
-  }, [urlInfo, catalogEntry, expandedBooks, authToken, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks]);
 
   useEffect(() => {
     const searchForRcLinks = (data, article, referenceWithLink = '') => {
@@ -465,7 +457,7 @@ export default function RcTranslationNotes() {
       }
       const rcLinksData = {};
 
-      if ((! renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
+      if ((!renderOptions.chapters || renderOptions.chapters.includes('front')) && tnTsvDataWithGLQuotes?.['front']?.['intro']) {
         html += `
       <div id="nav-${expandedBooks[0]}-front-intro" class="section tn-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
@@ -802,10 +794,10 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     if (html && copyright) {

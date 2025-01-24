@@ -59,10 +59,11 @@ h1 {
 
 export default function TsBible() {
   const {
-    state: { urlInfo, catalogEntry, bookId, bookTitle, supportedBooks, navAnchor, builtWith, authToken },
-    actions: { setBookId, setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns },
+    state: { urlInfo, catalogEntry, expandedBooks, bookTitle, supportedBooks, navAnchor, builtWith, authToken, renderNewCopy },
+    actions: { setBookTitle, setBuiltWith, setSupportedBooks, setStatusMessage, setErrorMessage, setHtmlSections, setNavAnchor, setCanChangeColumns },
   } = useContext(AppContext);
 
+  const [myBookId, setMyBookId] = useState('')
   const [usfmText, setUsfmText] = useState();
   const [copyright, setCopyright] = useState('');
 
@@ -80,8 +81,12 @@ export default function TsBible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (b != (bookId || urlInfo.hashParts[0] || 'gen')) {
-      window.location.hash = b;
+    if (myBookId && b != myBookId) {
+      const url = new URL(window.location);
+      url.hash = '';
+      url.searchParams.delete('book');
+      url.searchParams.set('book', b);
+      window.history.replaceState(null, '', url);
       window.location.reload();
     } else if (setNavAnchor) {
       let anchorParts = [b];
@@ -96,25 +101,23 @@ export default function TsBible() {
   };
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
-    initialBook: bookId || urlInfo.hashParts[0] || 'gen',
+    initialBook: myBookId || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
     initialChapter: urlInfo.hashParts[1] || '1',
     initialVerse: urlInfo.hashParts[2] || '1',
     onChange: onBibleReferenceChange,
   });
 
   const zipFileData = useFetchZipFileData({
-    authToken,
     catalogEntry,
-    setErrorMessage,
+    canFetch: renderNewCopy,
   });
 
   const { renderedData, htmlReady } = useUsfmPreviewRenderer({
-    bookId,
+    bookId: myBookId,
     usfmText,
     renderFlags,
     renderStyles: catalogEntry?.language_direction === 'rtl' ? getRtlPreviewStyle() : getLtrPreviewStyle(),
     htmlRender: true,
-    setErrorMessage,
   });
 
   useEffect(() => {
@@ -134,25 +137,20 @@ export default function TsBible() {
 
   useEffect(() => {
     const setInitialBookIdAndSupportedBooks = async () => {
-      if (!catalogEntry) {
-        // setErrorMessage('No catalog entry for this resource found.');
-        return;
-      }
-
-      let sb = catalogEntry.ingredients?.map((ingredient) => ingredient.identifier) || [];
+      let sb = catalogEntry.ingredients?.filter((ingredient) => BibleBookData[ingredient.identifier]).map((ingredient) => ingredient.identifier) || [];
 
       if (!sb.length) {
         setErrorMessage('No books found for this tS project');
       }
 
-      let _bookId = urlInfo.hashParts[0] || sb[0];
-      if (!_bookId) {
-        setErrorMessage('Unable to determine a book ID to render.');
-        return;
+      let _bookId = sb[0];
+      if (expandedBooks.length && sb.includes(expandedBooks[0])) {
+        _bookId = expandedBooks[0];
       }
+
       const title = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == _bookId).map((ingredient) => ingredient.title)[0] || _bookId;
-      setBookId(_bookId);
       setBookTitle(title);
+      setMyBookId(_bookId);
       setStatusMessage(
         <>
           Preparing preview for {title}.
@@ -160,38 +158,32 @@ export default function TsBible() {
           Please wait...
         </>
       );
-      if (!sb.includes(_bookId)) {
-        setErrorMessage(`This resource does not support the rendering of the book \`${_bookId}\`. Please choose another book to render.`);
-        sb = [_bookId, ...sb];
-      }
-
       setSupportedBooks(sb);
       bibleReferenceActions.applyBooksFilter(sb);
-
       setCanChangeColumns(true);
     };
 
-    if (!bookId) {
+    if (catalogEntry) {
       setInitialBookIdAndSupportedBooks();
     }
-  }, [bookId, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setBookId, setStatusMessage, setBookTitle]);
+  }, [expandedBooks, urlInfo, catalogEntry, setCanChangeColumns, setErrorMessage, setSupportedBooks, setStatusMessage, setBookTitle]);
 
   useEffect(() => {
     const getUsfmFromZipFileData = async () => {
-      if (!(bookId in BibleBookData)) {
-        setErrorMessage(`Invalid book: ${bookId}`);
+      if (!(myBookId in BibleBookData)) {
+        setErrorMessage(`Invalid book: ${myBookId}`);
         return;
       }
 
-      const ingredient = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == bookId)?.[0];
+      const ingredient = catalogEntry.ingredients.filter((ingredient) => ingredient.identifier == myBookId)?.[0];
       const _usfmText = await ts2usfm(catalogEntry, ingredient, zipFileData);
       setUsfmText(_usfmText);
     };
 
-    if (catalogEntry && zipFileData && bookId && supportedBooks.includes(bookId)) {
+    if (catalogEntry && zipFileData && myBookId && supportedBooks.includes(myBookId)) {
       getUsfmFromZipFileData();
     }
-  }, [catalogEntry, bookId, supportedBooks, zipFileData, setErrorMessage]);
+  }, [catalogEntry, myBookId, supportedBooks, zipFileData, setErrorMessage]);
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
@@ -203,23 +195,23 @@ export default function TsBible() {
       setCopyright(copyrightAndLicense);
     };
 
-    if (catalogEntry && builtWith.length) {
+    if (catalogEntry && builtWith.length && renderNewCopy) {
       generateCopyrightPage();
     }
-  }, [catalogEntry, builtWith, authToken, setCopyright]);
+  }, [catalogEntry, builtWith, authToken, renderNewCopy, setCopyright]);
 
   useEffect(() => {
     const handleRenderedDataFromUsfmToHtmlHook = async () => {
       let _html = renderedData.replaceAll(
         /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
-        `<span id="nav-${bookId}-$1-$2"$3><a href="#nav-${bookId}-$1-$2" class="header-link">$4</a></span>`
+        `<span id="nav-${myBookId}-$1-$2"$3><a href="#nav-${myBookId}-$1-$2" class="header-link">$4</a></span>`
       );
       _html = _html.replaceAll(
         /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
-        `<span id="nav-${bookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${bookId}-$1-1" class="header-link">$3</a></span>`
+        `<span id="nav-${myBookId}-$1" data-toc-title="${bookTitle} $1"$2><a href="#nav-${myBookId}-$1-1" class="header-link">$3</a></span>`
       );
       _html = _html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
-      _html = `<div class="section bible-book" id="nav-${bookId}" data-toc-title="${bookTitle}">${_html}</div>`;
+      _html = `<div class="section bible-book" id="nav-${myBookId}" data-toc-title="${bookTitle}">${_html}</div>`;
       setHtmlSections((prevState) => {
         return {
           ...prevState,
@@ -232,10 +224,10 @@ export default function TsBible() {
       setHtmlSections((prevState) => {return {...prevState, css: {web: webCss}}});
     };
 
-    if (htmlReady && renderedData && copyright) {
+    if (htmlReady && renderedData && copyright && myBookId) {
       handleRenderedDataFromUsfmToHtmlHook();
     }
-  }, [bookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
+  }, [myBookId, htmlReady, renderedData, copyright, bookTitle, setHtmlSections, setStatusMessage, setErrorMessage]);
 
   return (
     <ThemeProvider theme={theme}>
