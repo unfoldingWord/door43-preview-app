@@ -38,7 +38,7 @@ export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   note = md.render(noteAsProperMarkdown);
   note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2-$3" target="_blank"`);
   note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2" target="_blank"`);
-  note = note.replace(/href="\/*0*([^#/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
+  note = note.replace(/href="\.*\/*0*([^#/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
   note = transformRelativeUrls(note, bookId);
   note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
   note = note.replace(/<h4>/g, '<h6>').replace(/<\/h4>/g, '</h6>');
