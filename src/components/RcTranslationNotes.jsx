@@ -85,7 +85,7 @@ a.header-link {
 }
 
 a.header-link:hover::after {
-  content: '#';
+  content: '#' attr(data-descr);
   padding-left: 5px;
   color: blue;
   display: inline-block;
@@ -213,7 +213,9 @@ export default function RcTranslationNotes() {
       if (v != '1') {
         anchorParts.push(v);
       }
-      setNavAnchor(anchorParts.join('-'));
+      if (!navAnchor.startsWith(anchorParts.join('-'))) {
+        setNavAnchor(anchorParts.join('-'));
+      }
     }
   };
 
@@ -552,7 +554,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
             html += `
           <div class="article tn-scripture-block" id="${scriptureLink}">
             <h4 class="header tn-scripture-header">
-              <a href="#${scriptureLink}" class="header-link">
+              <a href="#${scriptureLink}" class="header-link" data-descr="${targetBibleCatalogEntry.abbreviation}">
                 ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
               </a>
             </h4>
@@ -576,7 +578,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
               if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `
                 <h4 class="header tn-note-header">
-                  <a href="#nav-${noteLink}" class="header-link">
+                  <a href="#nav-${noteLink}" class="header-link" data-descr="${row.ID}">
                   Note: ${verseBridge}
                   </a>
                 </h4>
@@ -596,7 +598,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
                   }
                   article += `
                 <h4 class="header tn-note-header">
-                  <a href="#${noteLink}" class="header-link">
+                  <a href="#${noteLink}" class="header-link" data-descr="${row.ID}">
                   ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
                   </a>
                 </h4>
