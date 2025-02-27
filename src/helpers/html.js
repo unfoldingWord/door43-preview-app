@@ -15,7 +15,7 @@ function transformRelativeUrls(htmlString, bookId) {
   // 2. Excludes URLs that start with protocols (http:, https:, etc.)
   // 3. Captures the path components
   return htmlString.replace(
-    /href="(?!(?:https?:|ftp:|mailto:|tel:|file:))(?:\.\.\/|\.\/)*([^"]+)"/g,
+    /href="(?!(?:https?:|ftp:|mailto:|tel:|file:))(?:\.\.\/|\.\/)+([^"]+)"/g,
     function(match, path) {
       // Remove .md extension if present
       path = path.replace(/\.md$/, '');
