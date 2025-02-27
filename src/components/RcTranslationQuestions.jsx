@@ -175,7 +175,7 @@ export default function RcTranslationQuestions() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (! expandedBooks.includes(b)) {
+    if (b && ! expandedBooks.includes(b)) {
       const url = new URL(window.location);
       url.hash = '';
       url.searchParams.delete('book');
@@ -196,8 +196,8 @@ export default function RcTranslationQuestions() {
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: expandedBooks[0],
-    initialChapter: urlInfo.hashParts[1] || '1',
-    initialVerse: urlInfo.hashParts[2] || '1',
+    initialChapter: parseInt(urlInfo.hashParts[1]) || 1,
+    initialVerse: parseInt(urlInfo.hashParts[2]) || 1,
     onChange: onBibleReferenceChange,
   });
 

@@ -16,6 +16,7 @@ import OpenBibleStories from '@components/OpenBibleStories';
 import RcTranslationAcademy from '@components/RcTranslationAcademy';
 import RcTranslationNotes from '@components/RcTranslationNotes';
 import RcTranslationQuestions from '@components/RcTranslationQuestions';
+import RcStudyQuestions from '@components/RcStudyQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
 import RcObsStudyNotes from '@components/RcObsStudyNotes';
 import RcObsStudyQuestions from '@components/RcObsStudyQuestions';
@@ -50,6 +51,7 @@ export function AppContextProvider({ children }) {
   const [printOptions, setPrintOptions] = useState({});
   const [documentReady, setDocumentReady] = useState(false);
   const [navAnchor, setNavAnchor] = useState('');
+  const [newUrlHash, setNewUrlHash] = useState('');
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
   const [authToken, setAuthToken] = useState();
@@ -556,6 +558,10 @@ export function AppContextProvider({ children }) {
             case 'Translation Academy':
               setResourceComponent(() => RcTranslationAcademy);
               break;
+            case 'TSV Study Questions':
+              setResourceComponent(() => RcStudyQuestions);
+              usesBooks = true;
+              break;
             case 'TSV Translation Notes':
               setResourceComponent(() => RcTranslationNotes);
               usesBooks = true;
@@ -726,6 +732,7 @@ export function AppContextProvider({ children }) {
       printOptions,
       documentReady,
       navAnchor,
+      newUrlHash,
       printPreviewStatus,
       printPreviewPercentDone,
       authToken,
@@ -756,6 +763,7 @@ export function AppContextProvider({ children }) {
       setPrintOptions,
       setDocumentReady,
       setNavAnchor,
+      setNewUrlHash,
       setPrintPreviewStatus,
       setPrintPreviewPercentDone,
       setBookTitle,

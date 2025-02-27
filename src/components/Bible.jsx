@@ -196,8 +196,8 @@ export default function Bible() {
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: expandedBooks?.[0] || books[0] || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
-    initialChapter: urlInfo.hashParts[1] || '1',
-    initialVerse: urlInfo.hashParts[2] || '1',
+    initialChapter: parseInt(urlInfo.hashParts[1]) || 1,
+    initialVerse: parseInt(urlInfo.hashParts[2]) || 1,
     onChange: onBibleReferenceChange,
   });
 

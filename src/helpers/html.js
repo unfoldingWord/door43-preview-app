@@ -9,16 +9,37 @@ export function encodeHTML(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 }
 
+function transformRelativeUrls(htmlString, bookId) {
+  // This regex:
+  // 1. Matches href=" followed by optional ../ or ./ prefixes
+  // 2. Excludes URLs that start with protocols (http:, https:, etc.)
+  // 3. Captures the path components
+  return htmlString.replace(
+    /href="(?!(?:https?:|ftp:|mailto:|tel:|file:))(?:\.\.\/|\.\/)*([^"]+)"/g,
+    function(match, path) {
+      // Remove .md extension if present
+      path = path.replace(/\.md$/, '');
+      // Convert slashes to dashes
+      path = path.replace(/\//g, '-');
+      // Strip leading zeros
+      path = path.replace(/(^|-)0+/g, '$1');
+      // If first character after stripping zeros is a number (1-9), add bookId- prefix
+      if (/^([1-9]+|front)/.test(path)) {
+        return `href="#nav-${bookId}-${path}"`;
+      }
+      return `href="#nav-${path}"`;
+    }
+  );
+}
+
 export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   const md = new MarkdownIt();
   const noteAsProperMarkdown = note?.replaceAll('\\n', '\n').replaceAll('<br>', '\n').replaceAll('rc://*/', 'rc://en/') || ''; // change * to en do avoid becoming italic in Markdown
   note = md.render(noteAsProperMarkdown);
-  note = note.replace(/href="\.\/0*([^/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
-  note = note.replace(/href="\.\.\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-$1-$2"`);
-  note = note.replace(/href="\.\.\/\.\.\/([a-z][^/".]+)\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0]}#$1-$2-$3" target="_blank"`);
-  note = note.replace(/href="0*([^#/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
-  note = note.replace(/href="\/*0*([^#/".]+)\/0*([^/".]+)\.md"/g, `href="#nav-${bookId}-$1-$2"`);
-  note = note.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/g, '<a href="$1">$1</a>');
+  note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2-$3" target="_blank"`);
+  note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2" target="_blank"`);
+  note = note.replace(/href="\/*0*([^#/".]+)(\.md){0,1}"/g, `href="#nav-${bookId}-${chapterStr}-$1"`);
+  note = transformRelativeUrls(note, bookId);
   note = note.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
   note = note.replace(/<h4>/g, '<h6>').replace(/<\/h4>/g, '</h6>');
   note = note.replace(/<h3>/g, '<h5>').replace(/<\/h3>/g, '</h5>');

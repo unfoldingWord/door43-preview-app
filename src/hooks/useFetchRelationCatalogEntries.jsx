@@ -43,6 +43,14 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
             setErrorMessage('There is no dublin_core.relation property in the manifest.yaml file.');
             return;
           }
+          console.log(requiredSubjects);
+          if (requiredSubjects.includes('Greek New Testament')) {
+            metadata.dublin_core.relation.push('el-x-koine/ugnt');
+          }
+          if (requiredSubjects.includes('Hebrew Old Testament')) {
+            metadata.dublin_core.relation.push('hbo/uhb');
+          }
+          console.log(metadata.dublin_core.relation);
           return getRelationCatalogEntries(catalogEntry, metadata.dublin_core.relation, requiredSubjects, authToken);
         })
         .then((entries) => {

@@ -198,7 +198,7 @@ export default function RcTranslationNotes() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (!expandedBooks.includes(b)) {
+    if (b && !expandedBooks.includes(b)) {
       const url = new URL(window.location);
       url.hash = '';
       url.searchParams.delete('book');
@@ -219,8 +219,8 @@ export default function RcTranslationNotes() {
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: expandedBooks[0] || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
-    initialChapter: urlInfo.hashParts[1] || '1',
-    initialVerse: urlInfo.hashParts[2] || '1',
+    initialChapter: parseInt(urlInfo.hashParts[1]) || 1,
+    initialVerse: parseInt(urlInfo.hashParts[2]) || 1,
     onChange: onBibleReferenceChange,
   });
 
@@ -464,7 +464,7 @@ export default function RcTranslationNotes() {
         for (let row of tnTsvDataWithGLQuotes['front']['intro']) {
           const link = `nav-${expandedBooks[0]}-front-intro-${row.ID}`;
           const article = `
-        <div class="article tn-front-intro-note">
+        <div class="article tn-front-intro-note" id="${link}">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
           <div class="tn-note-body">
 ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
@@ -491,7 +491,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 `;
         if (tnTsvDataWithGLQuotes?.[chapterStr]?.['intro']) {
           html += `
-        <div class="section tn-chapter-intro-section">
+        <div class="section tn-chapter-intro-section" id="nav-${expandedBooks[0]}-${chapterStr}-intro">
 `;
           for (let row of tnTsvDataWithGLQuotes[chapterStr]['intro']) {
             const link = `nav-${expandedBooks[0]}-${chapterStr}-intro-${row.ID}`;
@@ -571,7 +571,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
                 verseBridge += `(${row.Reference})`;
               }
               let article = `
-              <div class="article tn-note-article" id="nav-${noteLink}">
+              <div class="article tn-note-article" id="${noteLink}">
 `;
               if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `

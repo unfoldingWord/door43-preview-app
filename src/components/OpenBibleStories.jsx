@@ -90,8 +90,8 @@ export default function OpenBibleStories() {
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: 'obs',
-    initialChapter: urlInfo.hashParts[1] || '1',
-    initialVerse: urlInfo.hashParts[2] || '1',
+    initialChapter: parseInt(urlInfo.hashParts[1]) || 1,
+    initialVerse: parseInt(urlInfo.hashParts[2]) || 1,
     onChange: onBibleReferenceChange,
     addOBS: true,
   });

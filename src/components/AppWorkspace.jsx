@@ -173,7 +173,9 @@ export default function AppWorkspace() {
         let anchor = href.replace('#', '');
         if (anchor.startsWith('nav-')) {
           console.log("SET NAV ANCHOR", anchor);
-          setNavAnchor(anchor.replace(/^nav-/, ''));
+          const na = anchor.replace(/^nav-/, '');
+          setNavAnchor(na);
+          updateUrlHashInAddressBar(na);
         } else if (anchor) {
           if (anchor.split('-')[0] in BibleBookData && !(expandedBooks.includes(anchor.split('-')[0]))) {
             window.open(`#${anchor}`, '_blank');
@@ -192,12 +194,6 @@ export default function AppWorkspace() {
       document.querySelector('#root').removeEventListener('click', handleClick);
     };
   }, [view, expandedBooks, setNavAnchor]);
-
-  useEffect(() => {
-    if (navAnchor) {
-      updateUrlHashInAddressBar(navAnchor);
-    }
-  }, [navAnchor]);
 
   useEffect(() => {
     const determineIfImagesLoaded = async () => {
@@ -259,13 +255,8 @@ export default function AppWorkspace() {
     </Helmet>
     <Sheet>
       {!fullScreen &&
-        (window.location.hostname == 'preview.door43.org' ||
-          window.location.hostname.includes('netlify') ||
-          window.location.host == 'localhost:8888' ||
-          window.location.host == 'localhost:5173' ||
-          window.location.host == 'localhost:4173') && (
-          <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={bookId} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
-        )}
+        <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={bookId} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
+      }
       <Card sx={{backgroundColor: (urlInfo?.repo ? 'white' : 'lightgrey'), border: 'none', borderRadius: 'none'}}>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
         {fullScreen && (

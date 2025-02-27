@@ -81,7 +81,7 @@ export default function TsBible() {
   };
 
   const onBibleReferenceChange = (b, c, v) => {
-    if (myBookId && b != myBookId) {
+    if (b && ! expandedBooks.includes(b)) {
       const url = new URL(window.location);
       url.hash = '';
       url.searchParams.delete('book');
@@ -102,8 +102,8 @@ export default function TsBible() {
 
   const { state: bibleReferenceState, actions: bibleReferenceActions } = useBibleReference({
     initialBook: myBookId || catalogEntry?.ingredients?.[0]?.identifier || 'gen',
-    initialChapter: urlInfo.hashParts[1] || '1',
-    initialVerse: urlInfo.hashParts[2] || '1',
+    initialChapter: parseInt(urlInfo.hashParts[1]) || 1,
+    initialVerse: parseInt(urlInfo.hashParts[2]) || 1,
     onChange: onBibleReferenceChange,
   });
 
