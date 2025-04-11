@@ -343,6 +343,7 @@ export default function Bible() {
           continue;
         }
         usfm = removeAlignments(usfm);
+        usfm = usfm.replace(/\\s5 *\n/g, '');
         usfms.set(ingredient.identifier, usfm);
         let res;
         try {
