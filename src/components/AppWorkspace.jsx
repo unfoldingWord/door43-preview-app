@@ -255,7 +255,7 @@ export default function AppWorkspace() {
     </Helmet>
     <Sheet>
       {!fullScreen &&
-        <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={bookId} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
+        <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={expandedBooks?.[0]} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
       }
       <Card sx={{backgroundColor: (urlInfo?.repo ? 'white' : 'lightgrey'), border: 'none', borderRadius: 'none'}}>
         {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
