@@ -140,3 +140,14 @@ header {
   max-width: 80%;
   margin: 0 auto;
 }
+
+ol ol, ul ol {
+  list-style-type: upper-alpha
+}
+
+ol ol ol, 
+ul ol ol,
+ul ul ol,
+ol ul ol {
+  list-style-type: lower-roman
+}
