@@ -345,35 +345,39 @@ export default function Bible() {
         usfm = removeAlignments(usfm);
         usfm = usfm.replace(/\\s5 *\n/g, '');
         usfms.set(ingredient.identifier, usfm);
-        let res;
-        try {
-          res = pk.importDocument(
-            { lang: 'xxx', abbr: 'XXX' }, // doesn't matter...
-            'usfm',
-            usfm
-          );
-          if (!res.id) {
-            console.log(`Failed to import book for rendering.`);
-            continue;
-          } else {
-            docIds.push(res.id);
+        if (!html && renderNewCopy) {
+          let res;
+          try {
+            res = pk.importDocument(
+              { lang: 'xxx', abbr: 'XXX' }, // doesn't matter...
+              'usfm',
+              usfm
+            );
+            if (!res.id) {
+              console.log(`Failed to import book for rendering.`);
+              continue;
+            } else {
+              docIds.push(res.id);
+            }
+          } catch (e) {
+            console.log(`Error calling pk.importDocument(): `, e);
           }
-        } catch (e) {
-          console.log(`Error calling pk.importDocument(): `, e);
+          const output = {};
+          renderer.renderDocument({
+            config,
+            docId: res.id,
+            output,
+          });
+          htmls.push(parseHtml(output.paras, ingredient.identifier, books.length < 3));
         }
-        const output = {};
-        renderer.renderDocument({
-          config,
-          docId: res.id,
-          output,
-        });
-        htmls.push(parseHtml(output.paras, ingredient.identifier, books.length < 3));
       }
       setUsfmMap(usfms);
-      setHtml(htmls.join('\n'));
+      if(htmls.length) {
+        setHtml(htmls.join('\n'));
+      }
     };
 
-    if (!html && catalogEntry && renderNewCopy && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
+    if (catalogEntry && supportedBooks && expandedBooks && supportedBooks.includes(expandedBooks[0]) && !errorMessages) {
       fetchUsfmFileFromDCS();
     }
   }, [html, books, renderNewCopy, supportedBooks, catalogEntry, expandedBooks, authToken, errorMessages, setBookTitle, setErrorMessage]);
