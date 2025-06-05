@@ -257,6 +257,12 @@ export function AppContextProvider({ children }) {
       setNoCache(true);
     }
 
+    // Check if editor mode
+    if (url.searchParams.get('editor') === '1' || url.searchParams.get('edit') === 'true') {
+      setRenderOptions((prevState) => ({ ...prevState, editorMode: true }));
+      setNoCache(true);
+    }
+
     // Get chapters to render
     if (url.searchParams.get('chapters')) {
       const chaptersOrigStr = url.searchParams.get('chapters');

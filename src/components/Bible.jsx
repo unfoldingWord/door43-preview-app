@@ -72,6 +72,12 @@ h1 {
 .paras_usfm_fq, .paras_usfm_fqa {
   font-style: italic;
 }
+
+.implied-word-text {
+  color: #999;
+  font-weight: bold;
+  font-size: 0.9em;
+}
 `;
 
 const defaultFlags = {
@@ -150,6 +156,7 @@ export default function Bible() {
       errorMessages,
       cachedHtmlSections,
       renderNewCopy,
+      renderOptions,
       view,
     },
     actions: {
@@ -372,7 +379,7 @@ export default function Bible() {
         }
       }
       setUsfmMap(usfms);
-      if(htmls.length) {
+      if (htmls.length) {
         setHtml(htmls.join('\n'));
       }
     };
@@ -452,9 +459,10 @@ export default function Bible() {
           cover: `<h3 class="cover-book-title">${bookTitle}</h3>`,
           copyright,
           body: html,
-          css: { web: webCss },
+          css: { web: webCss + (!renderOptions.editorMode ? '.implied-word-start, .implied-word-end { display: none }' : '') },
         };
       });
+      console.log(webCss + (!renderOptions.editorMode ? '.implied-word-start, .implied-word-end { display: none }' : ''));
       setStatusMessage('');
     };
 
