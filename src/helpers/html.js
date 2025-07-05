@@ -3,7 +3,7 @@ import { getRepoContentsContent } from '@helpers/dcsApi';
 import { APP_VERSION } from '@common/constants';
 
 export function encodeHTML(s) {
-  if( ! s) {
+  if (!s) {
     return '';
   }
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -16,7 +16,7 @@ function transformRelativeUrls(htmlString, bookId) {
   // 3. Captures the path components
   return htmlString.replace(
     /href="(?!(?:https?:|ftp:|mailto:|tel:|file:))(?:\.\.\/|\.\/)+([^"]+)"/g,
-    function(match, path) {
+    function (match, path) {
       // Remove .md extension if present
       path = path.replace(/\.md$/, '');
       // Convert slashes to dashes
@@ -46,7 +46,7 @@ export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   note = note.replace(/<h3>/g, '<h5>').replace(/<\/h3>/g, '</h5>');
   note = note.replace(/<h2>/g, '<h4>').replace(/<\/h2>/g, '</h4>');
   note = note.replace(/<h1>/g, '<h3>').replace(/<\/h1>/g, '</h3>');
-  note = note.replace(/\s*\(See: \[\[[^\]]+\]\]\)/, '');
+  // note = note.replace(/\s*\(See: \[\[[^\]]+\]\]\)/, '');
 
   return note;
 }
