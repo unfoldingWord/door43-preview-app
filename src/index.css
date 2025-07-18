@@ -151,3 +151,37 @@ ul ul ol,
 ol ul ol {
   list-style-type: lower-roman
 }
+
+blockquote {
+  /* Indentation */
+  margin-left: 40px; /* Default browser indentation */
+  margin-right: 40px;
+  /* You can adjust these values, or set them to 0 if you prefer to control indentation with padding. */
+
+  /* Text styling */
+  font-family: Georgia, serif; /* A classic, readable serif font for quotes */
+  font-size: 1.2em; /* Increase font size slightly to make it stand out */
+  font-style: italic; /* Commonly used for blockquotes */
+  color: #333; /* Dark grey for readability against most backgrounds */
+
+  /* Spacing */
+  padding: 1.5em; /*  Creates space between the text and the border */
+  line-height: 1.6; /* Improves readability by increasing space between lines */
+
+  /* Visual differentiation */
+  border-left: 4px solid #ccc; /*  A subtle border to highlight the quote */
+  background-color: #f9f9f9; /*  A light background color for a subtle distinction */
+
+  /* Responsive design */
+  max-width: 800px; /* Limits the width of the blockquote for better readability on large screens */
+  /* You might also consider using media queries to adjust styling for different screen sizes. */
+}
+
+/* Styling for a citation within the blockquote, if you include one */
+blockquote cite {
+  display: block; /* Makes the citation appear on its own line */
+  text-align: right; /* Aligns the citation to the right */
+  font-size: 0.9em; /* Smaller font size for the citation */
+  color: #666; /*  A slightly lighter color for the citation */
+  margin-top: 1em; /* Adds some space between the quote and the citation */
+}
