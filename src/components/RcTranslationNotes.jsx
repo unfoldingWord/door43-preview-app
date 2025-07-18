@@ -170,6 +170,31 @@ a.header-link:hover::after {
   margin-left: 50px !important;
   font-size: 1em !important;
 }
+
+h4 + h4 {
+    margin-top: -0.5em; /* Bring the second h4 closer to the first */
+}
+
+h4:has(+ h4),
+h4 + h4 {
+    border: 1px solid #dee2e6;
+    padding: 0.75em 1em;
+    margin-top: 0;
+    margin-bottom: 0;
+    background-color: #f8f9fa;
+}
+
+h4:has(+ h4) {
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+}
+
+h4 + h4 {
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    margin-bottom: 1.5em;
+}
+
 `;
 
 const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
@@ -382,7 +407,21 @@ export default function RcTranslationNotes() {
       setCanChangeColumns(false);
       setInitialBookIdAndSupportedBooks();
     }
-  }, [urlInfo, catalogEntry, expandedBooks, errorMessages, supportedBooks, authToken, setCanChangeColumns, setErrorMessage, setHtmlSections, setStatusMessage, setBookTitle, setSupportedBooks, setIsDefaultBook]);
+  }, [
+    urlInfo,
+    catalogEntry,
+    expandedBooks,
+    errorMessages,
+    supportedBooks,
+    authToken,
+    setCanChangeColumns,
+    setErrorMessage,
+    setHtmlSections,
+    setStatusMessage,
+    setBookTitle,
+    setSupportedBooks,
+    setIsDefaultBook,
+  ]);
 
   useEffect(() => {
     if (

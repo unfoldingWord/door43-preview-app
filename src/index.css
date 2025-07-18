@@ -1,187 +1,487 @@
-html,
-body {
-  padding: 0;
-  margin: 0;
-  background-color: lightgrey;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell,
-    Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+/* Base styles and reset */
+html, body {
+    padding: 0;
+    margin: 0;
+    background-color: #d3d3d3;
+    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
+/* Main layout */
 main {
-  padding: 5rem 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-pre {
- font-family: inherit;
- font-size: inherit;
- padding-left: 2rem;
-}
-
-pre code {
-  border-radius: unset;
-  background: inherit;
-  padding: 0;
-  margin: 0;
-  font-family: inherit;
-  font-size: inherit;
+    padding: 5rem 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Font faces */
+@font-face {
+    font-family: Noto Sans;
+    src: url(/assets/fonts/NotoSans-Regular.ttf);
+    font-weight: 400;
 }
 
 @font-face {
-  font-family: Noto Sans;
-  src: url("/assets/fonts/NotoSans-Regular.ttf");
-  font-weight: normal;
-}
-@font-face {
-  font-family: Noto Sans;
-  font-style: italic;
-  src: url("/assets/fonts/NotoSans-Italic.ttf");
-}
-@font-face {
-  font-family: Noto Sans;
-  font-weight: bold;
-  src: url("/assets/fonts/NotoSans-Bold.ttf");
+    font-family: Noto Sans;
+    font-style: italic;
+    src: url(/assets/fonts/NotoSans-Italic.ttf);
 }
 
 @font-face {
-  font-family: Noto Sans;
-  font-style: italic;
-  font-weight: bold;
-  src: url("/assets/fonts/NotoSans-BoldItalic.ttf");
-}
-
-/*
-  special font for Hebrew
-*/
-@font-face {
-  font-family: Ezra;
-  src: url("/assets/fonts/SILEOTSR.ttf");
-  font-weight: normal;
-  unicode-range: U+0590-05FF;
-  font-display: swap;
-}
-
-
-/* set up Charis SIL font */
-@font-face {
-  font-family: CharisSIL;
-  src: url(/assets/fonts/CharisSIL-Regular.ttf);
-  font-weight: normal;
-}
-@font-face {
-  font-family: CharisSIL;
-  font-style: italic;
-  src: url(/assets/fonts/CharisSIL-Italic.ttf);
-}
-@font-face {
-  font-family: CharisSIL;
-  font-weight: bold;
-  src: url(/assets/fonts/CharisSIL-Bold.ttf);
+    font-family: Noto Sans;
+    font-weight: 700;
+    src: url(/assets/fonts/NotoSans-Bold.ttf);
 }
 
 @font-face {
-  font-family: CharisSIL;
-  font-style: italic;
-  font-weight: bold;
-  src: url(/assets/fonts/CharisSIL-BoldItalic.ttf);
+    font-family: Noto Sans;
+    font-style: italic;
+    font-weight: 700;
+    src: url(/assets/fonts/NotoSans-BoldItalic.ttf);
+}
+
+@font-face {
+    font-family: Ezra;
+    src: url(/assets/fonts/SILEOTSR.ttf);
+    font-weight: 400;
+    unicode-range: U+0590-05FF;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: CharisSIL;
+    src: url(/assets/fonts/CharisSIL-Regular.ttf);
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: CharisSIL;
+    font-style: italic;
+    src: url(/assets/fonts/CharisSIL-Italic.ttf);
+}
+
+@font-face {
+    font-family: CharisSIL;
+    font-weight: 700;
+    src: url(/assets/fonts/CharisSIL-Bold.ttf);
+}
+
+@font-face {
+    font-family: CharisSIL;
+    font-style: italic;
+    font-weight: 700;
+    src: url(/assets/fonts/CharisSIL-BoldItalic.ttf);
 }
 
 .CharisSIL-text {
-  font-family: CharisSIL, Noto Sans;
-  font-size: 100%;
+    font-family: CharisSIL, Noto Sans;
+    font-size: 100%;
 }
 
+/* Header and layout */
 header {
-  z-index: 1;
-}
-
-#print-preview, #print-preview-inner {
-  background-color: grey;
-  width: 100%;
-}
-
-#print-preview-inner > * {
-  background-color: white;
-}
-
-.pagedjs_pages {
-  background-color: transparent !important;
-}
-
-.pagedjs_page {
-  margin: 10px auto;
-  background-color: white;
+    z-index: 1;
 }
 
 .header-title {
-  display: none;
+    display: none;
 }
 
 .cover-page {
-  text-align: center;
+    text-align: center;
 }
 
 #web-preview {
-  max-width: 80%;
-  margin: 0 auto;
+    max-width: 80%;
+    margin: 0 auto;
 }
 
-ol ol, ul ol {
-  list-style-type: upper-alpha
+/* Print styles */
+#print-preview,
+#print-preview-inner {
+    background-color: gray;
+    width: 100%;
 }
 
-ol ol ol, 
+#print-preview-inner > * {
+    background-color: #fff;
+}
+
+.pagedjs_pages {
+    background-color: transparent !important;
+}
+
+.pagedjs_page {
+    margin: 10px auto;
+    background-color: #fff;
+}
+
+/* Pre and code styling (existing + enhanced) */
+pre {
+    font-family: inherit;
+    font-size: inherit;
+    padding-left: 2rem;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    overflow-x: auto;
+    border: 1px solid #e9ecef;
+    margin: 1em 0;
+}
+
+pre code {
+    border-radius: unset;
+    background: inherit;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+/* Inline code styling */
+code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #d63384;
+}
+
+/* Lists (existing + enhanced) */
+ol ol,
+ul ol {
+    list-style-type: upper-alpha;
+}
+
+ol ol ol,
 ul ol ol,
 ul ul ol,
 ol ul ol {
-  list-style-type: lower-roman
+    list-style-type: lower-roman;
 }
 
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+li {
+    margin: 0.5em 0;
+}
+
+/* Blockquote (existing style kept) */
 blockquote {
-  /* Indentation */
-  margin-left: 40px; /* Default browser indentation */
-  margin-right: 40px;
-  /* You can adjust these values, or set them to 0 if you prefer to control indentation with padding. */
-
-  /* Text styling */
-  font-family: Georgia, serif; /* A classic, readable serif font for quotes */
-  font-size: 1.2em; /* Increase font size slightly to make it stand out */
-  font-style: italic; /* Commonly used for blockquotes */
-  color: #333; /* Dark grey for readability against most backgrounds */
-
-  /* Spacing */
-  padding: 1.5em; /*  Creates space between the text and the border */
-  line-height: 1.6; /* Improves readability by increasing space between lines */
-
-  /* Visual differentiation */
-  border-left: 4px solid #ccc; /*  A subtle border to highlight the quote */
-  background-color: #f9f9f9; /*  A light background color for a subtle distinction */
-
-  /* Responsive design */
-  max-width: 800px; /* Limits the width of the blockquote for better readability on large screens */
-  /* You might also consider using media queries to adjust styling for different screen sizes. */
+    margin-left: 40px;
+    margin-right: 40px;
+    font-family: Georgia, serif;
+    font-size: 1.2em;
+    font-style: italic;
+    color: #333;
+    padding: 1.5em;
+    line-height: 1.6;
+    border-left: 4px solid #ccc;
+    background-color: #f9f9f9;
+    max-width: 800px;
 }
 
-/* Styling for a citation within the blockquote, if you include one */
 blockquote cite {
-  display: block; /* Makes the citation appear on its own line */
-  text-align: right; /* Aligns the citation to the right */
-  font-size: 0.9em; /* Smaller font size for the citation */
-  color: #666; /*  A slightly lighter color for the citation */
-  margin-top: 1em; /* Adds some space between the quote and the citation */
+    display: block;
+    text-align: right;
+    font-size: .9em;
+    color: #666;
+    margin-top: 1em;
+}
+
+blockquote p {
+    margin: 0.5em 0;
+}
+
+blockquote p:first-child {
+    margin-top: 0;
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    border: 1px solid #dee2e6;
+}
+
+th, td {
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 2em;
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    font-size: 1.5em;
+    color: #007acc;
+}
+
+h3 {
+    font-size: 1.25em;
+    color: #495057;
+}
+
+/* Paragraphs */
+p {
+    margin: 1em 0;
+    line-height: 1.6;
+}
+
+/* Links */
+a {
+    color: #007acc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Verse references and biblical text */
+.verse-ref {
+    font-weight: bold;
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.verse-ref:hover {
+    text-decoration: underline;
+}
+
+/* Translation notes specific styling */
+.translation-note {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+    border-left: 4px solid #ffc107;
+}
+
+.note-header {
+    font-weight: bold;
+    color: #856404;
+    margin-bottom: 0.5em;
+}
+
+/* Cross-references */
+.cross-ref {
+    font-size: 0.9em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Hebrew/Greek original text */
+.original-text,
+.hebrew-text {
+    font-family: "Ezra", "SBL Hebrew", "Times New Roman", serif;
+    font-size: 1.1em;
+    font-weight: normal;
+    direction: rtl;
+}
+
+.greek-text {
+    font-family: "CharisSIL", "SBL Greek", "Gentium Plus", "Times New Roman", serif;
+    font-size: 1.1em;
+    direction: ltr;
+}
+
+/* Strong's numbers */
+.strongs {
+    font-size: 0.8em;
+    color: #6c757d;
+    font-weight: normal;
+}
+
+/* Emphasis and formatting */
+strong, b {
+    font-weight: bold;
+}
+
+em, i {
+    font-style: italic;
+}
+
+/* Horizontal rules */
+hr {
+    border: none;
+    height: 1px;
+    background-color: #dee2e6;
+    margin: 2em 0;
+}
+
+/* Highlighting for search results or important text */
+mark, .highlight {
+    background-color: #fff3cd;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Responsive images */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+}
+
+/* Definition lists for glossary terms */
+dl {
+    margin: 1em 0;
+}
+
+dt {
+    font-weight: bold;
+    margin-top: 1em;
+    color: #495057;
+}
+
+dd {
+    margin-left: 2em;
+    margin-bottom: 0.5em;
+}
+
+/* Footnotes */
+.footnote {
+    font-size: 0.9em;
+    color: #6c757d;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5em;
+    margin-top: 2em;
+}
+
+/* Error or warning messages */
+.warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 0.75em;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 0.75em;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+/* Loading states */
+.loading {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #web-preview {
+        max-width: 95%;
+    }
+
+    main {
+        padding: 2rem 0;
+    }
+
+    blockquote {
+        margin-left: 20px;
+        margin-right: 20px;
+        font-size: 1.1em;
+        padding: 1em;
+    }
+
+    pre {
+        padding-left: 1rem;
+    }
+
+    table {
+        font-size: 0.9em;
+    }
+
+    th, td {
+        padding: 6px 8px;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background-color: white;
+    }
+
+    blockquote {
+        border-left: 4px solid #000;
+        background-color: transparent;
+        break-inside: avoid;
+    }
+
+    .translation-note {
+        border: 1px solid #000;
+        background-color: transparent;
+        break-inside: avoid;
+    }
+
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    pre {
+        border: 1px solid #000;
+        background-color: transparent;
+    }
+
+    table {
+        break-inside: avoid;
+    }
+
+    .pagedjs_page {
+        box-shadow: none;
+    }
 }
