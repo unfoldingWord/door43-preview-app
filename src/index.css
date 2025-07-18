@@ -187,15 +187,12 @@ li {
 blockquote {
     margin-left: 40px;
     margin-right: 40px;
-    font-family: Georgia, serif;
     font-size: 1.2em;
-    font-style: italic;
     color: #333;
     padding: 1.5em;
     line-height: 1.6;
     border-left: 4px solid #ccc;
     background-color: #f9f9f9;
-    max-width: 800px;
 }
 
 blockquote cite {
