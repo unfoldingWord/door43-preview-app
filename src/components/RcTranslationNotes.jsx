@@ -195,6 +195,9 @@ h4 + h4 {
     margin-bottom: 1.5em;
 }
 
+ul.tn-verse-twl-list li.tn-verse-twl-list-item {
+  margin: 0;
+}
 `;
 
 const requiredSubjects = ['Aligned Bible', 'Translation Academy', 'Translation Words', 'TSV Translation Words Links', 'Hebrew Old Testament', 'Greek New Testament'];
