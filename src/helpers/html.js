@@ -34,7 +34,7 @@ function transformRelativeUrls(htmlString, bookId) {
 
 export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   const md = new MarkdownIt();
-  const noteAsProperMarkdown = note?.replaceAll('\\n', '\n').replaceAll('<br>', '\n').replaceAll('rc://*/', 'rc://en/') || ''; // change * to en do avoid becoming italic in Markdown
+  const noteAsProperMarkdown = note?.replace(/(\\n)+/g, '\n\n').replace(/(<br>)+/g, '\n\n').replaceAll('rc://*/', 'rc://en/') || ''; // change * to en do avoid becoming italic in Markdown
   note = md.render(noteAsProperMarkdown);
   note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2-$3" target="_blank"`);
   note = note.replace(/href="\.\.\/\.\.\/([1-3]*[a-z]+)\/0*([^/".]+)(\.md){0,1}"/g, `href="${window.location.href.split('#')[0].split('?')[0]}?book=$1#$1-$2" target="_blank"`);

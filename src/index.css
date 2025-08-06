@@ -162,16 +162,24 @@ code {
 }
 
 /* Lists (existing + enhanced) */
-ol ol,
-ul ol {
-    list-style-type: upper-alpha;
+ol {
+    list-style: decimal;
 }
 
-ol ol ol,
-ul ol ol,
-ul ul ol,
-ol ul ol {
-    list-style-type: lower-roman;
+ol ol {
+    list-style: upper-alpha;
+}
+
+ol ol ol {
+    list-style: upper-roman;
+}
+
+ol ol ol ol {
+    list-style: lower-roman;
+}
+
+ol ol ol ol ol {
+    list-style: lower-alpha;
 }
 
 ul, ol {

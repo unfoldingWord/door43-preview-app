@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { parseTsvText } from '@helpers/tsv';
 
-export default function useTsvDataStandardizer({ tsvBookFile }) {
+export default function usePivotTsvFileOnReference({ tsvBookFile }) {
   const [tsvData, setTsvData] = useState();
 
   useEffect(() => {

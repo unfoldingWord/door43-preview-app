@@ -184,7 +184,7 @@ export default function RcObsTranslationNotes() {
     requiredSubjects,
   });
 
-  const catalogEntries = useMemo(() => catalogEntry ? [catalogEntry] : [], [catalogEntry]);
+  const catalogEntries = useMemo(() => (catalogEntry ? [catalogEntry] : []), [catalogEntry]);
 
   const tnTsvBookFiles = useFetchBookFiles({
     catalogEntries,
@@ -256,7 +256,7 @@ export default function RcObsTranslationNotes() {
   });
 
   useEffect(() => {
-    if (navAnchor && ! navAnchor.includes('--')) {
+    if (navAnchor && !navAnchor.includes('--')) {
       const parts = navAnchor.split('-');
       if (bibleReferenceState.bookId == parts[0] && (bibleReferenceState.chapter != (parts[1] || '1') || bibleReferenceState.verse != (parts[2] || '1'))) {
         bibleReferenceActions.goToBookChapterVerse(parts[0], parts[1] || '1', parts[2] || '1');
@@ -267,11 +267,11 @@ export default function RcObsTranslationNotes() {
   useEffect(() => {
     if (catalogEntry && taCatalogEntries?.length && twCatalogEntries?.length && twlCatalogEntries?.length) {
       setBuiltWith([
-        catalogEntry, 
-        ...(obsCatalogEntries?.[0] ? [obsCatalogEntries[0]] : []), 
-        ...(taCatalogEntries?.[0] ? [taCatalogEntries?.[0]] : []), 
-        ...(twCatalogEntries?.[0] ? [twCatalogEntries[0]] : []), 
-        ...(twlCatalogEntries?.[0] ? [twlCatalogEntries[0]] : [])
+        catalogEntry,
+        ...(obsCatalogEntries?.[0] ? [obsCatalogEntries[0]] : []),
+        ...(taCatalogEntries?.[0] ? [taCatalogEntries?.[0]] : []),
+        ...(twCatalogEntries?.[0] ? [twCatalogEntries[0]] : []),
+        ...(twlCatalogEntries?.[0] ? [twlCatalogEntries[0]] : []),
       ]);
     }
   }, [catalogEntry, obsCatalogEntries, taCatalogEntries, twCatalogEntries, twlCatalogEntries, setBuiltWith]);
@@ -334,7 +334,7 @@ export default function RcObsTranslationNotes() {
               break;
           }
         }
-        if (referenceWithLink && ! data[resource][rcLink].backRefs.includes(referenceWithLink)) {
+        if (referenceWithLink && !data[resource][rcLink].backRefs.includes(referenceWithLink)) {
           data[resource][rcLink].backRefs.push(referenceWithLink);
         }
       }
@@ -404,13 +404,13 @@ ${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
         <h3 class="header obs-tn-frame-header"><a href="#${frameLink}" class="header-link">${storyStr}:${frameStr}</a></h3>
         <span class="header-title">${catalogEntry.title} :: ${storyStr}:${frameStr}</span>
 `;
-        if (imageResolution != 'none') {
-          html += `
+          if (imageResolution != 'none') {
+            html += `
         <div class="obs-image-container" style="text-align: center">
          <img src="${await getOBSImgURL({ storyNum: storyStr, frameNum: frameStr, resolution: imageResolution })}" alt="Frame ${storyStr}-${frameStr}">
         </div>
 `;
-      }
+          }
 
           html += `
         <div class="obs-tn-frame-text">
@@ -615,11 +615,7 @@ ${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
 
   useEffect(() => {
     const generateCopyrightPage = async () => {
-      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(
-        catalogEntry,
-        builtWith,
-        authToken,
-      );
+      const copyrightAndLicense = await generateCopyrightAndLicenseHTML(catalogEntry, builtWith, authToken);
       setCopyright(copyrightAndLicense);
     };
 
@@ -633,7 +629,7 @@ ${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
       setHtmlSections((prevState) => ({
         ...prevState,
         copyright,
-        cover: (renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : ''),
+        cover: renderOptions.chaptersOrigStr ? `<h3>Stories: ${renderOptions.chaptersOrigStr}</h3>` : '',
         body: html,
       }));
       setStatusMessage('');
@@ -641,16 +637,16 @@ ${convertNoteFromMD2HTML(row.Note, 'obs', 'front')}
   }, [html, copyright, catalogEntry, renderOptions, setHtmlSections, setStatusMessage]);
 
   return (
-  <ThemeProvider theme={theme}>
-    <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
-    <FormControl>
-      <InputLabel id="image-resolution-label">Images</InputLabel>
-      <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
-        <MenuItem value="none">Hide Images</MenuItem>
-        <MenuItem value="360px">640x360px</MenuItem>
-        <MenuItem value="2160px">3840x2160px</MenuItem>
-      </Select>
-    </FormControl>
-  </ThemeProvider>
-  )
+    <ThemeProvider theme={theme}>
+      <BibleReference status={bibleReferenceState} actions={bibleReferenceActions} style={{ minWidth: 'auto' }} />
+      <FormControl>
+        <InputLabel id="image-resolution-label">Images</InputLabel>
+        <Select labelId="image-resolution-label" label="Images" value={imageResolution} onChange={(event) => setImageResolution(event.target.value)}>
+          <MenuItem value="none">Hide Images</MenuItem>
+          <MenuItem value="360px">640x360px</MenuItem>
+          <MenuItem value="2160px">3840x2160px</MenuItem>
+        </Select>
+      </FormControl>
+    </ThemeProvider>
+  );
 }
