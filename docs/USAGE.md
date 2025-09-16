@@ -4,7 +4,7 @@
 Door43 Preview lets you browse and preview DCS resources (TSV/Markdown/USFM) and print or export to PDF.
 
 ## Getting Started
-- Open the hosted app: https://door43-preview.netlify.app/
+- Open the hosted app: https://preview.door43.org/
 - Use the catalog search or subject filters to find resources.
 - Select a language and resource, then open the preview.
 
