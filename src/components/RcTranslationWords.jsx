@@ -112,7 +112,8 @@ export default function RcTranslationWords() {
 
   const [copyright, setCopyright] = useState('');
 
-  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: renderNewCopy });
+  // Even when using cached HTML, we still need manuals for navigation.
+  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: true });
 
   const twManuals = useGenerateTranslationWordsManuals({ catalogEntry, zipFileData });
 

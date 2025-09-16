@@ -115,7 +115,8 @@ export default function RcTranslationAcademy() {
   } = useContext(AppContext);
   const [copyright, setCopyright] = useState('');
 
-  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: renderNewCopy });
+  // Even when using cached HTML, we still need manuals for navigation.
+  const zipFileData = useFetchZipFileData({ catalogEntry, canFetch: true });
 
   let taManuals = useGenerateTranslationAcademyManuals({ catalogEntry, zipFileData });
 
