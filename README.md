@@ -16,7 +16,7 @@
 
 #### DCS resources preview
 
-The app is available <a href="https://door43-preview.netlify.app/"><strong>here</strong></a>
+The app is available <a href="https://preview.door43.org"><strong>here</strong></a>
 
 <a href="https://github.com/unfoldingWord-box3/door43-preview-app/issues">Report Bug</a>
 ·
@@ -32,7 +32,7 @@ The app is available <a href="https://door43-preview.netlify.app/"><strong>here<
 
 ## Quick Start
 
-- Visit the hosted app: https://door43-preview.netlify.app/
+- Visit the hosted app: https://preview.door43.org/
 - Browse or search resources by subject/language, then open a preview.
 - Choose print options (size, orientation, columns) and print or export to PDF via your browser.
 
