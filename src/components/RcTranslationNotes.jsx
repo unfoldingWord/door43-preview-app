@@ -213,8 +213,8 @@ export default function RcTranslationNotes() {
 
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
-  const [twlOl2GlQuoteDictionary, setTwlOl2GlQuoteDictionary] = useState({});
-  const [tnOl2GlQuoteDictionary, setTnOl2GlQuoteDictionary] = useState({});
+  const [tnOl2GlQuoteDictionary, setTnOl2GlQuoteDictionary] = useState();
+  const [twlOl2GlQuoteDictionary, setTwlOl2GlQuoteDictionary] = useState();
 
   const renderFlags = {
     showWordAtts: false,
@@ -309,8 +309,45 @@ export default function RcTranslationNotes() {
       sourceUsfm: sourceUsfms?.[0],
       targetUsfms,
       quoteTokenDelimiter,
-      tnOl2GlQuoteDictionary,
+      ol2GlQuoteDictionary: twlOl2GlQuoteDictionary,
     }) || {};
+
+  useEffect(() => {
+    const fetchTnOl2GlQuoteDictionary = async () => {
+      let ref = catalogEntry.repo.default_branch;
+
+      if (catalogEntry.ref_type == 'tag') {
+        ref = catalogEntry.branch_or_tag_name;
+      }
+
+      const response = await fetch(
+        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${ref}&bookId=${expandedBooks.join('-')}_ol2gl_quote_dictionary`,
+        {
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        setTnOl2GlQuoteDictionary({});
+        return;
+      }
+      const url = await response.text();
+      try {
+        new URL(url); // Check if the response is a valid URL
+        const dict = await downloadCachedBook(url);
+        setTnOl2GlQuoteDictionary(dict || {}); // set to {} if null so we know we tried to fetch
+        console.log(`TN dictionary fetched from ${url}:`, dict);
+      } catch (e) {
+        console.error(`Error downloading cached book from ${url}:`, e);
+      }
+    };
+
+    if (catalogEntry) {
+      fetchTnOl2GlQuoteDictionary();
+    }
+  }, [catalogEntry]);
 
   // Update tnOl2GlQuoteDictionary when the hook returns updated data
   useEffect(() => {
@@ -384,6 +421,45 @@ export default function RcTranslationNotes() {
       quoteTokenDelimiter,
       ol2GlQuoteDictionary: twlOl2GlQuoteDictionary,
     }) || {};
+
+  useEffect(() => {
+    const fetchTwlOl2GlQuoteDictionary = async () => {
+      let cat = twlCatalogEntries[0];
+
+      let ref = catalogEntry.repo.default_branch;
+
+      if (cat.ref_type == 'tag') {
+        ref = catalogEntries.branch_or_tag_name;
+      }
+
+      const response = await fetch(
+        `/.netlify/functions/get-cached-url?owner=${cat.repo.owner.username}&repo=${cat.repo.name}&ref=${ref}&bookId=${expandedBooks.join('-')}_ol2gl_quote_dictionary`,
+        {
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        setTwlOl2GlQuoteDictionary({});
+        return;
+      }
+      const url = await response.text();
+      try {
+        new URL(url); // Check if the response is a valid URL
+        const dict = await downloadCachedBook(url);
+        setTwlOl2GlQuoteDictionary(dict || {}); // set to {} if null so we know we tried to fetch
+        console.log(`TWL dictionary fetched from ${url}:`, dict);
+      } catch (e) {
+        console.error(`Error downloading cached book from ${url}:`, e);
+      }
+    };
+
+    if (twlCatalogEntries?.[0]) {
+      fetchTwlOl2GlQuoteDictionary();
+    }
+  }, [twlCatalogEntries?.[0]]);
 
   // Update twlOl2GlQuoteDictionary when the hook returns updated data
   useEffect(() => {

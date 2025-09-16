@@ -8,6 +8,12 @@
 
 # Door43 Preview
 
+[![Node >= 18](https://img.shields.io/badge/Node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![pnpm >= 8](https://img.shields.io/badge/pnpm-%3E%3D8-f69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![React 18](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=061d2a)](https://react.dev/)
+[![Vite 5](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/611844a6-4002-4938-b20e-540c10eff160/deploy-status)](https://app.netlify.com/sites/door43-preview/deploys)
+
 #### DCS resources preview
 
 The app is available <a href="https://door43-preview.netlify.app/"><strong>here</strong></a>
@@ -21,6 +27,16 @@ The app is available <a href="https://door43-preview.netlify.app/"><strong>here<
 <a href="https://discord.com/channels/867746700390563850/867746700390563853" title="OCE discord server"><img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&amp;logo=discord&amp;logoColor=white" alt="Discord"></a>
 <a href="https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="license"></a>
 </p>
+
+---
+
+## Quick Start
+
+- Visit the hosted app: https://door43-preview.netlify.app/
+- Browse or search resources by subject/language, then open a preview.
+- Choose print options (size, orientation, columns) and print or export to PDF via your browser.
+
+For local development: see “Local Development”. For detailed usage: see docs/USAGE.md. For internals: see ARCHITECHTURE.md.
 
 ---
 
@@ -57,7 +73,7 @@ These are some of the underlying components:
 
 ### Built With
 
-- [React.js](https://reactjs.org/)
+- [React](https://react.dev/) + [Vite](https://vitejs.dev/)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -71,36 +87,45 @@ See the [open issues](https://github.com/unfoldingWord-box3/door43-preview-app/i
 <!-- CONTRIBUTING -->
 ## Contributing
 
-The open source community is an amazing place to learn, inspire, and create. So, any contributions you make are **greatly appreciated**.  [Guidelines for rcl development](https://forum.door43.org/t/rcl-app-development-process/605) and [general information](https://forum.door43.org).
+Contributions are welcome. See AGENTS.md for contributor guidelines (style, commands, PR checklist). For component development process, see the [RCL development guidelines](https://forum.door43.org/t/rcl-app-development-process/605).
 
-You can, for instance, simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
+### Local Development
 
-If you would like to fork the repo and create a pull request.
+1) Prerequisites: Node >= 18, pnpm >= 8, Netlify CLI (optional for Netlify emulation).
 
-1. Fork the Project
-2. Clone the repo
+2) Install dependencies:
 
-   ```sh
-   git clone https://github.com/unfoldingWord-box3/door43-preview-app.git
-   ```
+```sh
+pnpm install
+```
 
-3. Install packages
+3) Configure environment:
 
-   ```sh
-   pnpm install
-   ```
+```sh
+cp .env.example .env
+# edit values as needed
+```
 
-4. Run locally:
+4) Start dev server:
 
-   ```sh
-   pnpm run dev
-   ```
+```sh
+pnpm dev
+```
 
-5. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-6. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-7. Push to the Branch (`git push origin feature/AmazingFeature`)
-8. Open a Pull Request
+5) Lint and build:
+
+```sh
+pnpm lint
+pnpm build && pnpm preview
+```
+
+### Deploying to Netlify
+
+- Configure site env vars in Netlify UI (VITE_* keys from `.env.example`).
+- Use Netlify CLI locally: `pnpm netlify-dev`.
+- Production builds use `vite build`; publish directory: `dist/`.
+
+For more, see docs/DEPLOYMENT.md.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -110,6 +135,4 @@ If you would like to fork the repo and create a pull request.
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
 

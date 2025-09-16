@@ -109,7 +109,7 @@ export const uploadOl2GlQuoteDictionary = async (owner, repo, ref, bookId, previ
     preview_version: previewVersion,
     date_iso: new Date().toISOString(),
     date_unix: new Date().getTime(),
-    ol2GlQuoteDictionary: ol2GlQuoteDictionary,
+    ol2gl_quote_dictionary: ol2GlQuoteDictionary,
     builtWith: {},
   };
 
@@ -124,7 +124,7 @@ export const uploadOl2GlQuoteDictionary = async (owner, repo, ref, bookId, previ
   console.log('Compressed Data Size:', compressedData?.length);
 
   const verification = import.meta.env.VITE_PREVIEW_VERIFICATION_KEY;
-  const path = `u/${owner}/${repo}/${ref}/${bookId}-ol2GlQuoteDictionary.json.gz`;
+  const path = `u/${owner}/${repo}/${ref}/${bookId}-ol2gl_quote_dictionary.json.gz`;
 
   try {
     const response = await fetch(`/.netlify/functions/cache-html?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {

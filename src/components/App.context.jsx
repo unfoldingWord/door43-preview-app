@@ -73,6 +73,8 @@ export function AppContextProvider({ children }) {
   const [expandedBooks, setExpandedBooks] = useState([]);
   const [cachedFileSuffix, setCachedFileSuffix] = useState('');
   const [isDefaultBook, setIsDefaultBook] = useState(false);
+  const [availableRefsCurrent, setAvailableRefsCurrent] = useState({});
+  const [fetchingAvailableRefs, setFetchingAvailableRefs] = useState(false);
 
   const onPrintClick = () => {
     setIsOpenPrint(true);
@@ -303,6 +305,30 @@ export function AppContextProvider({ children }) {
       setLastBookIdCookie();
     }
   }, [lastBookId, urlInfo]);
+
+  const fetchAvailableRefsForCurrentRepo = useCallback(
+    async (refType) => {
+      if (fetchingAvailableRefs || !serverInfo?.baseUrl || !urlInfo?.owner || !urlInfo?.repo) return;
+      if (availableRefsCurrent[refType]?.length) return;
+      setFetchingAvailableRefs(true);
+      try {
+        const path = refType === 'tag' ? 'tags' : 'branches';
+        const res = await fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${urlInfo.owner}/${urlInfo.repo}/${path}/`, {
+          cache: 'default',
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        });
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data?.map ? data : [];
+        const values = (refType === 'tag' ? list.map((t) => t.name) : list.map((b) => b.name)).filter(Boolean);
+        setAvailableRefsCurrent((prev) => ({ ...prev, [refType]: values }));
+      } catch (e) {
+        console.log('Error fetching refs:', e.message);
+      } finally {
+        setFetchingAvailableRefs(false);
+      }
+    },
+    [serverInfo, urlInfo, authToken, fetchingAvailableRefs, availableRefsCurrent]
+  );
 
   useEffect(() => {
     const fetchOwner = async () => {
@@ -757,6 +783,7 @@ export function AppContextProvider({ children }) {
       books,
       expandedBooks,
       cachedFileSuffix,
+      availableRefsCurrent,
     },
     actions: {
       onPrintClick,
@@ -787,6 +814,7 @@ export function AppContextProvider({ children }) {
       setExpandedBooks,
       setCachedFileSuffix,
       setIsDefaultBook,
+      fetchAvailableRefsForCurrentRepo,
     },
   };
 

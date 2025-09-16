@@ -172,12 +172,12 @@ export default function AppWorkspace() {
       if (href.startsWith('#')) {
         let anchor = href.replace('#', '');
         if (anchor.startsWith('nav-')) {
-          console.log("SET NAV ANCHOR", anchor);
+          console.log('SET NAV ANCHOR', anchor);
           const na = anchor.replace(/^nav-/, '');
           setNavAnchor(na);
           updateUrlHashInAddressBar(na);
         } else if (anchor) {
-          if (anchor.split('-')[0] in BibleBookData && !(expandedBooks.includes(anchor.split('-')[0]))) {
+          if (anchor.split('-')[0] in BibleBookData && !expandedBooks.includes(anchor.split('-')[0])) {
             window.open(`#${anchor}`, '_blank');
           } else {
             console.log('Scrolling without setting to: ', anchor);
@@ -246,220 +246,244 @@ export default function AppWorkspace() {
     }
   }, [printPreviewPercentDone, hidePercentDone]);
 
-  return (<>
-    <Helmet>
-     <title>{repo && repo.metadata_type ? `${repo.title} (${repo.abbreviation})${bookTitle && ` - ${bookTitle} (${bookId})`} - ${repo.language_title} (${repo.language})` : APP_NAME}</title>
-      <meta name="description" content={`unrestricted biblical content in every language; ${repo?.description}`} />
-      <meta name="keywords" content={`door43, unfoldingWord, bible, jesus${repo && `, ${repo.owner.full_name}, ${repo.owner.username}, ${repo.subject}, ${repo.language_title}, ${repo.language}`}`} />
-      <html lang={repo ? repo.language : 'en'} />
-    </Helmet>
-    <Sheet>
-      {!fullScreen &&
-        <Header serverInfo={serverInfo} urlInfo={urlInfo} repo={repo} owner={owner} catalogEntry={catalogEntry} bookId={expandedBooks?.[0]} bookTitle={bookTitle} builtWith={builtWith} onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)} />
-      }
-      <Card sx={{backgroundColor: (urlInfo?.repo ? 'white' : 'lightgrey'), border: 'none', borderRadius: 'none'}}>
-        {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
-        {fullScreen && (
-          <Tooltip title="Close full screen" arrow>
-            <IconButton
-              onClick={() => setFullScreen(false)}
+  return (
+    <>
+      <Helmet>
+        <title>
+          {repo && repo.metadata_type ? `${repo.title} (${repo.abbreviation})${bookTitle && ` - ${bookTitle} (${bookId})`} - ${repo.language_title} (${repo.language})` : APP_NAME}
+        </title>
+        <meta name="description" content={`unrestricted biblical content in every language; ${repo?.description}`} />
+        <meta
+          name="keywords"
+          content={`door43, unfoldingWord, bible, jesus${repo && `, ${repo.owner.full_name}, ${repo.owner.username}, ${repo.subject}, ${repo.language_title}, ${repo.language}`}`}
+        />
+        <html lang={repo ? repo.language : 'en'} />
+      </Helmet>
+      <Sheet>
+        {!fullScreen && (
+          <Header
+            serverInfo={serverInfo}
+            urlInfo={urlInfo}
+            repo={repo}
+            owner={owner}
+            catalogEntry={catalogEntry}
+            bookId={expandedBooks?.[0]}
+            bookTitle={bookTitle}
+            builtWith={builtWith}
+            onOpenClick={() => setShowSelectResourceModal(!showSelectResourceModal)}
+          />
+        )}
+        <Card sx={{ backgroundColor: urlInfo?.repo ? 'white' : 'lightgrey', border: 'none', borderRadius: 'none' }}>
+          {htmlSections?.body && <PrintDrawer {...printDrawerProps} />}
+          {fullScreen && (
+            <Tooltip title="Close full screen" arrow>
+              <IconButton
+                onClick={() => setFullScreen(false)}
+                sx={{
+                  position: 'sticky',
+                  top: 0,
+                  marginLeft: 'auto',
+                  backgroundColor: 'white',
+                  zIndex: 999,
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {urlInfo && urlInfo.repo && (
+            <AppBar
+              position="relative"
               sx={{
-                position: 'sticky',
-                top: 0,
-                marginLeft: 'auto',
                 backgroundColor: 'white',
+                position: 'sticky',
+                top: '0',
+                color: 'black',
                 zIndex: 999,
               }}
             >
-              <CloseIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-        {urlInfo && urlInfo.repo && (
-          <AppBar
-            position="relative"
-            sx={{
-              backgroundColor: 'white',
-              position: 'sticky',
-              top: '0',
-              color: 'black',
-              zIndex: 999,
-            }}
-          >
-            <Toolbar
-              sx={{
-                display: !fullScreen ? 'flex' : 'none',
-                justifyContent: 'space-between',
-                width: '100%',
-                height: '10px',
-                overflowX: 'scroll',
-                paddingTop: '10px',
-                paddingBottom: '10px',
-              }}
-            >
-              <div>&nbsp;</div>
-              {ResourceComponent ? <ResourceComponent /> : ''}
-              <div style={{ whiteSpace: 'nowrap' }}>
-                <ToggleButtonGroup
-                  value={view}
-                  exclusive
-                  onChange={(e, value) => {
-                    if (value !== null) {
-                      let ok = true;
-                      if (view == 'print' && value == 'web' && printPreviewPercentDone < 100) {
-                        ok = window.confirm('Switching to web view will cancel the print preview rendering. Are you sure?');
+              <Toolbar
+                sx={{
+                  display: !fullScreen ? 'flex' : 'none',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  height: '10px',
+                  overflowX: 'scroll',
+                  paddingTop: '10px',
+                  paddingBottom: '10px',
+                }}
+              >
+                <div>&nbsp;</div>
+                {ResourceComponent ? <ResourceComponent /> : ''}
+                <div style={{ whiteSpace: 'nowrap' }}>
+                  <ToggleButtonGroup
+                    value={view}
+                    exclusive
+                    onChange={(e, value) => {
+                      if (value !== null) {
+                        let ok = true;
+                        if (view == 'print' && value == 'web' && printPreviewPercentDone < 100) {
+                          ok = window.confirm('Switching to web view will cancel the print preview rendering. Are you sure?');
+                        }
+                        if (ok) {
+                          setView(value);
+                        }
                       }
-                      if (ok) {
-                        setView(value);
-                      }
-                    }
-                  }}
-                  aria-label="View"
-                  disabled={!htmlSections?.body}
-                >
-                  <ToggleButton value="web" aria-label="Web view">
-                    <Tooltip title="Web view" arrow>
-                      <WebIcon />
-                    </Tooltip>
-                  </ToggleButton>
-                  <ToggleButton value="print" aria-label="Print view" disabled={!htmlSections?.body}>
-                    <Tooltip title="Print view" arrow>
-                      <MenuBookIcon />
-                    </Tooltip>
-                  </ToggleButton>
-                </ToggleButtonGroup>
-                <Tooltip
-                  title={`Print Preview Status: ${printPreviewStatus}${printPreviewPercentDone < 100 && printPreviewPercentDone > 0 ? `, ${printPreviewPercentDone}%` : ''}`}
-                  arrow
-                >
-                  <IconButton disabled={!htmlSections.body}>
-                    <PrintIcon
-                      sx={{ zIndex: 2 }}
-                      onClick={() => {
-                        setView('print');
-                        setIsOpenPrint(true);
+                    }}
+                    aria-label="View mode"
+                    disabled={!htmlSections?.body}
+                  >
+                    <ToggleButton value="web" aria-label="Web view">
+                      <Tooltip title="Web view — interactive reading and navigation." arrow>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <WebIcon />
+                        </span>
+                      </Tooltip>
+                    </ToggleButton>
+                    <ToggleButton value="print" aria-label="Print view" disabled={!htmlSections?.body}>
+                      <Tooltip title="Print view — paginated preview for printing or saving as PDF. May take time to render." arrow>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <MenuBookIcon />
+                        </span>
+                      </Tooltip>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                  <Tooltip
+                    title={`Open print options and print/export PDF. Status: ${printPreviewStatus}${
+                      printPreviewPercentDone < 100 && printPreviewPercentDone > 0 ? ` (${printPreviewPercentDone}%)` : ''
+                    }`}
+                    arrow
+                  >
+                    <IconButton disabled={!htmlSections.body}>
+                      <PrintIcon
+                        sx={{ zIndex: 2 }}
+                        onClick={() => {
+                          setView('print');
+                          setIsOpenPrint(true);
+                        }}
+                      />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Full screen" arrow>
+                    <IconButton onClick={() => setFullScreen(true)}>
+                      <FitScreenIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Back to top" arrow>
+                    <IconButton onClick={() => window.scrollTo({ top: 0 })} disabled={isAtTop}>
+                      <KeyboardDoubleArrowUpIcon />
+                    </IconButton>
+                  </Tooltip>
+                </div>
+              </Toolbar>
+              {view === 'print' && !hidePercentDone && (
+                <Box sx={{ px: 2, py: 0.5, textAlign: 'center', backgroundColor: 'white' }}>
+                  <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                    {printPreviewPercentDone < 100 ? `Preparing print preview… ${printPreviewPercentDone}%` : 'Print preview ready'}
+                  </Typography>
+                  <Tooltip title="Preview Rendering Status" arrow>
+                    <LinearProgress
+                      variant="determinate"
+                      value={printPreviewPercentDone}
+                      sx={{
+                        height: 5,
+                        backgroundColor: 'grey',
+                        '& .MuiLinearProgress-bar': {
+                          backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
+                        },
                       }}
                     />
+                  </Tooltip>
+                </Box>
+              )}
+              {view === 'web' && !htmlSections.body && !errorMessages && <LoadingBar message={renderMessage} />}
+            </AppBar>
+          )}
+          {errorMessages &&
+            errorMessages.map((message, i) => (
+              <Alert
+                key={`errorMessage${i}`}
+                sx={{ alignItems: 'flex-start' }}
+                startDecorator={<ReportIcon />}
+                variant="soft"
+                color="danger"
+                endDecorator={
+                  <IconButton variant="soft" color="danger" onClick={() => clearErrorMessage(i)}>
+                    <CloseRoundedIcon />
                   </IconButton>
-                </Tooltip>
-                <Tooltip title="Full screen" arrow>
-                  <IconButton onClick={() => setFullScreen(true)}>
-                    <FitScreenIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Back to top" arrow>
-                  <IconButton onClick={() => window.scrollTo({ top: 0 })} disabled={isAtTop}>
-                    <KeyboardDoubleArrowUpIcon />
-                  </IconButton>
-                </Tooltip>
-              </div>
-            </Toolbar>
-            {view === 'print' && !hidePercentDone && (
-              <Tooltip title="Preview Rendering Status" arrow>
-                <LinearProgress
-                  variant="determinate"
-                  value={printPreviewPercentDone}
-                  sx={{
-                    height: 5,
-                    backgroundColor: 'grey',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: printPreviewPercentDone < 100 ? getColorForProgressBar(printPreviewPercentDone / 100) : 'green',
-                    },
-                  }}
-                />
-              </Tooltip>
-            )}
-            {view === 'web' && !htmlSections.body && !errorMessages && (
-              <LoadingBar
-                message={renderMessage}
+                }
+              >
+                <div>
+                  <div>Error</div>
+                  <Typography level="body-sm" color="danger">
+                    {message}
+                  </Typography>
+                </div>
+              </Alert>
+            ))}
+          <div
+            id="main-content"
+            style={{
+              position: 'relative',
+              minHeight: printPreviewRef?.current ? printPreviewRef.current.clientHeight + 'px' : 'auto',
+            }}
+          >
+            {urlInfo && urlInfo.owner == 'downloadables' && serverInfo && (
+              <ResourceLanguagesAccordion
+                serverInfo={serverInfo}
+                subjects={[
+                  'Open Bible Stories',
+                  'OBS Study Notes',
+                  'OBS Study Questions',
+                  'OBS Translation Notes',
+                  'OBS Translation Questions',
+                  'TSV OBS Study Notes',
+                  'TSV OBS Study Questions',
+                  'TSV OBS Translation Notes',
+                  'TSV OBS Translation Questions',
+                ]}
               />
             )}
-          </AppBar>
-        )}
-        {errorMessages &&
-          errorMessages.map((message, i) => (
-            <Alert
-              key={`errorMessage${i}`}
-              sx={{ alignItems: 'flex-start' }}
-              startDecorator={<ReportIcon />}
-              variant="soft"
-              color="danger"
-              endDecorator={
-                <IconButton variant="soft" color="danger" onClick={() => clearErrorMessage(i)}>
-                  <CloseRoundedIcon />
-                </IconButton>
-              }
-            >
-              <div>
-                <div>Error</div>
-                <Typography level="body-sm" color="danger">
-                  {message}
+            {statusMessage && !htmlSections?.body && !cachedHtmlSections?.body && !errorMessages && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  height: '300px', // Adjust as needed
+                }}
+              >
+                <CircularProgress />
+                <Typography id="modal-modal-description" sx={{ mt: 2, textAlign: 'center' }}>
+                  {statusMessage}
                 </Typography>
-              </div>
-            </Alert>
-          ))}
-        <div
-          id="main-content"
-          style={{
-            position: 'relative',
-            minHeight: printPreviewRef?.current ? printPreviewRef.current.clientHeight + 'px' : 'auto',
-          }}
-        >
-          {urlInfo && urlInfo.owner == 'downloadables' && serverInfo && (
-            <ResourceLanguagesAccordion
-              serverInfo={serverInfo}
-              subjects={[
-                'Open Bible Stories',
-                'OBS Study Notes',
-                'OBS Study Questions',
-                'OBS Translation Notes',
-                'OBS Translation Questions',
-                'TSV OBS Study Notes',
-                'TSV OBS Study Questions',
-                'TSV OBS Translation Notes',
-                'TSV OBS Translation Questions',
-              ]}
-            />
-          )}
-          {statusMessage && !htmlSections?.body && !cachedHtmlSections?.body && !errorMessages && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                textAlign: 'center',
-                height: '300px', // Adjust as needed
-              }}
-            >
-              <CircularProgress />
-              <Typography id="modal-modal-description" sx={{ mt: 2, textAlign: 'center' }}>
-                {statusMessage}
-              </Typography>
-            </Box>
-          )}
-          {!urlInfo?.repo && serverInfo && <ResourcesCardGrid />}
-          {urlInfo?.repo && serverInfo && view == 'web' && (
-            <WebPreviewComponent
-              ref={webPreviewRef}
-              style={{
-                backgroundColor: 'white',
-                direction: catalogEntry ? catalogEntry.language_direction : 'ltr',
-              }}
-            />
-          )}
-          {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
-            <PrintPreviewComponent ref={printPreviewRef} view={view} />
-          )}
-        </div>
-      </Card>
-      {serverInfo && (
-        <SelectResourceToPreviewModal
-          canLoad={htmlSections?.body !== '' || errorMessages != null || !(urlInfo?.repo)}
-          showModal={showSelectResourceModal}
-          setShowModal={setShowSelectResourceModal}
-        />
-      )}
-    </Sheet>
-  </>);
+              </Box>
+            )}
+            {!urlInfo?.repo && serverInfo && <ResourcesCardGrid />}
+            {urlInfo?.repo && serverInfo && view == 'web' && (
+              <WebPreviewComponent
+                ref={webPreviewRef}
+                style={{
+                  backgroundColor: 'white',
+                  direction: catalogEntry ? catalogEntry.language_direction : 'ltr',
+                }}
+              />
+            )}
+            {urlInfo && urlInfo.owner && urlInfo.repo && serverInfo && (view == 'print' || printPreviewStatus == 'ready') && (
+              <PrintPreviewComponent ref={printPreviewRef} view={view} />
+            )}
+          </div>
+        </Card>
+        {serverInfo && (
+          <SelectResourceToPreviewModal
+            canLoad={htmlSections?.body !== '' || errorMessages != null || !urlInfo?.repo}
+            showModal={showSelectResourceModal}
+            setShowModal={setShowSelectResourceModal}
+          />
+        )}
+      </Sheet>
+    </>
+  );
 }

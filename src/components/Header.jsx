@@ -1,38 +1,65 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 
 // MUI components
-import { AppBar, Toolbar, Tooltip, IconButton, SvgIcon, Collapse, Box, Grid, Tab, Typography } from '@mui/material';
+import {
+  AppBar,
+  Toolbar,
+  Tooltip,
+  IconButton,
+  SvgIcon,
+  Collapse,
+  Box,
+  Grid,
+  Tab,
+  Tabs,
+  Typography,
+  Chip,
+  Stack,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+} from '@mui/material';
 
 // MUI icons
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CallSplitIcon from '@mui/icons-material/CallSplit';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import TranslateIcon from '@mui/icons-material/Translate';
+import BookOutlinedIcon from '@mui/icons-material/BookOutlined';
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
+import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 
 // Custom components
 import CatalogEntriesGrid from './CatalogEntriesGrid';
+import { AppContext } from '@components/App.context';
 
 // Constants
-import { APP_NAME, APP_VERSION } from '@common/constants';
+import { APP_NAME, APP_VERSION, API_PATH } from '@common/constants';
 
 const sx = {
   title: {
     flexGrow: 1,
     color: '#ffffff',
     fontWeight: 'bold',
-    textAlign: "center",
+    textAlign: 'center',
   },
   subtitle: {
     flexGrow: 1,
     color: '#ffffff',
     fontSize: '14px',
-    textAlign: "center",
+    textAlign: 'center',
     // fontStyle: "italic",
-    textDecoration: "none",
+    textDecoration: 'none',
   },
   headerIcon: {
     color: '#ffffff',
-    textAlign: "center",
+    textAlign: 'center',
   },
   extendedIcon: {
     marginRight: (theme) => theme.spacing(1),
@@ -42,6 +69,17 @@ const sx = {
 export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry, builtWith, bookId, bookTitle, onOpenClick }) {
   const [isSubAppBarOpen, setSubAppBarOpen] = useState(false);
   const [dcsRefUrl, setDcsRefUrl] = useState('');
+  const [versionAnchorEl, setVersionAnchorEl] = useState(null);
+  const versionMenuOpen = Boolean(versionAnchorEl);
+  const [refTypeView, setRefTypeView] = useState('branch');
+  const [repoAnchorEl, setRepoAnchorEl] = useState(null);
+  const repoMenuOpen = Boolean(repoAnchorEl);
+  const [ownerRepos, setOwnerRepos] = useState([]);
+  const [fetchingOwnerRepos, setFetchingOwnerRepos] = useState(false);
+  const {
+    state: { availableRefsCurrent, authToken },
+    actions: { fetchAvailableRefsForCurrentRepo },
+  } = useContext(AppContext);
 
   const handleSubAppBarToggle = () => {
     setSubAppBarOpen(!isSubAppBarOpen);
@@ -50,6 +88,63 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
   const handleViewClick = () => {
     if (dcsRefUrl) window.open(dcsRefUrl, '_blank', 'noreferrer');
   };
+  const handleVersionChipClick = (e) => {
+    setVersionAnchorEl(e.currentTarget);
+    if (catalogEntry?.ref_type) {
+      fetchAvailableRefsForCurrentRepo(catalogEntry.ref_type);
+    }
+  };
+  const handleVersionMenuClose = () => setVersionAnchorEl(null);
+
+  useEffect(() => {
+    if (catalogEntry?.ref_type) {
+      setRefTypeView(catalogEntry.ref_type);
+    }
+  }, [catalogEntry?.ref_type]);
+
+  useEffect(() => {
+    if (versionMenuOpen) {
+      // Ensure current item is visible
+      setTimeout(() => {
+        const current = document.getElementById(`ref-item-${catalogEntry?.branch_or_tag_name}`);
+        if (current && current.scrollIntoView) current.scrollIntoView({ block: 'center' });
+      }, 0);
+    }
+  }, [versionMenuOpen, catalogEntry?.branch_or_tag_name]);
+
+  const handleRepoChipClick = (e) => {
+    setRepoAnchorEl(e.currentTarget);
+  };
+  const handleRepoMenuClose = () => setRepoAnchorEl(null);
+
+  useEffect(() => {
+    const fetchOwnerRepos = async () => {
+      if (!serverInfo?.baseUrl || !repo?.language || !(owner?.username || urlInfo?.owner)) return;
+      if (ownerRepos.length || fetchingOwnerRepos) return;
+      setFetchingOwnerRepos(true);
+      try {
+        const qs = `lang=${encodeURIComponent(repo.language)}&owner=${encodeURIComponent(owner?.username || urlInfo.owner)}`;
+        const res = await fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?${qs}`, {
+          cache: 'default',
+          headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        });
+        const json = await res.json();
+        const list = json?.data || [];
+        setOwnerRepos(list);
+        setTimeout(() => {
+          const cur = document.getElementById(`repo-item-${urlInfo?.repo}`);
+          if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' });
+        }, 0);
+      } catch (e) {
+        // ignore
+      } finally {
+        setFetchingOwnerRepos(false);
+      }
+    };
+    if (repoMenuOpen) {
+      fetchOwnerRepos();
+    }
+  }, [repoMenuOpen, serverInfo, owner, urlInfo, repo, authToken, ownerRepos.length, fetchingOwnerRepos]);
 
   useEffect(() => {
     let url = serverInfo?.baseUrl;
@@ -62,15 +157,15 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
           url += `/src/branch/${urlInfo.ref || 'master'}`;
         }
       } else if (urlInfo?.owner) {
-        url = `${serverInfo.baseUrl}/${urlInfo?.owner}`
+        url = `${serverInfo.baseUrl}/${urlInfo?.owner}`;
       }
     }
-    setDcsRefUrl(url)
+    setDcsRefUrl(url);
   }, [urlInfo, catalogEntry, serverInfo]);
 
   return (
     <header>
-      <AppBar position="relative">
+      <AppBar position="relative" sx={{ backgroundColor: '#38addf' }}>
         <Box display="flex" flexDirection="column">
           <Toolbar
             sx={{
@@ -78,23 +173,23 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
               justifyContent: 'space-between',
               width: '100%',
               '& > div': {
-                flex: '1 1 auto',  // Reset the flex property
+                flex: '1 1 auto', // Reset the flex property
               },
               '& > div:first-of-type': {
-                flex: '1 1 25%',  // The first cell takes up 15% of the toolbar
+                flex: '1 1 25%', // The first cell takes up 15% of the toolbar
               },
               '& > div:nth-of-type(2)': {
-                flex: '1 1 50%',  // The second cell takes up 70% of the toolbar
+                flex: '1 1 50%', // The second cell takes up 70% of the toolbar
               },
               '& > div:last-child': {
-                flex: '1 1 25%',  // The third cell takes up 15% of the toolbar
+                flex: '1 1 25%', // The third cell takes up 15% of the toolbar
               },
               button: {
                 flex: 'none',
               },
             }}
           >
-            <div style={{textAlign: "center"}}>
+            <div style={{ textAlign: 'center' }}>
               <Tooltip title="Go to DCS" arrow>
                 <IconButton sx={sx.headerIcon} onClick={handleViewClick} size={'large'}>
                   <SvgIcon fontSize={'large'}>
@@ -124,50 +219,219 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                   </SvgIcon>
                 </IconButton>
               </Tooltip>
-              <div style={{display: "inline-block", verticalAlign: "middle"}}>
-              <div style={{ ...sx.title, display: 'block' }}>
-                <a href={'/'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  {APP_NAME}
-                </a>
-              </div>
-              {urlInfo?.owner && (<div style={{ ...sx.subtitle, display: 'block' }}>
-                <a href={`/u/${owner?.username || urlInfo.owner}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  {owner?.full_name || owner?.username || urlInfo.owner}
-                </a>
-              </div>)}
+              <div style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                <div style={{ ...sx.title, display: 'block' }}>
+                  <Tooltip title="Home" arrow>
+                    <a href={'/'} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      {APP_NAME}
+                    </a>
+                  </Tooltip>
+                </div>
+                {urlInfo?.owner && (
+                  <div style={{ ...sx.subtitle, display: 'block' }}>
+                    <Tooltip title="View owner on DCS" arrow>
+                      <a href={`/u/${owner?.username || urlInfo.owner}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {owner?.full_name || owner?.username || urlInfo.owner}
+                      </a>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
             </div>
             <div>
               {urlInfo?.owner && urlInfo?.repo && (
-                <>
-                  <Typography sx={{...sx.title, direction: catalogEntry?.language_direction || 'ltr'}}>
-                    {repo ? `${repo.title} (${repo.abbreviation})` : urlInfo?.repo}{bookTitle && ` :: ${bookTitle} (${bookId})`}
+                <div style={{ textAlign: 'center' }}>
+                  <Typography sx={{ ...sx.title, direction: catalogEntry?.language_direction || 'ltr' }}>
+                    {repo ? `${repo.title} (${repo.abbreviation})` : urlInfo?.repo}
                   </Typography>
-                  <Typography sx={{textAlign: "center"}}>
-                    <a style={sx.subtitle} href={dcsRefUrl} target="_blank" rel="noopener noreferrer">
-                      <Tooltip title="View on DCS" arrow>
-                        <span>{urlInfo.owner}/{urlInfo.repo}</span>
+                  <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" sx={{ flexWrap: 'wrap', gap: '4px', mt: 1 }}>
+                    <Tooltip title={`View all of ${owner?.username || urlInfo.owner}'s projects`} arrow>
+                      <Chip
+                        size="small"
+                        icon={<GroupOutlinedIcon />}
+                        label={owner?.username || urlInfo.owner}
+                        variant="outlined"
+                        sx={{ color: 'white', borderColor: 'white', '& .MuiChip-icon': { color: 'white' }, mr: '2px !important' }}
+                        clickable
+                        onClick={() => window.open(`/${owner?.username || urlInfo.owner}`, '_self')}
+                      />
+                    </Tooltip>
+                    <Typography component="span" sx={{ color: 'white', mx: '2px !important' }}>
+                      /
+                    </Typography>
+                    <Tooltip title="View or switch repository" arrow>
+                      <Chip
+                        size="small"
+                        icon={<FolderOpenOutlinedIcon />}
+                        label={urlInfo.repo}
+                        variant="outlined"
+                        sx={{
+                          color: 'white',
+                          borderColor: 'white',
+                          '& .MuiChip-icon': { color: 'white' },
+                          '& .MuiChip-deleteIcon': { color: 'white' },
+                          '& .MuiChip-deleteIcon:hover': { color: 'white' },
+                          ml: '4px !important',
+                          mr: '6px !important',
+                        }}
+                        clickable
+                        onClick={handleRepoChipClick}
+                        onDelete={handleRepoChipClick}
+                        deleteIcon={<ExpandMoreIcon />}
+                      />
+                    </Tooltip>
+                    <Menu anchorEl={repoAnchorEl} open={repoMenuOpen} onClose={handleRepoMenuClose} keepMounted>
+                      <Box id="repo-menu-list" sx={{ maxHeight: 320, overflowY: 'auto', minWidth: 280 }}>
+                        {ownerRepos
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((r) => (
+                            <MenuItem
+                              key={`repo-${r.name}`}
+                              id={`repo-item-${r.name}`}
+                              selected={r.name === urlInfo.repo}
+                              onClick={() => {
+                                handleRepoMenuClose();
+                                const hash = urlInfo?.hash && urlInfo.hash !== 'default' ? `#${urlInfo.hash}` : '';
+                                window.open(`/${owner?.username || urlInfo.owner}/${r.name}${hash}`, '_self');
+                              }}
+                            >
+                              <ListItemIcon>
+                                <FolderOpenOutlinedIcon fontSize="small" />
+                              </ListItemIcon>
+                              <ListItemText>{r.name}</ListItemText>
+                            </MenuItem>
+                          ))}
+                      </Box>
+                    </Menu>
+                    {catalogEntry?.branch_or_tag_name && (
+                      <Tooltip
+                        title={`${catalogEntry?.ref_type === 'branch' ? 'Branch updated' : 'Release tagged'}: ${catalogEntry?.released}${
+                          catalogEntry?.ref_type === 'branch' && catalogEntry?.commit_sha ? ` (${catalogEntry.commit_sha.substring(0, 8)})` : ''
+                        }`}
+                        arrow
+                      >
+                        <Chip
+                          size="small"
+                          icon={catalogEntry?.ref_type === 'branch' ? <CallSplitIcon /> : <LocalOfferOutlinedIcon />}
+                          label={catalogEntry?.branch_or_tag_name}
+                          variant="outlined"
+                          sx={{
+                            color: 'white',
+                            borderColor: 'white',
+                            ml: '5px',
+                            mr: '5px',
+                            '& .MuiChip-icon': { color: 'white' },
+                            '& .MuiChip-deleteIcon': { color: 'white' },
+                            '& .MuiChip-deleteIcon:hover': { color: 'white' },
+                          }}
+                          clickable
+                          onClick={handleVersionChipClick}
+                          onDelete={handleVersionChipClick}
+                          deleteIcon={<ExpandMoreIcon />}
+                        />
                       </Tooltip>
-                      <Tooltip title={`${catalogEntry?.ref_type === "branch" ? "Updated" : "Released"}: ${catalogEntry?.released}${catalogEntry?.ref_type === "branch" ? ` (${catalogEntry.commit_sha.substring(0, 8)})` : ''}`}>
-                        <span>{' '}({catalogEntry?.branch_or_tag_name || urlInfo.ref  || repo?.default_branch || "master"})</span>
-                      </Tooltip>
-                    </a>
-                    {repo?.language && (<>
-                      {' :: '}
+                    )}
+                    <Menu anchorEl={versionAnchorEl} open={versionMenuOpen} onClose={handleVersionMenuClose} keepMounted>
+                      <Box sx={{ px: 1, pt: 1, minWidth: 280 }}>
+                        <Tabs
+                          value={refTypeView}
+                          onChange={(_, val) => {
+                            setRefTypeView(val);
+                            fetchAvailableRefsForCurrentRepo(val);
+                            setTimeout(() => {
+                              const current = document.getElementById(`ref-item-${catalogEntry?.branch_or_tag_name}`);
+                              if (current && current.scrollIntoView) current.scrollIntoView({ block: 'center' });
+                            }, 0);
+                          }}
+                          variant="fullWidth"
+                          textColor="primary"
+                          indicatorColor="primary"
+                        >
+                          <Tab value="branch" label="Branches" />
+                          <Tab value="tag" label="Releases" />
+                        </Tabs>
+                        <Divider sx={{ my: 1 }} />
+                        <Box id="ref-menu-list" sx={{ maxHeight: 320, overflowY: 'auto' }}>
+                          {(() => {
+                            const list = availableRefsCurrent?.[refTypeView] || [];
+                            const sorted =
+                              refTypeView === 'branch'
+                                ? [...list].sort((a, b) => a.localeCompare(b))
+                                : [...list].sort((a, b) => {
+                                    const pa = a
+                                      .replace(/^v/i, '')
+                                      .split('.')
+                                      .map((n) => parseInt(n, 10) || 0);
+                                    const pb = b
+                                      .replace(/^v/i, '')
+                                      .split('.')
+                                      .map((n) => parseInt(n, 10) || 0);
+                                    if ((pb[0] || 0) !== (pa[0] || 0)) return (pb[0] || 0) - (pa[0] || 0);
+                                    if ((pb[1] || 0) !== (pa[1] || 0)) return (pb[1] || 0) - (pa[1] || 0);
+                                    return (pb[2] || 0) - (pa[2] || 0);
+                                  });
+                            return sorted.map((name) => (
+                              <MenuItem
+                                key={`${refTypeView}-${name}`}
+                                id={`ref-item-${name}`}
+                                selected={name === catalogEntry?.branch_or_tag_name}
+                                onClick={() => {
+                                  handleVersionMenuClose();
+                                  const hash = urlInfo?.hash && urlInfo.hash !== 'default' ? `#${urlInfo.hash}` : '';
+                                  window.open(`/${urlInfo.owner}/${urlInfo.repo}/${name}${hash}`, '_self');
+                                }}
+                              >
+                                <ListItemIcon>{refTypeView === 'branch' ? <CallSplitIcon fontSize="small" /> : <LocalOfferOutlinedIcon fontSize="small" />}</ListItemIcon>
+                                <ListItemText>{name}</ListItemText>
+                              </MenuItem>
+                            ));
+                          })()}
+                        </Box>
+                      </Box>
+                    </Menu>
+                    {repo?.language && (
                       <Tooltip title="See other resources in this language" arrow>
-                        <a style={sx.subtitle} href={`/${repo.language}`}>{repo.language_title} ({repo.language})</a>
+                        <Chip
+                          size="small"
+                          icon={<TranslateIcon />}
+                          label={`${repo.language_title} (${repo.language})`}
+                          variant="outlined"
+                          sx={{ color: 'white', borderColor: 'white', '& .MuiChip-icon': { color: 'white' }, ml: '6px !important' }}
+                          clickable
+                          onClick={() => window.open(`/${repo.language}`, '_self')}
+                        />
                       </Tooltip>
-                    </>)}
-                  </Typography>
-                </>
+                    )}
+                    {bookTitle && (
+                      <Tooltip title={`${bookTitle} (${bookId})`} arrow>
+                        <Chip
+                          size="small"
+                          icon={<BookOutlinedIcon />}
+                          label={`${bookTitle} (${bookId})`}
+                          variant="outlined"
+                          sx={{ color: 'white', borderColor: 'white', '& .MuiChip-icon': { color: 'white' } }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                </div>
               )}
             </div>
-            <div style={{textAlign: "right"}}>
-            <Tooltip title="Search for a project" arrow>
-              <IconButton sx={sx.headerIcon} onClick={onOpenClick}>
-                <ZoomInIcon sx={sx.extendedIcon} />
-              </IconButton>
-            </Tooltip>
+            <div style={{ textAlign: 'right' }}>
+              <Tooltip title="User Guide" arrow>
+                <IconButton
+                  sx={sx.headerIcon}
+                  onClick={() => window.open('https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/docs/USAGE.md', '_blank', 'noreferrer')}
+                >
+                  <HelpOutlineIcon sx={sx.extendedIcon} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Search for a project" arrow>
+                <IconButton sx={sx.headerIcon} onClick={onOpenClick}>
+                  <ZoomInIcon sx={sx.extendedIcon} />
+                </IconButton>
+              </Tooltip>
             </div>
           </Toolbar>
           <Box
@@ -177,7 +441,7 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
               height: '20px',
             }}
           >
-            <Tooltip title={builtWith.length ? "Show app and resource versions" : "Show app info"} arrow>
+            <Tooltip title={builtWith.length ? 'Show app and resource versions' : 'Show app info'} arrow>
               <Tab
                 label={isSubAppBarOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 onClick={handleSubAppBarToggle}
@@ -186,7 +450,7 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                   minHeight: 'auto', // Reduce the height
                   padding: '6px 12px', // Adjust the padding as needed
                   justifyContent: 'center', // Center the icon
-                  backgroundColor: 'rgb(25, 118, 210)',
+                  backgroundColor: '#44afd8',
                   borderBottomLeftRadius: '10px',
                   borderBottomRightRadius: '10px',
                   height: '25px',
@@ -197,33 +461,64 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
         </Box>
         <Collapse in={isSubAppBarOpen}>
           <AppBar position="static" sx={{ backgroundColor: 'lightgrey', padding: '10px', color: 'black' }}>
-            {(builtWith.length || catalogEntry) && (<>
-              <div style={{paddingBottom: "10px"}}>
-                <div id="built-with">
-                  <Typography style={{fontWeight: "bold", paddingBottom: "10px"}}>Built with:</Typography>
+            {(builtWith.length || catalogEntry) && (
+              <>
+                <div style={{ paddingBottom: '10px' }}>
+                  <div id="built-with">
+                    <Typography style={{ fontWeight: 'bold', paddingBottom: '10px' }}>Built with:</Typography>
+                  </div>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Grid container>
+                      <CatalogEntriesGrid catalogEntries={builtWith.length ? builtWith : [catalogEntry]} showJustThisCatalogEntry={true} linkToDCS={true} bookId={bookId} />
+                    </Grid>
+                  </Box>
                 </div>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Grid container>
-                    <CatalogEntriesGrid catalogEntries={builtWith.length ? builtWith : [catalogEntry]} showJustThisCatalogEntry={true} linkToDCS={true} bookId={bookId} />
-                  </Grid>
-                </Box>
-              </div>
-            </>)}
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              </>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
               <div id="server-info">
                 Server:{' '}
-                <a href={dcsRefUrl || serverInfo?.baseUrl} target="_blank" rel="noopener noreferrer">
-                  {serverInfo?.baseUrl}
-                </a>{' '}
+                <Tooltip title="Open server in DCS" arrow>
+                  <a href={dcsRefUrl || serverInfo?.baseUrl} target="_blank" rel="noopener noreferrer">
+                    {serverInfo?.baseUrl}
+                  </a>
+                </Tooltip>{' '}
                 ({serverInfo?.ID})
               </div>
-              {catalogEntry &&
-              <div style={{textAlign: "center"}}>
-                <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
-                  {"See resource's metadata"}
-                </a>
-              </div>}
-              <div id="app-version"><a href="https://github.com/unfoldingWord/door43-preview-app/releases/latest" target="_blank" rel="noopener noreferrer" style={{textDecoration: "none"}}>App Version: v{APP_VERSION}</a></div>
+              {catalogEntry && (
+                <div style={{ textAlign: 'center' }}>
+                  <Tooltip title="View resource metadata on DCS" arrow>
+                    <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
+                      {"See resource's metadata"}
+                    </a>
+                  </Tooltip>
+                </div>
+              )}
+              <div id="user-docs" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <Tooltip title="Open User Guide" arrow>
+                  <a
+                    href="https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/docs/USAGE.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    User Guide
+                  </a>
+                </Tooltip>
+                <span>·</span>
+                <Tooltip title="Open GitHub repository" arrow>
+                  <a href="https://github.com/unfoldingWord-box3/door43-preview-app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                    Repository
+                  </a>
+                </Tooltip>
+              </div>
+              <div id="app-version">
+                <Tooltip title="Open latest release notes" arrow>
+                  <a href="https://github.com/unfoldingWord/door43-preview-app/releases/latest" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                    App Version: v{APP_VERSION}
+                  </a>
+                </Tooltip>
+              </div>
             </div>
           </AppBar>
         </Collapse>
