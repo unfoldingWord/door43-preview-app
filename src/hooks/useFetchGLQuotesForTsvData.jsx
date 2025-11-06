@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { getParsedUSFM, getTargetQuoteFromSourceQuote } from 'uw-quote-helpers';
+import { useState, useEffect, useMemo } from 'react';
+import { adddGLQuoteCols } from 'tsv-quote-converters'
 
 // Function to generate SHA-256 hash for params object
 async function generateParamsHash(params) {

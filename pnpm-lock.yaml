@@ -107,6 +107,9 @@ importers:
       styled-components:
         specifier: ^6.1.8
         version: 6.1.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tsv-quote-converters:
+        specifier: ^1.1.14
+        version: 1.1.14(@babel/core@7.24.5)
       use-deep-compare-effect:
         specifier: 1.8.1
         version: 1.8.1(react@18.3.1)
@@ -2685,6 +2688,9 @@ packages:
   avvio@8.4.0:
     resolution: {integrity: sha512-CDSwaxINFy59iNwhYnkvALBwZiTydGkOecZyPkqBpABYR1KqGEsET0VOOYDwtleZSUIdeY36DC2bSZ24CO1igA==}
 
+  axios@1.12.2:
+    resolution: {integrity: sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw==}
+
   axios@1.7.2:
     resolution: {integrity: sha512-2A8QhOMrbomlDuiLeK9XibIBzuHeRcqqNOHp0Cyp5EoJ1IFDh+XZH3A6BkXtv0K4gFGCI0Y4BM7B1wOEi0Rmgw==}
 
@@ -3257,6 +3263,12 @@ packages:
   csstype@3.1.3:
     resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
 
+  csv-parse@5.6.0:
+    resolution: {integrity: sha512-l3nz3euub2QMg5ouu5U09Ew9Wf6/wQ8I++ch1loQ0ljmzhmfZYrH9fflS22i/PQEvsPvxCwxgz5q7UB8K1JO4Q==}
+
+  csv-stringify@6.6.0:
+    resolution: {integrity: sha512-YW32lKOmIBgbxtu3g5SaiqWNwa/9ISQt2EcgOq0+RAIFufFp9is6tqNnKahqE5kuKvrnYAzs28r+s6pXJR8Vcw==}
+
   cyclist@1.0.2:
     resolution: {integrity: sha512-0sVXIohTfLqVIW3kb/0n6IiWF3Ifj5nm2XaSrLq2DI6fKIGa2fYAZdk917rUneaeLVpYfFcyXE2ft0fe3remsA==}
 
@@ -3326,6 +3338,9 @@ packages:
 
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
+
+  deepcopy@2.1.0:
+    resolution: {integrity: sha512-8cZeTb1ZKC3bdSCP6XOM1IsTczIO73fdqtwa2B0N15eAz7gmyhQo+mc5gnFuulsgN3vIQYmTgbmQVKalH1dKvQ==}
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -3593,6 +3608,10 @@ packages:
 
   es-set-tostringtag@2.0.3:
     resolution: {integrity: sha512-3T8uNMC3OQTHkFUsFq8r/BwAXLHvU/9O9mE0fBc/MY5iq/8H7ncvO947LmYA6ldWw9Uh8Yhf25zu6n7nML5QWQ==}
+    engines: {node: '>= 0.4'}
+
+  es-set-tostringtag@2.1.0:
+    resolution: {integrity: sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==}
     engines: {node: '>= 0.4'}
 
   es-shim-unscopables@1.0.2:
@@ -3991,6 +4010,10 @@ packages:
 
   form-data@4.0.0:
     resolution: {integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==}
+    engines: {node: '>= 6'}
+
+  form-data@4.0.4:
+    resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
     engines: {node: '>= 6'}
 
   formdata-polyfill@4.0.10:
@@ -5642,6 +5665,9 @@ packages:
   prop-types@15.8.1:
     resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
 
+  proskomma-core@0.10.17:
+    resolution: {integrity: sha512-BKfBur1itsM57+ibKq0SQKwYC0PmiTyfqT7zuGdaDHMSutNZMcncGnXP9pvShTc3j+joO1wLPyLOKnjJ0mfT/A==}
+
   proskomma-core@0.10.7:
     resolution: {integrity: sha512-OIpnxUZ9Bh16jgin2H15k9AFIjBipej0z0YSZS+aju3RkW6nkrNdGg0QA5FY0+Zn93iVwCny0tFABqKXcq/+dg==}
 
@@ -6546,6 +6572,9 @@ packages:
     peerDependencies:
       string-punctuation-tokenizer: ^2.0.0
 
+  tsv-quote-converters@1.1.14:
+    resolution: {integrity: sha512-fjgLfOsuHD9ZXisdPAKEquwzRwIuBDeG2YIcMA/GD9QdBP2CNfEr2u+ShaGz86NZMbEZXObQ5VSA7FTK+fiXMw==}
+
   tsvtojson@1.0.1:
     resolution: {integrity: sha512-tcmQHJvwroh4EqkDoUan1UsYo0S5lTLjVc865zYxZ+hwfkDBr0Ljnqr4CywNqgsoS8313zoZ938uHyQEdBHY6A==}
 
@@ -6555,6 +6584,10 @@ packages:
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
+
+  type-detect@4.1.0:
+    resolution: {integrity: sha512-Acylog8/luQ8L7il+geoSxhEkazvkslg7PSNKOX59mbB9cOveP5aq9h74Y7YU8yDpJwetzQQrfIwtf4Wp4LKcw==}
+    engines: {node: '>=4'}
 
   type-fest@0.20.2:
     resolution: {integrity: sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==}
@@ -9850,6 +9883,14 @@ snapshots:
       '@fastify/error': 3.4.1
       fastq: 1.17.1
 
+  axios@1.12.2:
+    dependencies:
+      follow-redirects: 1.15.6(debug@4.4.0)
+      form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
   axios@1.7.2:
     dependencies:
       follow-redirects: 1.15.6(debug@4.4.0)
@@ -10512,6 +10553,10 @@ snapshots:
 
   csstype@3.1.3: {}
 
+  csv-parse@5.6.0: {}
+
+  csv-stringify@6.6.0: {}
+
   cyclist@1.0.2: {}
 
   d@1.0.2:
@@ -10589,6 +10634,10 @@ snapshots:
   deep-extend@0.6.0: {}
 
   deep-is@0.1.4: {}
+
+  deepcopy@2.1.0:
+    dependencies:
+      type-detect: 4.1.0
 
   deepmerge@4.3.1: {}
 
@@ -10891,6 +10940,13 @@ snapshots:
   es-set-tostringtag@2.0.3:
     dependencies:
       get-intrinsic: 1.2.4
+      has-tostringtag: 1.0.2
+      hasown: 2.0.2
+
+  es-set-tostringtag@2.1.0:
+    dependencies:
+      es-errors: 1.3.0
+      get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
       hasown: 2.0.2
 
@@ -11486,6 +11542,14 @@ snapshots:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
+      mime-types: 2.1.35
+
+  form-data@4.0.4:
+    dependencies:
+      asynckit: 0.4.0
+      combined-stream: 1.0.8
+      es-set-tostringtag: 2.1.0
+      hasown: 2.0.2
       mime-types: 2.1.35
 
   formdata-polyfill@4.0.10:
@@ -13301,6 +13365,32 @@ snapshots:
       object-assign: 4.1.1
       react-is: 16.13.1
 
+  proskomma-core@0.10.17(@babel/core@7.24.5):
+    dependencies:
+      '@babel/preset-env': 7.24.5(@babel/core@7.24.5)
+      '@graphql-tools/schema': 9.0.19(graphql@16.8.1)
+      async-mutex: 0.4.1
+      base-64: 1.0.0
+      base64-js: 1.5.1
+      bitset: 5.1.1
+      buffer: 6.0.3
+      deep-copy-all: 1.3.4
+      deep-equal: 2.2.3
+      easy-crc32: 0.0.2
+      fs-extra: 11.2.0
+      graphql: 16.8.1
+      proskomma-json-tools: 0.6.5
+      pure-uuid: 1.8.1
+      sax: 1.3.0
+      stream: 0.0.2
+      string_decoder: 1.3.0
+      utf8-string-bytes: 1.0.3
+      util: 0.12.5
+      xregexp: 5.1.1
+    transitivePeerDependencies:
+      - '@babel/core'
+      - supports-color
+
   proskomma-core@0.10.7(@babel/core@7.24.5):
     dependencies:
       '@babel/preset-env': 7.24.5(@babel/core@7.24.5)
@@ -14358,6 +14448,21 @@ snapshots:
       tsvtojson: 1.0.1
       uw-tsv-parser: 1.0.3
 
+  tsv-quote-converters@1.1.14(@babel/core@7.24.5):
+    dependencies:
+      axios: 1.12.2
+      buffer: 6.0.3
+      csv-parse: 5.6.0
+      csv-stringify: 6.6.0
+      deepcopy: 2.1.0
+      proskomma-core: 0.10.17(@babel/core@7.24.5)
+      string-punctuation-tokenizer: 2.2.0
+      xregexp: 5.1.1
+    transitivePeerDependencies:
+      - '@babel/core'
+      - debug
+      - supports-color
+
   tsvtojson@1.0.1: {}
 
   tunnel-agent@0.6.0:
@@ -14367,6 +14472,8 @@ snapshots:
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
+
+  type-detect@4.1.0: {}
 
   type-fest@0.20.2: {}
 
