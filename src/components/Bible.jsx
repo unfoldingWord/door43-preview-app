@@ -122,6 +122,8 @@ const parseHtml = (html, book, showChapters = true) => {
   );
   html = html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
 
+  html = html.replace(/(\d+),\s+(\d{3})(?=\b)/g, '$1,$2');
+
   const footnotes = html.match(/<span class="footnote">/g);
   if (footnotes) {
     footnotes.forEach((footnote, index) => {
