@@ -338,10 +338,12 @@ export default function Bible() {
       });
       const usfms = new Map();
       const htmls = [];
+      const titles = [];
       for (const ingredient of catalogEntry.ingredients) {
         if (!expandedBooks.includes(ingredient.identifier)) {
           continue;
         }
+        titles.push(ingredient.title);
         const filePath = ingredient.path.replace(/^\.\//, '');
         let usfm = '';
         try {
@@ -382,6 +384,7 @@ export default function Bible() {
       }
       setUsfmMap(usfms);
       if (htmls.length) {
+        setBookTitle(titles.join(', '));
         setHtml(htmls.join('\n'));
       }
     };
