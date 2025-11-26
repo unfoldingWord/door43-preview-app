@@ -932,7 +932,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
         let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
         html = html.replace(regex, `href="#${data.anchor}"`);
         regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
-        html = html.replace(regex, `<a href="${data.anchor}">${data.title}</a>`);
+        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
       }
       setHtml(html);
     };
