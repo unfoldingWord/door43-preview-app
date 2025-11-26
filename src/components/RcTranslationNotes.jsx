@@ -582,6 +582,7 @@ export default function RcTranslationNotes() {
         if (!data[resource]) {
           data[resource] = {};
         }
+        rcLink = rcLink.replace(/rc:\/\/[^/]+\//, 'rc://*/');
         if (!data[resource][rcLink]) {
           data[resource][rcLink] = {
             backRefs: [],
