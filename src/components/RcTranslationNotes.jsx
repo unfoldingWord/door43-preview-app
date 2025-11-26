@@ -578,7 +578,7 @@ export default function RcTranslationNotes() {
       const rcLinkRegex = /rc:\/\/[^/]+\/([^/]+)\/[^/]+\/([A-Za-z0-9/_-]+)/g;
       let match;
       while ((match = rcLinkRegex.exec(article)) !== null) {
-        const [rcLink, resource, file] = match;
+        let [rcLink, resource, file] = match;
         if (!data[resource]) {
           data[resource] = {};
         }
