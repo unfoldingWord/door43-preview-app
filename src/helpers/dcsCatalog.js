@@ -9,16 +9,28 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   for (let owner of owners) {
     for (let r of repos) {
-      console.log("Trying to fetch catalog entry for", owner, r, ref, `${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
-      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, {
+      console.log("Trying to fetch catalog entry for", owner, r, s, `${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
+      let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${s}`, {
         cache: 'default',
         headers: {
           Authorization: `Bearer ${authToken}`
         }
       });
       if (resp && resp.status == '200') {
-        console.log("Found catalog entry for", owner, r, ref);
+        console.log("Found catalog entry for", owner, r, s);
         const json = await resp.json();
+        if (stage != json.stage && json.repo.catalog?.[stage]) {
+          resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${json.repo.catalog[stage].branch_or_tag_name}`, {
+            cache: 'default',
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          });
+          if (resp && resp.status == '200') {
+            console.log("Found production catalog entry for", owner, r, json.repo.catalog[stage].branch_or_tag_name);
+            return await resp.json();
+          }
+        }
         return json;
       }
     }
@@ -119,7 +131,7 @@ export const getRelationCatalogEntries = async (catalogEntry, relation, required
     let stage = 'prod';
     if (!ref) {
       ref = catalogEntry.repo.default_branch;
-      stage = 'latest';
+      stage = catalogEntry.stage;
     }
     let entry = await getCatalogEntryByRef(apiUrl, [catalogEntry.owner, `${lang}_gl`, 'unfoldingWord', 'Door43-Catalog'], repo, ref, stage, authToken);
     if (!entry) {
