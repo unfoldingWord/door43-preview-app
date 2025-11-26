@@ -9,6 +9,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   for (let owner of owners) {
     for (let r of repos) {
+      console.log("Trying to fetch catalog entry for", owner, r, ref, `${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
       let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, {
         cache: 'default',
         headers: {
@@ -16,6 +17,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
         }
       });
       if (resp && resp.status == '200') {
+        console.log("Found catalog entry for", owner, r, ref);
         const json = await resp.json();
         return json;
       }
@@ -25,6 +27,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   if (stage != 'latest') {
     for (let owner of owners) {
       for (let r of repos) {
+        console.log("Trying to fetch repo for", owner, r, `${apiUrl}/repos/${owner}/${r}`);
         let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, {
           cache: 'default',
           headers: {
@@ -34,6 +37,8 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
         if (resp && resp.status == '200') {
           const repoObj = resp.json();
           if (repoObj?.catalog?.prod) {
+            console.log("Found repo for", owner, repo, repoObj.branch_or_tag_name);
+            console.log("Trying to fetch catalog entry for", owner, r, repoObj.branch_or_tag_name, `${apiUrl}/catalog/entry/${owner}/${r}/${repoObj.branch_or_tag_name}`);
             resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
               cache: 'default',
               headers: {
@@ -41,6 +46,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
               }
             });
             if (resp && resp.status == '200') {
+              console.log("Found catalog entry for", owner, r, repoObj.branch_or_tag_name);
               return await resp.json();
             }
           }
