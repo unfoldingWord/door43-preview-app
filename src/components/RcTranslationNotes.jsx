@@ -848,6 +848,9 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       html += `
 </div>
 `;
+console.log("rcLinksData before TA/TW processing:", rcLinksData.ta.length, rcLinksData.tw.length);
+console.log('RC Links Data:', Object.keys(rcLinksData.ta || {}));
+console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}));
       if (rcLinksData.ta && taCatalogEntries.length) {
         const taCatalogEntry = taCatalogEntries[0];
         // TA ARTICLES
