@@ -16,79 +16,85 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
           Authorization: `Bearer ${authToken}`
         }
       });
+      if (!resp || resp.status != '200')
+        continue;
+      console.log("Found catalog entry for", owner, r, ref);
+      const json = await resp.json();
+      if (ref == "master" && stage != "latest") {
+        let branch_or_tag_name = json.repo?.catalog?.[stage]?.branch_or_tag_name;
+        if (stage == "prod" && !json.repo.catalog?.prod) {
+          branch_or_tag_name = json.repo?.catalog?.preprod?.branch_or_tag_name || json.repo?.catalog?.latest?.branch_or_tag_name;
+        }
+        if (branch_or_tag_name != ref)
+          resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${branch_or_tag_name}`, {
+            cache: 'default',
+            headers: {
+              Authorization: `Bearer ${authToken}`
+            }
+          });
+        if (resp && resp.status == '200') {
+          console.log(`Found ${stage} catalog entry for`, owner, r, json.repo.catalog[stage].branch_or_tag_name);
+          return await resp.json();
+        }
+      }
+    }
+    return json;
+  }
+}
+// Didn't find a ref in the catalog entries of owners, so now find catalog entry of latest tag
+if (stage != 'latest') {
+  for (let owner of owners) {
+    for (let r of repos) {
+      console.log("Trying to fetch repo for", owner, r, `${apiUrl}/repos/${owner}/${r}`);
+      let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
       if (resp && resp.status == '200') {
-        console.log("Found catalog entry for", owner, r, ref);
-        const json = await resp.json();
-        if (stage != json.stage && json.repo.catalog?.[stage]) {
-          resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${json.repo.catalog[stage].branch_or_tag_name}`, {
+        const repoObj = resp.json();
+        if (repoObj?.catalog?.prod) {
+          console.log("Found repo for", owner, repo, repoObj.branch_or_tag_name);
+          console.log("Trying to fetch catalog entry for", owner, r, repoObj.branch_or_tag_name, `${apiUrl}/catalog/entry/${owner}/${r}/${repoObj.branch_or_tag_name}`);
+          resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
             cache: 'default',
             headers: {
               Authorization: `Bearer ${authToken}`
             }
           });
           if (resp && resp.status == '200') {
-            console.log("Found production catalog entry for", owner, r, json.repo.catalog[stage].branch_or_tag_name);
+            console.log("Found catalog entry for", owner, r, repoObj.branch_or_tag_name);
             return await resp.json();
           }
         }
-        return json;
       }
     }
   }
-  // Didn't find a ref in the catalog entries of owners, so now find catalog entry of latest tag
-  if (stage != 'latest') {
-    for (let owner of owners) {
-      for (let r of repos) {
-        console.log("Trying to fetch repo for", owner, r, `${apiUrl}/repos/${owner}/${r}`);
-        let resp = await fetch(`${apiUrl}/repos/${owner}/${r}`, {
-          cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        });
-        if (resp && resp.status == '200') {
-          const repoObj = resp.json();
-          if (repoObj?.catalog?.prod) {
-            console.log("Found repo for", owner, repo, repoObj.branch_or_tag_name);
-            console.log("Trying to fetch catalog entry for", owner, r, repoObj.branch_or_tag_name, `${apiUrl}/catalog/entry/${owner}/${r}/${repoObj.branch_or_tag_name}`);
-            resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
-              cache: 'default',
-              headers: {
-                Authorization: `Bearer ${authToken}`
-              }
-            });
-            if (resp && resp.status == '200') {
-              console.log("Found catalog entry for", owner, r, repoObj.branch_or_tag_name);
-              return await resp.json();
-            }
-          }
+}
+// Now we just get the latest catalog entry for the repo if it exists
+for (let owner of owners) {
+  let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`, {
+    cache: 'default',
+    headers: {
+      Authorization: `Bearer ${authToken}`
+    }
+  });
+  if (resp) {
+    const repoObj = resp.json();
+    if (repoObj?.catalog?.latest) {
+      resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
+        cache: 'default',
+        headers: {
+          Authorization: `Bearer ${authToken}`
         }
+      });
+      if (resp) {
+        return await resp.json();
       }
     }
   }
-  // Now we just get the latest catalog entry for the repo if it exists
-  for (let owner of owners) {
-    let resp = await fetch(`${apiUrl}/repos/${owner}/${repo}`, {
-      cache: 'default',
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
-    });
-    if (resp) {
-      const repoObj = resp.json();
-      if (repoObj?.catalog?.latest) {
-        resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${repo}/${repoObj.branch_or_tag_name}`, {
-          cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        });
-        if (resp) {
-          return await resp.json();
-        }
-      }
-    }
-  }
+}
 };
 
 export const getCatalogEntryBySubject = async (apiUrl, subject, lang = ['en'], owners = ['unfoldingWord', 'Door43-Catalog'], stage = 'prod') => {
