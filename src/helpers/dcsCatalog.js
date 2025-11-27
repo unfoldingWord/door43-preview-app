@@ -94,7 +94,6 @@ for (let owner of owners) {
       }
     }
   }
-}
 };
 
 export const getCatalogEntryBySubject = async (apiUrl, subject, lang = ['en'], owners = ['unfoldingWord', 'Door43-Catalog'], stage = 'prod') => {
