@@ -292,17 +292,17 @@ a.internal-link {
 
 a.external-link {
     position: relative;
-    font-weight: bold;
-    color: #666;
-    border-bottom: dashed 1px #666;
-    text-decoration: none;
-    cursor: ne-resize; 
+    font-weight: bold !important;
+    color: #666 !important;
+    border-bottom: dashed 1px #666 !important;
+    text-decoration: none !important;
+    cursor: ne-resize !important; 
 }
 
 a.external-link::after {
     content: ' 🔗';
     font-size: 0.8em;
-    vertical-align: super;
+vertical-align: super;
 }
 
 .back-refs a {
