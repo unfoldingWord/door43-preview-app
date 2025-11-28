@@ -24,7 +24,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
           if (stage == "prod" && ! json.repo.catalog?.prod) {
             branch_or_tag_name = json.repo?.catalog?.preprod?.branch_or_tag_name || json.repo?.catalog?.latest?.branch_or_tag_name  ;
           }
-          if (branch_or_tag_name != ref)
+          if (branch_or_tag_name != ref) {
             resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${branch_or_tag_name}`, {
               cache: 'default',
               headers: {
