@@ -271,8 +271,8 @@ h1 {
 #toc-contents ul li {
   width: 100%;
   list-style-type: none;
-  padding-bottom: 2px;
-  line-height: 1.1em;
+  padding-bottom: 0;
+  line-height: 1em;
 }
 
 #toc-contents ul a {
