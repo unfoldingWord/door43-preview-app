@@ -3,7 +3,7 @@ import markdownit from 'markdown-it';
 import yaml from 'yaml';
 import { AppContext } from '@components/App.context';
 
-export default function useGenerateTranslationAcademyFileContents({ catalogEntry, zipFileData }) {
+export default function useGenerateTranslationAcademyFileContents({ catalogEntry, zipFileData, useRcLinks = false }) {
   const [taFileContents, setTaFileContents] = useState();
   const {
     actions: { setErrorMessage }
@@ -74,8 +74,13 @@ export default function useGenerateTranslationAcademyFileContents({ catalogEntry
             case '01.md':
             default:
               body = md.render(new TextDecoder().decode(currentValue));
-              body = body.replace(/href="\.\.\/([^/".]+)\/*(01.md){0,1}"/g, `href="rc://*/ta/man/${manualId}/$1"`);
-              body = body.replace(/href="\.\.\/\.\.\/([^/".]+)\/([^/".]+)\/*(01.md){0,1}"/g, `href="rc://*/ta/man/$1/$2"`);
+              if (useRcLinks) {
+                body = body.replace(/href="\.\.\/([^/".]+)\/*(01.md){0,1}"/g, `href="rc://*/ta/man/${manualId}/$1"`);
+                body = body.replace(/href="\.\.\/\.\.\/([^/".]+)\/([^/".]+)\/*(01.md){0,1}"/g, `href="rc://*/ta/man/$1/$2"`);
+              } else {
+                body = body.replace(/href="\.\.\/([^/".]+)\/*(01.md){0,1}"/g, `href="#${manualId}--$1"`);
+                body = body.replace(/href="\.\.\/\.\.\/([^/".]+)\/([^/".]+)\/*(01.md){0,1}"/g, `href="#$1--$2"`);
+              }
               body = body.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>');
               body = body.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
               articleMap[manualId].articles[articleId].body = body;
