@@ -906,7 +906,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
     </h2>
     <span class="header-title">${twCatalogEntry.title} :: ${twArticle.title}</span>
-    <span id="${twArticle.anchor.split('--').slice(-2).join('--')}"></span>
+    <span id="${twArticle.anchor.split('--').slice(-1)[0].replace('-', '--')}"></span>
     <div class="article-body">
       ${twArticle.body}
     </div>
