@@ -582,7 +582,7 @@ export default function RcTranslationNotes() {
         if (!data[resource]) {
           data[resource] = {};
         }
-        // rcLink = rcLink.replace(/rc:\/\/[^/]+\//, 'rc://*/');
+        rcLink = rcLink.replace(/rc:\/\/[^/]+\//, 'rc://*/');
         if (!data[resource][rcLink]) {
           data[resource][rcLink] = {
             backRefs: [],
@@ -848,9 +848,6 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       html += `
 </div>
 `;
-console.log("rcLinksData before TA/TW processing:", rcLinksData.ta.length, rcLinksData.tw.length);
-console.log('RC Links Data:', Object.keys(rcLinksData.ta || {}).sort());
-console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}).sort());
       if (rcLinksData.ta && taCatalogEntries.length) {
         const taCatalogEntry = taCatalogEntries[0];
         // TA ARTICLES
@@ -909,6 +906,7 @@ console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}).sort());
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
     </h2>
     <span class="header-title">${twCatalogEntry.title} :: ${twArticle.title}</span>
+    <span id="${twArticle.anchor.split('--').slice(-2).join('--')}"></span>
     <div class="article-body">
       ${twArticle.body}
     </div>
