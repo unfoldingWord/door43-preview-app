@@ -34,6 +34,7 @@ const stageLevel = {
 const subjectsUsingBooks = ['Aligned Bible', 'Bible', 'Greek New Testament', 'Hebrew Old Testament', 'Study Notes', 'Study Questions', 'Translation Notes', 'TSV Study Questions', 'TSV Translation Notes', 'Translation Questions', 'TSV Translation Questions', 'TSV Study Questions', 'TSV Translation Words Links'];
 
 const CatalogEntriesGrid = ({ catalogEntries, stage = 'latest', showJustThisCatalogEntry = false, linkToDCS = false, bookId = '', extraItem = null }) => {
+  console.log(catalogEntries);
   return (
     <Grid container spacing={1} alignItems="stretch" style={{ backgroundColor: "lightgrey" }}>
       {catalogEntries.map((entry) => {

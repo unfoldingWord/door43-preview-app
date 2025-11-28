@@ -848,9 +848,6 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       html += `
 </div>
 `;
-console.log("rcLinksData before TA/TW processing:", rcLinksData.ta.length, rcLinksData.tw.length);
-console.log('RC Links Data:', Object.keys(rcLinksData.ta || {}).sort());
-console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}).sort());
       if (rcLinksData.ta && taCatalogEntries.length) {
         const taCatalogEntry = taCatalogEntries[0];
         // TA ARTICLES
@@ -900,6 +897,9 @@ console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}).sort());
     <h3 class="cover-version">${twCatalogEntry.branch_or_tag_name}</h3>
   </div>
 `;
+console.log('RC Links Data:', Object.keys(rcLinksData.tw || {}).sort().map(k => [k, rcLinksData.tw[k].title, rcLinksData.tw[k].anchor]));
+console.log('RC links Data TW by title:', Object.keys(rcLinksData.tw || {}).sort((a, b) => (rcLinksData.tw[a].title.toLowerCase() < rcLinksData.tw[b].title.toLowerCase() ? -1 : rcLinksData.tw[a].title.toLowerCase() > rcLinksData.tw[b].title.toLowerCase() ? 1 : 0)).map(k => [k, rcLinksData.tw[k].title, rcLinksData.tw[k].anchor]));
+console.log(rcLinksData.tw);
         Object.values(rcLinksData.tw)
           .sort((a, b) => (a.title.toLowerCase() < b.title.toLowerCase() ? -1 : a.title.toLowerCase() > b.title.toLowerCase() ? 1 : 0))
           .forEach((twArticle) => {

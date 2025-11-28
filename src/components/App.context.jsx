@@ -12,9 +12,11 @@ import { getCatalogEntry, getRepo, getOwner } from '@helpers/dcsApi';
 
 // Converter components
 import Bible from '@components/Bible';
-import OpenBibleStories from '@components/OpenBibleStories';
+// REFACTORED: Using new renderer-based component
+import OpenBibleStories from '@components/OpenBibleStoriesRefactored';
 import RcTranslationAcademy from '@components/RcTranslationAcademy';
-import RcTranslationNotes from '@components/RcTranslationNotes';
+// REFACTORED: Using new renderer-based component
+import RcTranslationNotes from '@components/RcTranslationNotesRefactored';
 import RcTranslationQuestions from '@components/RcTranslationQuestions';
 import RcStudyQuestions from '@components/RcStudyQuestions';
 import RcTranslationWords from '@components/RcTranslationWords';
