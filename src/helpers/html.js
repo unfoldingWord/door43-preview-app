@@ -35,7 +35,7 @@ function transformRelativeUrls(htmlString, bookId) {
 export function convertNoteFromMD2HTML(note, bookId, chapterStr) {
   const md = new MarkdownIt();
   let noteAsProperMarkdown = note || '';
-  noteAsProperMarkdown = note.replace(/(\\n)+/g, '\n\n');
+  noteAsProperMarkdown = noteAsProperMarkdown.replace(/(\\n)+/g, '\n\n');
   noteAsProperMarkdown = noteAsProperMarkdown.replace(/(<br>)+/g, '\n\n');
   noteAsProperMarkdown = noteAsProperMarkdown.replaceAll('rc://*/', 'rc://STAR/'); // change * to en do avoid becoming italic in Markdown
   note = md.render(noteAsProperMarkdown);
