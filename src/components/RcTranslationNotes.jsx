@@ -65,7 +65,7 @@ const webCss = `
   margin-bottom: 10px;
 }
 
-.article {
+.tn-book-section .article {
   break-after: auto !important;
   orphans: 2;
   widows: 2;
