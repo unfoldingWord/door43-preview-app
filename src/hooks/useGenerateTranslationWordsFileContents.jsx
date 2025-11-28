@@ -72,8 +72,8 @@ export default function useGenerateTranslationWordsFileContents({ catalogEntry, 
             };
           }
           let body = md.render(new TextDecoder().decode(currentValue));
-          body = body.replace(/href="\.\/([^/".]+).md"/g, `href="#${categoryId}--$1"`);
-          body = body.replace(/href="\.\.\/([^/".]+)\/*([^/]+).md"/g, `href="#$1--$2"`);
+          body = body.replace(/href="\.\/([^/".]+).md"/g, `href="arcb://*/tw/dict/bible/${categoryId}/$1"`);
+          body = body.replace(/href="\.\.\/([^/".]+)\/*([^/]+).md"/g, `href="rc://*/tw/dict/bible/$1/$2"`);
           body = body.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>');
           body = body.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
 

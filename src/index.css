@@ -248,6 +248,7 @@ tbody tr:nth-child(even) {
 
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
+    color: #495057;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
     font-weight: bold;
@@ -261,12 +262,10 @@ h1 {
 
 h2 {
     font-size: 1.5em;
-    color: #007acc;
 }
 
 h3 {
     font-size: 1.25em;
-    color: #495057;
 }
 
 /* Paragraphs */
@@ -283,6 +282,27 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+a.internal-link {
+    font-weight: bold;
+    color: #007acc;
+    cursor: s-resize;
+}
+
+a.external-link {
+    position: relative;
+    font-weight: bold;
+    color: #666;
+    border-bottom: dashed 1px #666;
+    text-decoration: none;
+    cursor: ne-resize; 
+}
+
+a.external-link::after {
+    content: ' 🔗';
+    font-size: 0.8em;
+    vertical-align: super;
 }
 
 /* Verse references and biblical text */
