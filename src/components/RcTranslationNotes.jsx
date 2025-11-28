@@ -32,6 +32,297 @@ import { AppContext } from '@components/App.context';
 import { APP_VERSION } from '@common/constants';
 
 const webCss = `
+pre {
+    font-family: inherit;
+    font-size: inherit;
+    padding-left: 2rem;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    overflow-x: auto;
+    border: 1px solid #e9ecef;
+    margin: 1em 0;
+}
+
+pre code {
+    border-radius: unset;
+    background: inherit;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+/* Inline code styling */
+code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: #d63384;
+}
+
+/* Lists (existing + enhanced) */
+ol {
+    list-style: decimal;
+}
+
+ol ol {
+    list-style: upper-alpha;
+}
+
+ol ol ol {
+    list-style: upper-roman;
+}
+
+ol ol ol ol {
+    list-style: lower-roman;
+}
+
+ol ol ol ol ol {
+    list-style: lower-alpha;
+}
+
+ul, ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+li {
+    margin: 0.5em 0;
+}
+
+/* Blockquote (existing style kept) */
+blockquote {
+    margin-left: 40px;
+    margin-right: 40px;
+    color: #333;
+    padding: 1.5em;
+    line-height: 1.6;
+    border-left: 4px solid #ccc;
+    background-color: #f9f9f9;
+}
+
+blockquote cite {
+    display: block;
+    text-align: right;
+    font-size: .9em;
+    color: #666;
+    margin-top: 1em;
+}
+
+blockquote p {
+    margin: 0.5em 0;
+}
+
+blockquote p:first-child {
+    margin-top: 0;
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    border: 1px solid #dee2e6;
+}
+
+th, td {
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #495057;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #495057;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 2em;
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.25em;
+}
+
+/* Paragraphs */
+p {
+    margin: 1em 0;
+    line-height: 1.6;
+}
+
+/* Links */
+a {
+    color: #007acc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a.internal-link {
+    cursor: s-resize;
+}
+
+a.external-link {
+    position: relative;
+    font-weight: bold !important;
+    color: #666 !important;
+    border-bottom: dashed 1px #666 !important;
+    text-decoration: none !important;
+    cursor: ne-resize !important;
+}
+
+a.external-link::after {
+    content: ' 🔗';
+    font-size: 0.8em;
+vertical-align: super;
+}
+
+.back-refs a {
+    position: relative;
+    cursor: n-resize;
+}
+
+/* Verse references and biblical text */
+.verse-ref {
+    font-weight: bold;
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.verse-ref:hover {
+    text-decoration: underline;
+}
+
+/* Translation notes specific styling */
+.translation-note {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+    border-left: 4px solid #ffc107;
+}
+
+.note-header {
+    font-weight: bold;
+    color: #856404;
+    margin-bottom: 0.5em;
+}
+
+/* Cross-references */
+.cross-ref {
+    font-size: 0.9em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Hebrew/Greek original text */
+.original-text,
+.hebrew-text {
+    font-family: "Ezra", "SBL Hebrew", "Times New Roman", serif;
+    font-size: 1.1em;
+    font-weight: normal;
+    direction: rtl;
+}
+
+.greek-text {
+    font-family: "CharisSIL", "SBL Greek", "Gentium Plus", "Times New Roman", serif;
+    font-size: 1.1em;
+    direction: ltr;
+}
+
+/* Strong's numbers */
+.strongs {
+    font-size: 0.8em;
+    color: #6c757d;
+    font-weight: normal;
+}
+
+/* Emphasis and formatting */
+strong, b {
+    font-weight: bold;
+}
+
+em, i {
+    font-style: italic;
+}
+
+/* Horizontal rules */
+hr {
+    border: none;
+    height: 1px;
+    background-color: #dee2e6;
+    margin: 2em 0;
+}
+
+/* Highlighting for search results or important text */
+mark, .highlight {
+    background-color: #fff3cd;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Responsive images */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1em auto;
+}
+
+/* Definition lists for glossary terms */
+dl {
+    margin: 1em 0;
+}
+
+dt {
+    font-weight: bold;
+    margin-top: 1em;
+    color: #495057;
+}
+
+dd {
+    margin-left: 2em;
+    margin-bottom: 0.5em;
+}
+
+/* Footnotes */
+.footnote {
+    font-size: 0.9em;
+    color: #6c757d;
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5em;
+    margin-top: 2em;
+}
+
 .tn-book-section-header {
   break-after: avoid !important;
 }
