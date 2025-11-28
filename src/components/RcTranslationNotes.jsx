@@ -848,6 +848,10 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       html += `
 </div>
 `;
+
+      const existingTAArticles = Object.keys(rcLinksData.ta || {});
+      const existingTWArticles = Object.keys(rcLinksData.tw || {});
+
       if (rcLinksData.ta && taCatalogEntries.length) {
         const taCatalogEntry = taCatalogEntries[0];
         // TA ARTICLES
@@ -885,6 +889,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 </div>
 `;
       }
+
       if (rcLinksData.tw && twCatalogEntries.length) {
         const twCatalogEntry = twCatalogEntries[0];
         // TW ARTICLES
@@ -906,7 +911,6 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       <a href="#${twArticle.anchor}" class="header-link">${twArticle.title}</a>
     </h2>
     <span class="header-title">${twCatalogEntry.title} :: ${twArticle.title}</span>
-    <span id="${twArticle.anchor.split('-').slice(-2).join('--')}"></span>
     <div class="article-body">
       ${twArticle.body}
     </div>
@@ -925,17 +929,44 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
       }
 
       for (let data of Object.values(rcLinksData.ta || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
-        html = html.replaceAll(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
-        html = html.replaceAll(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+        if (existingTAArticles.includes(data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://*/'))) {
+          let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+          html = html.replaceAll(regex, `href="#${data.anchor}" class="internal-link"`);
+          regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+          html = html.replaceAll(regex, `<a href="#${data.anchor}" class="internal-link">${data.title}</a>`);
+        } else {
+          let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+          html = html.replace(regex, `href="https://preview.door43.org/u/${urlInfo.owner}/${taCatalogEntries[0].repo.name}/${taCatalogEntries[0].branch_or_tag_name}#${data.anchor.split('-ta-')[1].replace('-', '--')}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`);
+          regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+          html = html.replace(regex, `<a href="https://preview.door43.org/u/${urlInfo.owner}/${taCatalogEntries[0].repo.name}/${taCatalogEntries[0].branch_or_tag_name}#${data.anchor.split('-ta-')[1].replace('-', '--')}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43">${data.title}</a>`);
+        }
       }
+
       for (let data of Object.values(rcLinksData.tw || {})) {
-        let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
-        html = html.replace(regex, `href="#${data.anchor}"`);
-        regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
-        html = html.replace(regex, `<a href="#${data.anchor}">${data.title}</a>`);
+        if (existingTWArticles.includes(data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://*/'))) {
+          let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+          html = html.replace(regex, `href="#${data.anchor}" class="internal-link"`);
+          regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+          html = html.replace(regex, `<a href="#${data.anchor}" class="internal-link">${data.title}</a>`);
+        } else {
+          let regex = new RegExp(`href="#*${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}"`, 'g');
+          html = html.replace(regex, `href="https://preview.door43.org/u/${urlInfo.owner}/${twCatalogEntries[0].repo.name}/${twCatalogEntries[0].branch_or_tag_name}#${data.anchor.split('-bible-')[1].replace('-', '--')}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`);
+          regex = new RegExp(`\\[+${data.rcLink.replace(/rc:\/\/[^/]*\//, 'rc://[^/]*/')}\\]+`, 'g');
+          html = html.replace(regex, `<a href="https://preview.door43.org/u/${urlInfo.owner}/${twCatalogEntries[0].repo.name}/${twCatalogEntries[0].branch_or_tag_name}#${data.anchor.split('-bible-')[1].replace('-', '--')}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43">${data.title}</a>`);
+        }
       }
+      let regex = new RegExp(`href="#*rc://[^/]+/tn/help/([^/]+)/0*([^/]+)/0*([^"]+)"`, 'g');
+      html = html.replace(regex, (match, book, chapter, verse, text) => {
+        if (expandedBooks.includes(book)) {
+          return `href="#nav-${book}-${chapter}-${verse}" class="internal-link"`;
+        }
+        if (book == "obs") {
+          return `href="https://preview.door43.org/u/${urlInfo.owner}/${catalogEntry.repo.name.split('_')[0]}_obs/#${book}-${chapter}-${verse}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`;
+
+        } else {
+          return `href="https://preview.door43.org/u/${urlInfo.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}?book=${book}#${book}-${chapter}-${verse}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`;
+        }
+      });
       setHtml(html);
     };
 
