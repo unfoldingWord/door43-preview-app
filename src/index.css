@@ -285,8 +285,6 @@ a:hover {
 }
 
 a.internal-link {
-    font-weight: bold;
-    color: #007acc;
     cursor: s-resize;
 }
 
@@ -296,7 +294,7 @@ a.external-link {
     color: #666 !important;
     border-bottom: dashed 1px #666 !important;
     text-decoration: none !important;
-    cursor: ne-resize !important; 
+    cursor: ne-resize !important;
 }
 
 a.external-link::after {

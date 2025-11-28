@@ -187,8 +187,6 @@ a:hover {
 }
 
 a.internal-link {
-    font-weight: bold;
-    color: #007acc;
     cursor: s-resize;
 }
 
