@@ -9,7 +9,7 @@ export const getCatalogEntryByRef = async (apiUrl, owners = ['unfoldingWord', 'D
   }
   for (let owner of owners) {
     for (let r of repos) {
-      console.log("Trying to fetch catalog entry for", owner, r, s, `${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
+      console.log("Trying to fetch catalog entry for", owner, r, ref, `${apiUrl}/catalog/entry/${owner}/${r}/${ref}`);
       let resp = await fetch(`${apiUrl}/catalog/entry/${owner}/${r}/${ref}`, {
         cache: 'default',
         headers: {
