@@ -379,6 +379,7 @@ export default function RcTranslationNotes() {
   const taFileContents = useGenerateTranslationAcademyFileContents({
     catalogEntry: taCatalogEntries[0],
     zipFileData: taZipFileData,
+    useRcLinks: true,
   });
 
   const twCatalogEntries = useFetchCatalogEntriesBySubject({
@@ -395,6 +396,7 @@ export default function RcTranslationNotes() {
   const twFileContents = useGenerateTranslationWordsFileContents({
     catalogEntry: twCatalogEntries?.[0],
     zipFileData: twZipFileData,
+    useRcLinks: true,
   });
 
   const twlCatalogEntries = useFetchCatalogEntriesBySubject({
