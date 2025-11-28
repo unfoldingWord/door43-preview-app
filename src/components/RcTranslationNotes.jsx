@@ -960,7 +960,12 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
         if (expandedBooks.includes(book)) {
           return `href="#nav-${book}-${chapter}-${verse}" class="internal-link"`;
         }
-        return `href="https://preview.door43.org/u/${urlInfo.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}?book=${book}#${book}-${chapter}-${verse}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`;
+        if (book == "obs") {
+          return `href="https://preview.door43.org/u/${urlInfo.owner}/${catalogEntry.repo.name.split('_')[0]}_obs/#${book}-${chapter}-${verse}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`;
+
+        } else {
+          return `href="https://preview.door43.org/u/${urlInfo.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}?book=${book}#${book}-${chapter}-${verse}" target="_blank" rel="noopener noreferrer" class="external-link" title="External link. View on Door43"`;
+        }
       });
       setHtml(html);
     };

@@ -305,6 +305,11 @@ a.external-link::after {
     vertical-align: super;
 }
 
+.back-refs a {
+    position: relative;
+    cursor: n-resize;
+}
+
 /* Verse references and biblical text */
 .verse-ref {
     font-weight: bold;
