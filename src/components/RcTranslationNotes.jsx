@@ -1298,11 +1298,17 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 
   useEffect(() => {
     if (html && copyright) {
+      // Minify HTML by removing unnecessary whitespace while preserving content spacing
+      const minifiedHtml = html
+        .replace(/>\s+</g, '><') // Remove whitespace between tags
+        .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+        .trim();
+      
       setHtmlSections((prevState) => ({
         ...prevState,
         cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
         copyright,
-        body: html,
+        body: minifiedHtml,
       }));
       setStatusMessage('');
     }
