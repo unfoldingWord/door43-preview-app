@@ -32,6 +32,14 @@ import { AppContext } from '@components/App.context';
 import { APP_VERSION } from '@common/constants';
 
 const webCss = `
+/* Performance optimization: Let browser skip rendering off-screen content */
+.tn-chapter-section,
+.tn-front-intro-section,
+.appendex {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
 pre {
     font-family: inherit;
     font-size: inherit;
@@ -1299,11 +1307,14 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
   useEffect(() => {
     if (html && copyright) {
       // Minify HTML by removing unnecessary whitespace while preserving content spacing
-      const minifiedHtml = html
-        .replace(/>\s+</g, '><') // Remove whitespace between tags
-        .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
-        .trim();
-      
+      // const minifiedHtml = html
+      //   .replace(/>\s+</g, '><') // Remove whitespace between tags
+      //   .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+      //   .trim();
+const start = performance.now();
+const minifiedHtml = html.replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').trim();
+console.log(`HTML minification took ${performance.now() - start}ms, reduced from ${html.length} to ${minifiedHtml.length} bytes`);
+
       setHtmlSections((prevState) => ({
         ...prevState,
         cover: `<h3>${bookTitle}</h3>` + (renderOptions.chaptersOrigStr ? `<h4>Chapters: ${renderOptions.chaptersOrigStr}</h4>` : ''),
