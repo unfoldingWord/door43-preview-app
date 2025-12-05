@@ -34,3 +34,4 @@ temp/*
 # Python
 .venv
 venv
+cached-files/u

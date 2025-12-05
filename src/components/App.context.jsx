@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { BibleBookData } from '@common/books';
-import { downloadCachedBook, uploadCachedBook } from '@helpers/books';
+import { uploadCachedBook } from '@helpers/books';
 
 // Constants
 import { DCS_SERVERS, API_PATH, APP_VERSION } from '@common/constants';
@@ -237,7 +237,15 @@ export function AppContextProvider({ children }) {
     if (url.searchParams.get('token')) {
       setAuthToken(url.searchParams.get('token'));
     } else {
-      setAuthToken(import.meta.env.VITE_DCS_READ_ONLY_TOKEN);
+      // Fetch token from server config
+      fetch('/api/config')
+        .then(res => res.json())
+        .then(config => {
+          if (config.dcsReadOnlyToken) {
+            setAuthToken(config.dcsReadOnlyToken);
+          }
+        })
+        .catch(err => console.error('Failed to fetch config:', err));
     }
     if (
       url.searchParams.get('rerender') === '1' ||
@@ -419,8 +427,41 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const fetchCachedBook = async () => {
+      // Try the fast path first: direct server route
+      const fastPathUrl = `/api/cached-page/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || 'master'}?book=${cachedFileSuffix}`;
+      
+      try {
+        const fastResponse = await fetch(fastPathUrl, {
+          cache: 'default',
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+        
+        if (fastResponse.ok) {
+          const result = await fastResponse.json();
+          if (result.cached && result.data) {
+            console.log('✅ Using cached version from fast path');
+            setCachedBook(result.data);
+            setCachedHtmlSections(result.data?.htmlSections);
+            setFetchingCachedBook(false);
+            return;
+          }
+        } else if (fastResponse.status === 404) {
+          // File doesn't exist - set empty object to indicate we tried to fetch
+          console.log('No cached version available from fast path');
+          setCachedBook({});
+          setCachedHtmlSections(null);
+          setFetchingCachedBook(false);
+          return;
+        }
+      } catch (e) {
+        console.log('Fast path not available, falling back to API:', e.message);
+      }
+
+      // Fallback to original API route
       const response = await fetch(
-        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}`,
+        `/api/get-cached-html?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}`,
         {
           cache: 'default',
           headers: {
@@ -428,18 +469,21 @@ export function AppContextProvider({ children }) {
           },
         }
       );
-      if (!response.ok && catalogEntry) {
+      if (!response.ok) {
+        console.log('No cached version available from fallback API');
         setCachedBook({});
+        setCachedHtmlSections(null);
+        setFetchingCachedBook(false);
         return;
       }
-      const url = await response.text();
       try {
-        new URL(url); // Check if the response is a valid URL
-        const cb = await downloadCachedBook(url);
+        const cb = await response.json();
         setCachedBook(cb || {}); // set to {} if null so we know we tried to fetch
-        setCachedHtmlSections(cb?.htmlSections);
+        setCachedHtmlSections(cb?.htmlSections || null);
       } catch (e) {
+        console.error(`Error parsing cached book JSON:`, e);
         setCachedBook({});
+        setCachedHtmlSections(null);
       }
       setFetchingCachedBook(false);
     };

@@ -22,8 +22,6 @@ import { AppContext } from '@components/App.context';
 import { getColorForProgressBar } from '@helpers/loading';
 import printResources from '@helpers/printResources';
 
-const defaultIncludeNames = ['titles', 'headings', 'introductions', 'footnotes', 'xrefs', 'paraStyles', 'characterMarkup', 'chapterLabels', 'versesLabels'];
-
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',

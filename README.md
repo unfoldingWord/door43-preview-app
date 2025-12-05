@@ -1,50 +1,434 @@
-<div id="top"></div>
-
-<!-- PROJECT LOGO -->
-<br />
-  <a href="https://github.com/unfoldingWord">
-    <img src="images/uW.png" alt="Logo" width="300" height="50">
-  </a>
-
 # Door43 Preview
 
-[![Node >= 18](https://img.shields.io/badge/Node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![pnpm >= 8](https://img.shields.io/badge/pnpm-%3E%3D8-f69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+![unfoldingWord](images/uW.png)
+
+[![Node >= 22](https://img.shields.io/badge/Node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![pnpm >= 10](https://img.shields.io/badge/pnpm-%3E%3D10-f69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![React 18](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=061d2a)](https://react.dev/)
-[![Vite 5](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Netlify Status](https://api.netlify.com/api/v1/badges/611844a6-4002-4938-b20e-540c10eff160/deploy-status)](https://app.netlify.com/sites/door43-preview/deploys)
+[![Vite 7](https://img.shields.io/badge/Vite-7-646cff?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-#### DCS resources preview
+### Web & Print Preview for Door43 Content Service
 
-The app is available <a href="https://preview.door43.org"><strong>here</strong></a>
+A React application for previewing and printing Bible translations, study resources, and Open Bible Stories from the [Door43 Content Service (DCS)](https://qa.door43.org). Generate web previews for online viewing or print-ready PDFs with customizable layouts.
 
-<a href="https://github.com/unfoldingWord-box3/door43-preview-app/issues">Report Bug</a>
-·
-<a href="https://github.com/unfoldingWord-box3/door43-preview-app/issues">Request Feature</a>
+**Live App:** [https://preview.door43.org](https://preview.door43.org)
 
-<p>
-<a href="https://opencomponents.io/" title="Door43 Preview is part of the OCE"><img src="https://img.shields.io/badge/OCE-component-green?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNDcuNDEgMTQ3LjQxIj48dGl0bGU+b2NlX2NvbXBvbmVudDwvdGl0bGU+PGcgaWQ9IkNhcGFfMiIgZGF0YS1uYW1lPSJDYXBhIDIiPjxnIGlkPSJDYXBhXzEtMiIgZGF0YS1uYW1lPSJDYXBhIDEiPjxwYXRoIGQ9Ik04Ny4xNSw4Ny4zM2MtNy41MSw3LjUzLTguMzYsMjIuNSw4LjExLDI1LjI3LDguMjcsMS40MywxMS42LDUuNCw4LDEwLjE0TDc4LjU3LDE0Ny40MSw0OSwxMTcuODhjLTQuNzMtMy42MS04LjctLjI5LTEwLjEzLDgtMi43NywxNi40OC0xNy43NCwxNS42My0yNS4yNyw4LjEybC0uMTktLjE5Yy03LjUtNy41Mi04LjM1LTIyLjQ5LDguMTItMjUuMjcsOC4yOC0xLjQzLDExLjYtNS40LDgtMTAuMTNMMCw2OC44NSwyNC42OCw0NC4xN2M0Ljc0LTMuNjEsOC43MS0uMjgsMTAuMTMsOCwyLjc4LDE2LjQ4LDE3Ljc1LDE1LjYzLDI1LjI4LDguMTJsLjE4LS4xOGM3LjUtNy41NCw4LjM2LTIyLjUxLTguMTItMjUuMjgtOC4yNi0xLjQyLTExLjYtNS40LTgtMTAuMTNMNjguODUsMCw5OC4zOSwyOS41NGM0LjcyLDMuNjEsOC43LjI5LDEwLjEyLTgsMi43Ny0xNi40OCwxNy43NC0xNS42MiwyNS4yOC04LjEybC4xOS4xOWM3LjQ5LDcuNTIsOC4zNCwyMi41LTguMTIsMjUuMjctOC4yOCwxLjQzLTExLjYsNS40MS04LDEwLjEzbDI5LjU0LDI5LjU1LTI0LjY3LDI0LjY4Yy00Ljc0LDMuNjEtOC43MS4yOC0xMC4xNC04LTIuNzgtMTYuNDgtMTcuNzUtMTUuNjItMjUuMjctOC4xMVoiIHN0eWxlPSJmaWxsOiMyZjVjNmUiLz48L2c+PC9nPjwvc3ZnPg==&amp;style=for-the-badge&amp;labelColor=ffffff&amp;?color=2f5c6e" alt="Open Components Ecosystem"></a>
-<a href="https://discord.com/channels/867746700390563850/867746700390563853" title="OCE discord server"><img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&amp;logo=discord&amp;logoColor=white" alt="Discord"></a>
-<a href="https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge" alt="license"></a>
-</p>
+[Report Bug](https://github.com/unfoldingWord-box3/door43-preview-app/issues) · 
+[Request Feature](https://github.com/unfoldingWord-box3/door43-preview-app/issues)
 
 ---
 
-## Quick Start
+## Table of Contents
 
-- Visit the hosted app: https://preview.door43.org/
-- Browse or search resources by subject/language, then open a preview.
-- Choose print options (size, orientation, columns) and print or export to PDF via your browser.
+- [About](#about)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Development](#development)
+  - [Prerequisites](#prerequisites)
+  - [Environment Configuration](#environment-configuration)
+  - [Running Locally](#running-locally)
+  - [Building for Production](#building-for-production)
+- [Docker Deployment](#docker-deployment)
+  - [Using Docker Compose](#using-docker-compose)
+  - [Using Docker CLI](#using-docker-cli)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
-For local development: see “Local Development”. For detailed usage: see docs/USAGE.md. For internals: see ARCHITECHTURE.md.
+---
+
+## About
+
+Door43 Preview is a web application that fetches Bible translations, translation notes, translation words, study questions, and Open Bible Stories from the Door43 Content Service (DCS) and renders them in two modes:
+
+- **Web Preview**: Interactive, responsive view for online browsing
+- **Print Preview**: Paginated layout optimized for printing to PDF with configurable page size, orientation, and column layout
+
+Built with React 18 + Vite 7, the app uses [Proskomma](https://github.com/Proskomma/proskomma-core) for Scripture processing and [PagedJS](https://pagedjs.org/) for print rendering.
+
+![Door43 Preview Screenshot](./images/screenshot.png)
 
 ---
 
 ## Features
 
-- Offering an easy to use app for printing Bible text and Bible Stories.
-- The various underlying components are assembled together in a simple user interface.
-- Most of the features are made available from the underlying components, meaning that the size of code in this app is kept rather small.
+- **Resource Browsing**: Search and browse DCS resources by language, subject, and repository
+- **Multi-Format Support**: Bible text (USFM), Open Bible Stories (markdown), Translation Notes/Questions/Words, Translation Academy
+- **Web Preview**: Responsive viewer with chapter/verse navigation
+- **Print Preview**: Professional print layouts with configurable:
+  - Page size (A4, Letter, Legal, etc.)
+  - Orientation (Portrait/Landscape)
+  - Column count (1-3 columns)
+  - Export to PDF via browser print dialog
+- **Caching**: Local filesystem caching for improved performance
+- **Docker Ready**: Self-hosted deployment with Docker + Docker Compose
+
+---
+
+## Quick Start
+
+**Visit the hosted app:** [https://preview.door43.org](https://preview.door43.org)
+
+1. Browse or search resources by subject (Bible, OBS, Notes, etc.) and language
+2. Select a resource to preview
+3. Choose **Web Preview** for online viewing or **Print Preview** for PDF export
+4. Configure print options and use your browser's print function to save as PDF
+
+For local development, see the [Development](#development) section below.
+
+---
+
+## Development
+
+### Prerequisites
+
+- **Node.js**: >= 22.x (LTS recommended - use [nvm](https://github.com/nvm-sh/nvm) or download from [nodejs.org](https://nodejs.org/))
+- **pnpm**: >= 10.x (install via `npm install -g pnpm` or `corepack enable`)
+- **Docker** (optional, for containerized deployment)
+
+### Environment Configuration
+
+Copy the example environment file and configure variables:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+
+```bash
+# Server-side variables (used by Express at runtime)
+PORT=3000                           # Server port
+CACHE_DIR=./cached-files            # Directory for cached content
+
+# DCS API token - allows access to public DCS repos that require authentication
+# Create a dummy DCS user with no repos and generate a token with "public_repo" (read-only) scope
+# Leave empty if all resources you need are publicly accessible without authentication
+DCS_READ_ONLY_TOKEN=
+
+# Verification key - shared secret between client and server
+# Client sends this key with cache upload requests; server validates before accepting uploads
+# Use any random string (e.g., openssl rand -hex 32)
+# This prevents unauthorized users from uploading arbitrary cached content
+PREVIEW_VERIFICATION_KEY=
+```
+
+**Note:** All configuration is provided to the React client at runtime via the `/api/config` endpoint. No build-time environment variables are needed.
+
+### Running Locally
+
+#### Development Mode (Hot Reload)
+
+Start the Vite development server with hot module replacement:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+**Access:** http://localhost:5173
+
+The dev server proxies API requests to `http://localhost:3000` (if you run the backend separately for testing caching features).
+
+#### Development with Backend (Optional)
+
+To test caching and server-side features, run both frontend and backend:
+
+```bash
+# Terminal 1: Start Express server
+pnpm dev:server
+
+# Terminal 2: Start Vite dev server
+pnpm dev
+```
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:3000
+
+### Building for Production
+
+#### 1. Build the React App
+
+```bash
+pnpm build
+```
+
+This creates optimized production assets in `dist/`:
+- Single JavaScript bundle (~4.3 MB, ~1.2 MB gzipped)
+- CSS, fonts, and static assets
+- Hashed filenames for cache busting
+
+#### 2. Preview the Production Build
+
+```bash
+pnpm preview
+```
+
+**Access:** http://localhost:4173
+
+This serves the built `dist/` folder for testing.
+
+#### 3. Run Production Server
+
+Start the Express server to serve the built app:
+
+```bash
+pnpm start
+```
+
+**Access:** http://localhost:3000
+
+The Express server:
+- Serves static files from `dist/`
+- Provides API endpoints for caching (`/api/save-html-to-cache`, `/api/get-cached-html`)
+- Handles SPA routing (all routes return `index.html`)
+
+---
+
+## Docker Deployment
+
+The app is containerized using Docker with Chainguard's security-hardened Node base image.
+
+### Using Docker Compose (Recommended)
+
+Docker Compose manages the entire stack with proper environment variable handling and volume mounting.
+
+#### 1. Configure Environment
+
+Ensure your `.env` file contains the required variables:
+
+```bash
+# Get a DCS token by:
+# 1. Create a dummy DCS user at https://qa.door43.org
+# 2. Go to Settings > Applications > Generate New Token
+# 3. Select "public_repo" scope (read-only access to public repositories)
+# 4. Copy the token here
+DCS_READ_ONLY_TOKEN=your_dcs_token_here
+
+# Generate a random verification key (any random string):
+# openssl rand -hex 32
+PREVIEW_VERIFICATION_KEY=your_random_verification_key_here
+```
+
+#### 2. Build and Run
+
+```bash
+# Build and start in detached mode
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop and remove containers
+docker-compose down
+```
+
+**Access:** http://localhost:3000
+
+#### 3. Docker Compose Configuration
+
+The `docker-compose.yml` file:
+- Builds the Docker image (no build args needed - everything is runtime)
+- Sets runtime environment variables for Express server
+- Mounts `./cached-files` as a volume for persistent caching
+- Exposes port 3000
+- Includes health check (`/health` endpoint)
+
+### Using Docker CLI
+
+For manual Docker builds without Compose:
+
+#### 1. Build the Image
+
+```bash
+docker build -t door43-preview-app .
+```
+
+**No build arguments needed!** All configuration is provided at runtime.
+
+#### 2. Run the Container
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e PORT=3000 \
+  -e CACHE_DIR=/app/cached-files \
+  -e DCS_READ_ONLY_TOKEN="${DCS_READ_ONLY_TOKEN}" \
+  -e PREVIEW_VERIFICATION_KEY="${PREVIEW_VERIFICATION_KEY}" \
+  -v "$(pwd)/cached-files:/app/cached-files" \
+  --name door43-preview \
+  door43-preview-app
+```
+
+**Runtime Environment Variables:**
+- `NODE_ENV=production`: Enables production mode
+- `PORT=3000`: Server port
+- `CACHE_DIR=/app/cached-files`: Cache directory path
+- `DCS_READ_ONLY_TOKEN`: Optional DCS API token for accessing authenticated repos (create a dummy DCS user with public_repo read-only scope)
+- `PREVIEW_VERIFICATION_KEY`: Shared secret for validating cache upload requests (prevents unauthorized uploads)
+
+#### 3. Manage the Container
+
+```bash
+# View logs
+docker logs -f door43-preview
+
+# Stop container
+docker stop door43-preview
+
+# Remove container
+docker rm door43-preview
+
+# View container details
+docker inspect door43-preview
+```
+
+### Docker Image Details
+
+- **Base Image**: `cgr.dev/chainguard/node:latest` (currently Node.js 25.x, security-hardened, minimal attack surface)
+- **Node Version Note**: Chainguard only provides `:latest` tag (no version-specific tags like `:22`). Currently points to Node 25, which is compatible with this app. Local development uses Node 22 LTS (see `.nvmrc`).
+- **Image Size**: ~552 MB
+- **Build Process**: Single-stage build with no secrets required at build time
+- **Non-root User**: Runs as unprivileged user for security
+- **Configuration**: All settings provided at runtime via environment variables
+- **Health Check**: `GET /health` returns `{"status":"ok","timestamp":"..."}`
+
+---
+
+## Project Structure
+
+```
+door43-preview-app/
+├── src/                          # React application source
+│   ├── components/               # React components
+│   ├── hooks/                    # Custom React hooks
+│   ├── helpers/                  # Utility functions
+│   ├── renderer/                 # Content rendering logic
+│   ├── App.jsx                   # Root component
+│   └── main.jsx                  # Entry point
+├── server/                       # Express backend
+│   ├── index.js                  # Server entry point
+│   └── routes/                   # API route handlers
+│       ├── save-html-to-cache.js
+│       ├── get-cached-html.js
+│       └── serve-cached-page.js
+├── public/                       # Static assets
+├── dist/                         # Production build output (generated)
+├── cached-files/                 # Cache storage (gitignored)
+├── docs/                         # Additional documentation
+│   ├── USAGE.md                  # User guide
+│   └── DEPLOYMENT.md             # Deployment details
+├── Dockerfile                    # Docker image definition
+├── docker-compose.yml            # Docker Compose configuration
+├── vite.config.js                # Vite build configuration
+├── package.json                  # Dependencies and scripts
+├── .env.example                  # Environment variable template
+├── AGENTS.md                     # Contributor guidelines
+└── ARCHITECHTURE.md              # Architecture documentation
+```
+
+### Key Files
+
+- **`vite.config.js`**: Build configuration, path aliases, CommonJS options
+- **`server/index.js`**: Express server, API routes, SPA fallback
+- **`Dockerfile`**: Multi-stage build with Chainguard Node base
+- **`docker-compose.yml`**: Orchestration with build args and volumes
+- **`.env.example`**: Template showing required/optional environment variables
+
+---
+
+## Available Scripts
+
+```bash
+# Development
+pnpm dev                # Start Vite dev server (port 5173)
+pnpm dev:server         # Start Express server only (port 3000)
+
+# Building
+pnpm build              # Build React app for production
+pnpm preview            # Preview production build (port 4173)
+
+# Production
+pnpm start              # Run Express server with built assets (port 3000)
+
+# Quality
+pnpm lint               # Run ESLint (fails on errors, allows warnings)
+
+# Docker
+pnpm docker:build       # Build Docker image with build args
+pnpm docker:compose     # Start with Docker Compose
+```
+
+---
+
+## API Endpoints
+
+The Express server provides these endpoints:
+
+### Health Check
+```
+GET /health
+Response: {"status":"ok","timestamp":"2025-12-04T..."}
+```
+
+### Client Configuration
+```
+GET /api/config
+Response: {
+  "dcsReadOnlyToken": "...",      // DCS API token for accessing authenticated repos
+  "previewVerificationKey": "..." // Shared secret for cache upload verification
+}
+Purpose: Provides runtime environment variables to the React client.
+         Client uses dcsReadOnlyToken for DCS API requests.
+         Client sends previewVerificationKey with cache uploads for validation.
+```
+
+### Save Cached HTML
+```
+POST /api/save-html-to-cache?path=u/owner/repo/ref/book.json.gz&verification=KEY
+Body: Gzipped JSON data (binary)
+Response: {"message":"Cache Success","path":"..."}
+Note: The 'verification' parameter must match PREVIEW_VERIFICATION_KEY.
+      This prevents unauthorized cache uploads from untrusted clients.
+```
+
+### Get Cached HTML
+```
+GET /api/get-cached-html?path=u/owner/repo/ref/book.json.gz
+Response: {"cached":true,"data":{...}} or {"cached":false}
+```
+
+### Fast-Path Cached Page
+```
+GET /api/cached-page/:owner/:repo/:ref?
+Response: Cached book data or 404
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! See [AGENTS.md](./AGENTS.md) for contributor guidelines including:
+- Coding style and conventions
+- Commit message format
+- Pull request checklist
+- Testing guidelines
+
+For component development process, see the [RCL development guidelines](https://forum.door43.org/t/rcl-app-development-process/605).
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Install dependencies (`pnpm install`)
+4. Make your changes
+5. Run linter (`pnpm lint`)
+6. Build and test (`pnpm build && pnpm preview`)
+7. Commit changes (`git commit -m 'Add amazing feature'`)
+8. Push to branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
 
 ---
 
@@ -54,85 +438,29 @@ Having trouble? Get help in the official [Open Components Ecosystem Discord](htt
 
 ---
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
+## Key Technologies
 
-![Door43 Preview Screenshot](./images/screenshot.png)
+- **React 18**: UI framework with hooks and context
+- **Vite 7**: Build tool and dev server
+- **Express 4**: Backend server for API and static serving
+- **Proskomma**: Scripture processing engine
+- **PagedJS**: CSS pagination for print layouts
+- **Material-UI 5**: Component library
+- **Docker + Chainguard**: Secure containerized deployment
 
-### Purpose
+---
 
-This app is basically just a wrapper  for other components (a reference implementation app).
-
-These are some of the underlying components:
-
-- [Epitelete-html](https://github.com/unfoldingWord/epitelete-html) HTML handling in Epitelete - as a derived sub-class. All the [original Epitelete](https://github.com/Proskomma/epitelete) parent functions are inherited and then extended with more functions for generating and parsing Html.
-
-- [proskomma-core](https://github.com/Proskomma/proskomma-core) An implementation of the Proskomma Scripture Processing Model.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-### Built With
-
-- [React](https://react.dev/) + [Vite](https://vitejs.dev/)
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-<!-- ROADMAP -->
-## Roadmap
-
-See the [open issues](https://github.com/unfoldingWord-box3/door43-preview-app/issues) for a full list of proposed features (and any known issues).
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-<!-- CONTRIBUTING -->
-## Contributing
-
-Contributions are welcome. See AGENTS.md for contributor guidelines (style, commands, PR checklist). For component development process, see the [RCL development guidelines](https://forum.door43.org/t/rcl-app-development-process/605).
-
-### Local Development
-
-1) Prerequisites: Node >= 18, pnpm >= 8, Netlify CLI (optional for Netlify emulation).
-
-2) Install dependencies:
-
-```sh
-pnpm install
-```
-
-3) Configure environment:
-
-```sh
-cp .env.example .env
-# edit values as needed
-```
-
-4) Start dev server:
-
-```sh
-pnpm dev
-```
-
-5) Lint and build:
-
-```sh
-pnpm lint
-pnpm build && pnpm preview
-```
-
-### Deploying to Netlify
-
-- Configure site env vars in Netlify UI (VITE_* keys from `.env.example`).
-- Use Netlify CLI locally: `pnpm netlify-dev`.
-- Production builds use `vite build`; publish directory: `dist/`.
-
-For more, see docs/DEPLOYMENT.md.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-<!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See [LICENSE](./LICENSE) for more information.
 
-<p align="right">(<a href="#top">back to top</a>)</p>
+---
+
+## Links
+
+- **Live App**: https://preview.door43.org
+- **DCS**: https://qa.door43.org
+- **GitHub**: https://github.com/unfoldingWord-box3/door43-preview-app
+- **Issues**: https://github.com/unfoldingWord-box3/door43-preview-app/issues
+- **Discord**: https://discord.com/channels/867746700390563850/1019675732324143205
 

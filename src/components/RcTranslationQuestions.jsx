@@ -161,6 +161,7 @@ export default function RcTranslationQuestions() {
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
 
+  // eslint-disable-next-line no-unused-vars
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,

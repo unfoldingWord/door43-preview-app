@@ -5,12 +5,6 @@ import { encodeHTML, convertNoteFromMD2HTML, generateCopyrightAndLicenseHTML } f
 import { BibleBookData } from '@common/books';
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoGitTrees } from '@helpers/dcsApi';
-import { fetchBookFiles } from '@helpers/books';
-import { fetchZipFileData } from '@helpers/books';
-import { generateTranslationAcademyFileContents } from '@helpers/books';
-import { generateTranslationWordsFileContents } from '@helpers/books';
-import { pivotTsvFileOnReference } from '@helpers/books';
-import { fetchGLQuotesForTsvData } from '@helpers/books';
 
 const webCss = `
 .tn-book-section-header {

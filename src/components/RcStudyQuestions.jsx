@@ -8,7 +8,7 @@ import { BibleBookData } from '@common/books';
 // Helper imports
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoGitTrees } from '@helpers/dcsApi';
-import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
+import { convertNoteFromMD2HTML } from '@helpers/html';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
@@ -169,6 +169,7 @@ export default function RcStudyQuestions() {
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
 
+  // eslint-disable-next-line no-unused-vars
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,
@@ -342,7 +343,6 @@ export default function RcStudyQuestions() {
       <div id="nav-${expandedBooks[0]}-front-intro" class="section sq-front-intro-section" data-toc-title="${bookTitle} Introduciton">
 `;
         for (let row of sqTsvDataWithGLQuotes['front']['intro']) {
-          const link = `nav-${expandedBooks[0]}-front-intro-${row.ID}`;
           const article = `
         <div class="article sq-front-intro-question">
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} :: Introduction</span>
@@ -533,6 +533,7 @@ ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
       html += `
 </div>
 `;
+      setHtml(html);
     }
 
     if (!html && targetBibleCatalogEntries && sqTsvDataWithGLQuotes && targetUsfms?.length) {

@@ -85,7 +85,7 @@ export default function useGenerateTranslationWordsManuals({ catalogEntry, zipFi
           body = body.replace(/href="\.\.\/([^/".]+)\/([^/".]+)(\.md){0,1}"/g, `href="#$1--$2"`);
           body = body.replace(/href="([^#/".]+)(\.md){0,1}"/g, `href="#${manualId}--$1"`);
           body = body.replace(/href="\/*([^#/".]+)\/([^/".]+)\.md"/g, `href="#$1--$2"`);
-          body = body.replace(/(?<![">])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g, '<a href="$1">$1</a>');
+            body = body.replace(/(?<![">;])(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*))/g, '<a href="$1">$1</a>');
           body = body.replace(/(href="http[^"]+")/g, '$1 target="_blank"');
           let title = '';
           const headerMatch = body.match(/^\s*<(h\d)>(.*?)<\/\1>\s*\n(.*)/ms);

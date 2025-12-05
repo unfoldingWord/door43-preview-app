@@ -1,9 +1,9 @@
 // React imports
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 
 // Material UI imports
-import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress, Grid } from '@mui/material';
+import { AppBar, CircularProgress, ToggleButton, ToggleButtonGroup, Toolbar, Typography, LinearProgress } from '@mui/material';
 import { Alert, Box, Card, IconButton, Sheet, Tooltip } from '@mui/joy';
 import {
   Close as CloseIcon,
@@ -113,19 +113,6 @@ export default function AppWorkspace() {
     },
     canChangeAtts: false,
     handlePrint,
-  };
-
-  const processModalStyle = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: 400,
-    bgcolor: 'white',
-    border: '2px solid #000',
-    boxShadow: 24,
-    p: 4,
-    backdropFilter: 'none',
   };
 
   const scrollToAnchor = (myAnchor, myRef, myView) => {

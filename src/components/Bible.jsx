@@ -11,7 +11,6 @@ import { removeAlignments } from '@helpers/usfm';
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
 
 // Helper functions and constants
-import { getLtrPreviewStyle, getRtlPreviewStyle } from '@helpers/previewStyling.js';
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoGitTrees } from '@helpers/dcsApi';
 import { getRepoContentsContent } from '@helpers/dcsApi';

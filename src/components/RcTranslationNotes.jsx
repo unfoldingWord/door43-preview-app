@@ -9,7 +9,6 @@ import { BibleBookData } from '@common/books';
 import { getSupportedBooks } from '@helpers/books';
 import { getRepoGitTrees } from '@helpers/dcsApi';
 import { encodeHTML, convertNoteFromMD2HTML } from '@helpers/html';
-import { downloadOl2GlQuoteDictionary, uploadOl2GlQuoteDictionary } from '@helpers/books';
 
 // Hook imports
 import useFetchRelationCatalogEntries from '@hooks/useFetchRelationCatalogEntries';
@@ -29,7 +28,6 @@ import { generateCopyrightAndLicenseHTML } from '@helpers/html';
 
 // Context imports
 import { AppContext } from '@components/App.context';
-import { APP_VERSION } from '@common/constants';
 
 const webCss = `
 pre {
@@ -504,21 +502,6 @@ export default function RcTranslationNotes() {
 
   const [html, setHtml] = useState();
   const [copyright, setCopyright] = useState();
-  const [tnOl2GlQuoteDictionary, setTnOl2GlQuoteDictionary] = useState();
-  const [twlOl2GlQuoteDictionary, setTwlOl2GlQuoteDictionary] = useState();
-
-  const renderFlags = {
-    showWordAtts: false,
-    showTitles: true,
-    showHeadings: true,
-    showIntroductions: true,
-    showFootnotes: false,
-    showXrefs: false,
-    showParaStyles: true,
-    showCharacterMarkup: false,
-    showChapterLabels: true,
-    showVersesLabels: true,
-  };
 
   const onBibleReferenceChange = (b, c, v) => {
     if (b && !expandedBooks.includes(b)) {
@@ -594,67 +577,13 @@ export default function RcTranslationNotes() {
   // Stabilize tnTsvData reference to prevent unnecessary re-renders
   const stableTnTsvData = useMemo(() => tnTsvData, [JSON.stringify(tnTsvData)]);
 
-  const { renderedData: tnTsvDataWithGLQuotes, newOl2GlQuoteDictionary: newTnOl2GlQuoteDictionary } =
+  const { renderedData: tnTsvDataWithGLQuotes } =
     useFetchGLQuotesForTsvData({
       tsvData: stableTnTsvData,
       sourceUsfm: sourceUsfms?.[0],
       targetUsfms,
       quoteTokenDelimiter,
-      ol2GlQuoteDictionary: twlOl2GlQuoteDictionary,
     }) || {};
-
-  useEffect(() => {
-    const fetchTnOl2GlQuoteDictionary = async () => {
-      let ref = catalogEntry.repo.default_branch;
-
-      if (catalogEntry.ref_type == 'tag') {
-        ref = catalogEntry.branch_or_tag_name;
-      }
-
-      const response = await fetch(
-        `/.netlify/functions/get-cached-url?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${ref}&bookId=${expandedBooks.join('-')}_ol2gl_quote_dictionary`,
-        {
-          cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        setTnOl2GlQuoteDictionary({});
-        return;
-      }
-      const url = await response.text();
-      try {
-        new URL(url); // Check if the response is a valid URL
-        const dict = await downloadCachedBook(url);
-        setTnOl2GlQuoteDictionary(dict || {}); // set to {} if null so we know we tried to fetch
-        console.log(`TN dictionary fetched from ${url}:`, dict);
-      } catch (e) {
-        console.error(`Error downloading cached book from ${url}:`, e);
-      }
-    };
-
-    if (catalogEntry) {
-      fetchTnOl2GlQuoteDictionary();
-    }
-  }, [catalogEntry]);
-
-  // Update tnOl2GlQuoteDictionary when the hook returns updated data
-  useEffect(() => {
-    if (
-      expandedBooks.length &&
-      catalogEntry &&
-      newTnOl2GlQuoteDictionary &&
-      Object.keys(newTnOl2GlQuoteDictionary).length > 0 &&
-      (catalogEntry.ref_type == 'tag' || catalogEntry.branch_or_tag_name == catalogEntry.repo.default_branch)
-    ) {
-      console.log('📤 Uploading TN dictionary...');
-      uploadOl2GlQuoteDictionary(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, expandedBooks[0], APP_VERSION, builtWith, newTnOl2GlQuoteDictionary);
-    } else {
-      console.log('⏸️ Skipping TN upload - conditions not met');
-    }
-  }, [expandedBooks, catalogEntry, newTnOl2GlQuoteDictionary, builtWith]);
 
   const taCatalogEntries = useFetchCatalogEntriesBySubject({
     catalogEntries: relationCatalogEntries,
@@ -706,77 +635,13 @@ export default function RcTranslationNotes() {
     tsvBookFile: twlTSVBookFiles?.[0],
   });
 
-  const { renderedData: twlTsvDataWithGLQuotes, newOl2GlQuoteDictionary: newTwlOl2GlQuoteDictionary } =
+  const { renderedData: twlTsvDataWithGLQuotes } =
     useFetchGLQuotesForTsvData({
       tsvData: twlTsvData,
       sourceUsfm: sourceUsfms?.[0],
       targetUsfms,
       quoteTokenDelimiter,
-      ol2GlQuoteDictionary: twlOl2GlQuoteDictionary,
     }) || {};
-
-  useEffect(() => {
-    const fetchTwlOl2GlQuoteDictionary = async () => {
-      let cat = twlCatalogEntries[0];
-
-      let ref = catalogEntry.repo.default_branch;
-
-      if (cat.ref_type == 'tag') {
-        ref = catalogEntries.branch_or_tag_name;
-      }
-
-      const response = await fetch(
-        `/.netlify/functions/get-cached-url?owner=${cat.repo.owner.username}&repo=${cat.repo.name}&ref=${ref}&bookId=${expandedBooks.join('-')}_ol2gl_quote_dictionary`,
-        {
-          cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        setTwlOl2GlQuoteDictionary({});
-        return;
-      }
-      const url = await response.text();
-      try {
-        new URL(url); // Check if the response is a valid URL
-        const dict = await downloadCachedBook(url);
-        setTwlOl2GlQuoteDictionary(dict || {}); // set to {} if null so we know we tried to fetch
-        console.log(`TWL dictionary fetched from ${url}:`, dict);
-      } catch (e) {
-        console.error(`Error downloading cached book from ${url}:`, e);
-      }
-    };
-
-    if (twlCatalogEntries?.[0]) {
-      fetchTwlOl2GlQuoteDictionary();
-    }
-  }, [twlCatalogEntries?.[0]]);
-
-  // Update twlOl2GlQuoteDictionary when the hook returns updated data
-  useEffect(() => {
-    if (
-      expandedBooks.length &&
-      twlCatalogEntries?.[0] &&
-      newTwlOl2GlQuoteDictionary &&
-      Object.keys(newTwlOl2GlQuoteDictionary).length > 0 &&
-      (twlCatalogEntries[0].ref_type == 'tag' || twlCatalogEntries[0].branch_or_tag_name == twlCatalogEntries[0].repo.default_branch)
-    ) {
-      console.log('📤 Uploading TWL dictionary...');
-      uploadOl2GlQuoteDictionary(
-        twlCatalogEntries[0].repo.owner.username,
-        twlCatalogEntries[0].repo.name,
-        twlCatalogEntries[0].branch_or_tag_name,
-        expandedBooks.join('-'),
-        APP_VERSION,
-        builtWith,
-        newTwlOl2GlQuoteDictionary
-      );
-    } else {
-      console.log('⏸️ Skipping TWL upload - conditions not met');
-    }
-  }, [expandedBooks, twlCatalogEntries, newTwlOl2GlQuoteDictionary, builtWith]);
 
   useEffect(() => {
     if (navAnchor && !navAnchor.includes('--')) {
@@ -1249,7 +1114,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
         }
       }
       let regex = new RegExp(`href="#*rc://[^/]+/tn/help/([^/]+)/0*([^/]+)/0*([^"]+)"`, 'g');
-      html = html.replace(regex, (match, book, chapter, verse, text) => {
+      html = html.replace(regex, (match, book, chapter, verse) => {
         if (expandedBooks.includes(book)) {
           return `href="#nav-${book}-${chapter}-${verse}" class="internal-link"`;
         }

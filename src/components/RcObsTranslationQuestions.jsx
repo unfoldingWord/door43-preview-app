@@ -171,6 +171,7 @@ export default function RcObsTranslationQuestions() {
   const [copyright, setCopyright] = useState();
   const [imageResolution, setImageResolution] = useState('none');
 
+  // eslint-disable-next-line no-unused-vars
   const renderFlags = {
     showWordAtts: false,
     showTitles: true,

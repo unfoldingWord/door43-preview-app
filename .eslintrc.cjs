@@ -7,9 +7,9 @@ module.exports = {
     'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs'],
+  ignorePatterns: ['dist', '.eslintrc.cjs', 'netlify', 'server', 'src/utils/translationNotesRenderer.js'],
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-  settings: { react: { version: '18.2' } },
+  settings: { react: { version: '18.3' } },
   plugins: ['react-refresh'],
   rules: {
     'react-refresh/only-export-components': [
