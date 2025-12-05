@@ -758,7 +758,6 @@ export default function Bible() {
           css: { web: webCss + (!renderOptions.editorMode ? '.implied-word-start, .implied-word-end { display: none }' : '') },
         };
       });
-      console.log(webCss + (!renderOptions.editorMode ? '.implied-word-start, .implied-word-end { display: none }' : ''));
       setStatusMessage('');
     };
 

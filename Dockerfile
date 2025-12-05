@@ -10,6 +10,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN npx pnpm@latest install --frozen-lockfile
 
 # Copy source files
+
 COPY . .
 
 # Build the React app (no build-time secrets needed)
