@@ -25,6 +25,7 @@ import RcObsTranslationQuestions from '@components/RcObsTranslationQuestions';
 import TsBible from '@components/TsBible';
 import { getMetadataTypeFromRepoName, getSubjectFromRepoName } from '@helpers/dcsApi';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = React.createContext();
 
 export function AppContextProvider({ children }) {
@@ -433,9 +434,6 @@ export function AppContextProvider({ children }) {
       try {
         const fastResponse = await fetch(fastPathUrl, {
           cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
         });
         
         if (fastResponse.ok) {
@@ -464,9 +462,6 @@ export function AppContextProvider({ children }) {
         `/api/get-cached-html?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}`,
         {
           cache: 'default',
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
         }
       );
       if (!response.ok) {

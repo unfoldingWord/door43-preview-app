@@ -132,9 +132,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
       setIsFetching(true);
       fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/search?lang=${encodeURIComponent(selectedLanguage.lc)}&owner=${encodeURIComponent(selectedOwner.username)}`, {
         cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       })
         .then((response) => response.json())
         .then(({ data }) => {
@@ -159,9 +157,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
       setIsFetching(true);
       fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/branches/`, {
         cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       })
         .then((response) => response.json())
         .then((branches) => {
@@ -183,9 +179,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
       setIsFetching(true);
       fetch(`${serverInfo.baseUrl}/${API_PATH}/repos/${selectedRepo.full_name}/tags/`, {
         cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       })
         .then((response) => response.json())
         .then((tags) => {
@@ -216,9 +210,7 @@ export default function SelectResourceToPreviewModal({ canLoad, showModal, setSh
       setIsFetching(true);
       fetch(`${serverInfo.baseUrl}/${API_PATH}/catalog/entry/${selectedRepo.full_name}/${ref}`, {
         cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       })
         .then((response) => response.json())
         .then((entry) => {

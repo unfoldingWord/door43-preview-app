@@ -20,9 +20,7 @@ export default function useFetchRelationCatalogEntries({ catalogEntry, requiredS
       const metadataUrl = `${catalogApiUrl}/metadata/${catalogEntry.owner}/${catalogEntry.repo.name}/${catalogEntry.branch_or_tag_name}`;
       fetch(metadataUrl, {
         cache: 'default',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
       })
         .then((response) => {
           if (!response.ok) {

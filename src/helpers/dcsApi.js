@@ -4,9 +4,7 @@ export const getCatalogEntry = async (apiUrl, owner, repo, ref, authToken = '') 
   const catalogEntryUrl = `${apiUrl}/catalog/entry/${owner}/${repo}/${ref}`;
   return fetch(catalogEntryUrl, {
     cache: 'default',
-    headers: {
-      Authorization: `Bearer ${authToken}`
-    }
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
   }).then((response) => {
     if (response && response.ok) {
       return response.json();
@@ -18,9 +16,7 @@ export const getRepo = async (apiUrl, owner, repo, authToken = '') => {
   const repoUrl = `${apiUrl}/repos/${owner}/${repo}`;
   return fetch(repoUrl, {
     cache: 'default',
-    headers: {
-      Authorization: `Bearer ${authToken}`
-    }
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
   }).then((response) => {
     if (!response || !response.ok) {
       throw new Error(`Unable to get repo on DCS.`);
@@ -34,9 +30,7 @@ export const getOwner = async (apiUrl, owner, authToken = '') => {
   const usersUrl = `${apiUrl}/users/${owner}`;
   return fetch(usersUrl, {
     cache: 'default',
-    headers: {
-      Authorization: `Bearer ${authToken}`
-    }
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
   }).then((response) => {
     if (!response || !response.ok) {
       throw new Error(`Unable to get owner on DCS.`);
@@ -51,9 +45,7 @@ export const getRepoContentsContent = async (repoApiUrl, filePath, ref, authToke
   return fetch(repoContentsUrl,
     {
       cache: 'default',
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
     })
     .then((response) => {
       if (!response || !response.ok) {
@@ -69,9 +61,7 @@ export const getRepoGitTrees = async (repoApiUrl, ref, authToken = '', recursive
   return fetch(repoGitTreesUrl,
   {
     cache: 'default',
-    headers: {
-      Authorization: `Bearer ${authToken}`
-    }
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
   }).then(async (response) => {
     if (!response || !response.ok) {
       throw new Error(`Unable to get directory listing of repo on DCS.`);
