@@ -99,7 +99,7 @@ Edit `.env` with your values:
 
 ```bash
 # Server-side variables (used by Express at runtime)
-PORT=3000                           # Server port
+PORT=3001                           # Server port
 CACHE_DIR=./cached-files            # Directory for cached content
 
 # DCS API token - allows access to public DCS repos that require authentication
@@ -129,7 +129,7 @@ pnpm dev
 
 **Access:** http://localhost:5173
 
-The dev server proxies API requests to `http://localhost:3000` (if you run the backend separately for testing caching features).
+The dev server proxies API requests to `http://localhost:3001` (if you run the backend separately for testing caching features).
 
 #### Development with Backend (Optional)
 
@@ -144,7 +144,7 @@ pnpm dev
 ```
 
 - **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:3000
+- **Backend API:** http://localhost:3001
 
 ### Building for Production
 
@@ -177,7 +177,7 @@ Start the Express server to serve the built app:
 pnpm start
 ```
 
-**Access:** http://localhost:3000
+**Access:** http://localhost:3001
 
 The Express server:
 - Serves static files from `dist/`
@@ -224,7 +224,7 @@ docker-compose logs -f
 docker-compose down
 ```
 
-**Access:** http://localhost:3000
+**Access:** http://localhost:3001
 
 #### 3. Docker Compose Configuration
 
@@ -232,7 +232,7 @@ The `docker-compose.yml` file:
 - Builds the Docker image (no build args needed - everything is runtime)
 - Sets runtime environment variables for Express server
 - Mounts `./cached-files` as a volume for persistent caching
-- Exposes port 3000
+- Exposes port 3001
 - Includes health check (`/health` endpoint)
 
 ### Using Docker CLI
@@ -251,9 +251,9 @@ docker build -t door43-preview-app .
 
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 3001:3001 \
   -e NODE_ENV=production \
-  -e PORT=3000 \
+  -e PORT=3001 \
   -e CACHE_DIR=/app/cached-files \
   -e DCS_READ_ONLY_TOKEN="${DCS_READ_ONLY_TOKEN}" \
   -e PREVIEW_VERIFICATION_KEY="${PREVIEW_VERIFICATION_KEY}" \
@@ -264,7 +264,7 @@ docker run -d \
 
 **Runtime Environment Variables:**
 - `NODE_ENV=production`: Enables production mode
-- `PORT=3000`: Server port
+- `PORT=3001`: Server port
 - `CACHE_DIR=/app/cached-files`: Cache directory path
 - `DCS_READ_ONLY_TOKEN`: Optional DCS API token for accessing authenticated repos (create a dummy DCS user with public_repo read-only scope)
 - `PREVIEW_VERIFICATION_KEY`: Shared secret for validating cache upload requests (prevents unauthorized uploads)
@@ -344,14 +344,14 @@ door43-preview-app/
 ```bash
 # Development
 pnpm dev                # Start Vite dev server (port 5173)
-pnpm dev:server         # Start Express server only (port 3000)
+pnpm dev:server         # Start Express server only (port 3001)
 
 # Building
 pnpm build              # Build React app for production
 pnpm preview            # Preview production build (port 4173)
 
 # Production
-pnpm start              # Run Express server with built assets (port 3000)
+pnpm start              # Run Express server with built assets (port 3001)
 
 # Quality
 pnpm lint               # Run ESLint (fails on errors, allows warnings)

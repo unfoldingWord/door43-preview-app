@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.3.1",
   "type": "module",
   "engines": {
     "node": ">=22.0.0",
@@ -14,9 +14,8 @@
     "start": "NODE_ENV=production node server/index.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview",
-    "netlify-dev": "netlify dev",
     "docker:build": "docker build -t door43-preview-app .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env door43-preview-app",
+    "docker:run": "docker run -p 3001:3001 -e PORT=3001 --env-file .env door43-preview-app",
     "docker:compose": "docker-compose up -d --build",
     "docker:compose:down": "docker-compose down"
   },
@@ -74,7 +73,6 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.24",
     "internal-ip": "^8.0.1",
-    "netlify-cli": "^23.12.2",
     "vite": "^7.2.6"
   }
 }
