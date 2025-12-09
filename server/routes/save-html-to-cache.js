@@ -21,9 +21,9 @@ async function ensureCacheDir() {
 
 export default async function saveHtmltoCacheHandler(req, res) {
   try {
-    const verification = req.query.verification;
+    const verification = req.query.verification || '';
 
-    if (verification !== process.env.PREVIEW_VERIFICATION_KEY) {
+    if (verification !== (process.env.PREVIEW_VERIFICATION_KEY || '')) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
