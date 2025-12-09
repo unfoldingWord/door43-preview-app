@@ -34,15 +34,15 @@ COPY --from=builder /app/dist ./dist
 COPY server ./server
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3000
 
 # Set production environment
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=3000
 
 # Health check - uses $PORT environment variable
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "const port=process.env.PORT||3001; require('http').get(\`http://localhost:\${port}/health\`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "const port=process.env.PORT||3000; require('http').get(\`http://localhost:\${port}/health\`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Override the base image's entrypoint and start the server
 ENTRYPOINT []
