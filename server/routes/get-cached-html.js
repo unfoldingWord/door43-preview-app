@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import pako from 'pako';
+import { getVerificationKey } from '../verificationKey.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,11 +14,17 @@ const CACHE_DIR = process.env.CACHE_DIR || path.join(__dirname, '../../cached-fi
 
 export default async function getCachedHtmlHandler(req, res) {
   try {
-    const { owner, repo, ref, bookId } = req.query;
+    const { owner, repo, ref, bookId, verification } = req.query;
 
     if (!owner || !repo || !ref || !bookId) {
       return res.status(400).json({ 
         message: 'Bad Request: Missing required parameters (owner, repo, ref, bookId)' 
+      });
+    }
+
+    if (verification !== getVerificationKey()) {
+      return res.status(401).json({ 
+        message: 'Unauthorized' 
       });
     }
 
