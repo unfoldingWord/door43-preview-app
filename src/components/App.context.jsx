@@ -434,7 +434,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const fetchCachedBook = async () => {
       // Try the fast path first: direct server route
-      const fastPathUrl = `/api/cached-page/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || 'master'}?book=${cachedFileSuffix}&verification=${verificationKey}`;
+      const fastPathUrl = `/api/cached-page?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&book=${cachedFileSuffix}&verification=${verificationKey}`;
       
       try {
         const fastResponse = await fetch(fastPathUrl, {

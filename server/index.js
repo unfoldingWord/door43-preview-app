@@ -41,7 +41,7 @@ app.post('/api/save-html-to-cache', saveHtmltoCacheHandler);
 app.get('/api/get-cached-html', getCachedHtmlHandler);
 
 // Direct cached page serving (fast path)
-app.get('/api/cached-page/:owner/:repo/:ref?', serveCachedPage);
+app.get('/api/cached-page', serveCachedPage);
 
 // Serve static files from dist folder (production)
 if (process.env.NODE_ENV === 'production') {
