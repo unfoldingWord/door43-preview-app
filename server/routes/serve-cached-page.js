@@ -1,6 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import pako from 'pako';
+import { getVerificationKey } from '../verificationKey.js';
+import { version } from 'os';
 
 const CACHE_DIR = process.env.CACHE_DIR || './cached-files';
 
@@ -11,9 +13,16 @@ const CACHE_DIR = process.env.CACHE_DIR || './cached-files';
  */
 export default async function serveCachedPage(req, res) {
   try {
-    const { owner, repo, ref } = req.params;
+    const { owner, repo, ref, verification } = req.query;
     const book = req.query.book || 'default';
     const actualRef = ref || 'master';
+
+    if (verification != getVerificationKey()) {
+      return res.status(401).json({ 
+        cached: false, 
+        message: 'Unauthorized '+verification+' '+getVerificationKey() 
+      });
+    }
 
     const filePath = path.join(CACHE_DIR, 'u', owner, repo, actualRef, `${book}.json.gz`);
 

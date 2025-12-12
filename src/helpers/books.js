@@ -41,7 +41,7 @@ export const downloadCachedBook = async (url) => {
   return null;
 };
 
-export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion, catalogEntry, builtWith, htmlSections) => {
+export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion, catalogEntry, builtWith, htmlSections, verificationKey) => {
   const cachedBook = {
     bookId: bookId,
     preview_version: previewVersion,
@@ -64,12 +64,7 @@ export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion,
   const path = `u/${owner}/${repo}/${ref}/${bookId}.json.gz`;
 
   try {
-    // Fetch verification key from server config
-    const configResponse = await fetch('/api/config');
-    const config = await configResponse.json();
-    const verification = config.previewVerificationKey;
-
-    const response = await fetch(`/api/save-html-to-cache?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verification)}`, {
+    const response = await fetch(`/api/save-html-to-cache?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verificationKey)}`, {
       method: 'POST',
       body: compressedData,
       headers: {

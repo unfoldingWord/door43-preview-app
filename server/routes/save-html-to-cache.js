@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { getVerificationKey } from '../verificationKey.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,7 +24,7 @@ export default async function saveHtmltoCacheHandler(req, res) {
   try {
     const verification = req.query.verification || '';
 
-    if (verification !== (process.env.PREVIEW_VERIFICATION_KEY || '')) {
+    if (verification !== getVerificationKey()) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 

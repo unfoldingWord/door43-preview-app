@@ -55,7 +55,8 @@ export function AppContextProvider({ children }) {
   const [newUrlHash, setNewUrlHash] = useState('');
   const [printPreviewStatus, setPrintPreviewStatus] = useState('not started');
   const [printPreviewPercentDone, setPrintPreviewPercentDone] = useState(0);
-  const [authToken, setAuthToken] = useState();
+  const [authToken, setAuthToken] = useState('');
+  const [verificationKey, setVerificationKey] = useState('');
   const [builtWith, setBuiltWith] = useState([]);
   const [cachedBook, setCachedBook] = useState();
   const [cachedHtmlSections, setCachedHtmlSections] = useState();
@@ -122,6 +123,24 @@ export function AppContextProvider({ children }) {
     } else {
       setServerInfo(DCS_SERVERS['qa']);
     }
+
+    // Get Config from Preview Server
+    const token = url.searchParams.get('token');
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        if (token) {
+          setAuthToken(token);
+        } else if (config.dcsReadOnlyToken) {
+          setAuthToken(config.dcsReadOnlyToken);
+        }
+
+        if(config.previewVerificationKey) {
+          setVerificationKey(config.previewVerificationKey);
+        }
+      })
+      .catch(err => console.error('Failed to fetch config:', err));
+
 
     // Get URL Info
     let urlParts = url.pathname.replace(/^\/(.*)\/*$/, '$1').split('/');
@@ -234,20 +253,6 @@ export function AppContextProvider({ children }) {
     setExpandedBooks(_expandedBooks);
     setLastBookId(_books.join('-') || _lastBookId);
 
-    // Get Auth Token
-    if (url.searchParams.get('token')) {
-      setAuthToken(url.searchParams.get('token'));
-    } else {
-      // Fetch token from server config
-      fetch('/api/config')
-        .then(res => res.json())
-        .then(config => {
-          if (config.dcsReadOnlyToken) {
-            setAuthToken(config.dcsReadOnlyToken);
-          }
-        })
-        .catch(err => console.error('Failed to fetch config:', err));
-    }
     if (
       url.searchParams.get('rerender') === '1' ||
       url.searchParams.get('rerender') === 'true' ||
@@ -429,7 +434,7 @@ export function AppContextProvider({ children }) {
   useEffect(() => {
     const fetchCachedBook = async () => {
       // Try the fast path first: direct server route
-      const fastPathUrl = `/api/cached-page/${urlInfo.owner}/${urlInfo.repo}/${urlInfo.ref || repo?.default_branch || 'master'}?book=${cachedFileSuffix}`;
+      const fastPathUrl = `/api/cached-page?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&book=${cachedFileSuffix}&verification=${verificationKey}`;
       
       try {
         const fastResponse = await fetch(fastPathUrl, {
@@ -459,7 +464,7 @@ export function AppContextProvider({ children }) {
 
       // Fallback to original API route
       const response = await fetch(
-        `/api/get-cached-html?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}`,
+        `/api/get-cached-html?owner=${urlInfo.owner}&repo=${urlInfo.repo}&ref=${urlInfo.ref || repo?.default_branch || 'master'}&bookId=${cachedFileSuffix}&verification=${verificationKey}`,
         {
           cache: 'default',
         }
@@ -489,12 +494,12 @@ export function AppContextProvider({ children }) {
           setCachedBook({});
           setRenderNewCopy(true);
         }
-      } else if (!fetchingCachedBook && !cachedBook) {
+      } else if (!fetchingCachedBook && !cachedBook && verificationKey) {
         setFetchingCachedBook(true);
         fetchCachedBook();
       }
     }
-  }, [urlInfo, books, renderNewCopy, cachedFileSuffix, catalogEntry, repo?.default_branch, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken]);
+  }, [urlInfo, books, renderNewCopy, cachedFileSuffix, catalogEntry, repo?.default_branch, cachedBook, fetchingCachedBook, noCache, renderMessage, authToken, verificationKey]);
 
   useEffect(() => {
     const determineIfRenderingNewCopyNecessary = () => {
@@ -768,9 +773,9 @@ export function AppContextProvider({ children }) {
 
   useEffect(() => {
     const sendCachedBook = async () => {
-      uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, cachedFileSuffix, APP_VERSION, catalogEntry, builtWith, htmlSections);
+      uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, cachedFileSuffix, APP_VERSION, catalogEntry, builtWith, htmlSections, verificationKey);
       if (isDefaultBook && cachedFileSuffix != 'default') {
-        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections);
+        uploadCachedBook(urlInfo.owner, urlInfo.repo, catalogEntry.branch_or_tag_name, 'default', APP_VERSION, catalogEntry, builtWith, htmlSections, verificationKey);
       }
     };
 

@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 // Middleware
 app.use(cors());
@@ -41,7 +41,7 @@ app.post('/api/save-html-to-cache', saveHtmltoCacheHandler);
 app.get('/api/get-cached-html', getCachedHtmlHandler);
 
 // Direct cached page serving (fast path)
-app.get('/api/cached-page/:owner/:repo/:ref?', serveCachedPage);
+app.get('/api/cached-page', serveCachedPage);
 
 // Serve static files from dist folder (production)
 if (process.env.NODE_ENV === 'production') {
