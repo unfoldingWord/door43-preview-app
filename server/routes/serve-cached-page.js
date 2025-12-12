@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import pako from 'pako';
-import { getVerificationKey } from '../verificationKey';
+import { getVerificationKey } from '../verificationKey.js';
 
 const CACHE_DIR = process.env.CACHE_DIR || './cached-files';
 
