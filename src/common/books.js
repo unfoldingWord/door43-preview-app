@@ -63,7 +63,7 @@ export const BibleBookData = { "gen": {"id": "gen", "title": "Genesis", "usfm": 
 "2jn": {"id": "2jn", "title": "2 John", "usfm": "64-2JN", "testament": "new", "verseCount": 13, "chapters": [13]},
 "3jn": {"id": "3jn", "title": "3 John", "usfm": "65-3JN", "testament": "new", "verseCount": 15, "chapters": [15]},
 "jud": {"id": "jud", "title": "Jude", "usfm": "66-JUD", "testament": "new", "verseCount": 25, "chapters": [25]},
-"rev": {"id": "rev", "title": "Revelation", "usfm": "67-REV", "testament": "new", "verseCount": 404, "chapters": [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 17, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21]}
+"rev": {"id": "rev", "title": "Revelation", "usfm": "67-REV", "testament": "new", "verseCount": 404, "chapters": [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 18, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21]}
 }
 
 const oftenMissingBCVList = [
