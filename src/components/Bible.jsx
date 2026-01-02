@@ -403,17 +403,26 @@ const parseHtml = (html, book, showChapters = true) => {
   const titleMatch = html.match(/<p [^>]*>(.*?)<\/p>/);
   const title = titleMatch ? titleMatch[1] : '';
   html = html.replace(/<p /, `<p id="nav-${book}" `);
+
+  // Convert chapter:verse data in spans to nav anchors
   html = html.replaceAll(
     /<span id="chapter-(\d+)-verse-(\d+)"([^>]*)>(\d+)<\/span>/g,
     `<span id="nav-${book}-$1-$2"$3><a href="#nav-${book}-$1-$2" class="header-link">$4</a></span>`
   );
+
+  // Add TOC and nav data
   html = html.replaceAll(
     /<span id="chapter-(\d+)"([^>]+)>([\d]+)<\/span>/gi,
     `<span id="nav-${book}-$1"${showChapters ? ` data-toc-title="${title} $1"` : ''}$2><a href="#nav-${book}-$1-1" class="header-link">$3</a></span>`
   );
+
+  // Add class for footnotes  
   html = html.replace(/<span([^>]+style="[^">]+#CCC[^">]+")/gi, `<span$1 class="footnote"`);
 
-  html = html.replace(/(\d+),\s+(\d{3})(?!\d)/g, '$1,$2');
+  // normalize spaces
+  html = html.replace(/[\u00A0\u202F\u2009 ]+/g, ' ');
+  // fix numbers with comma separated thousands
+  html = html.replace(/(\d{1,3})(?:\s*,\s*\d{3})+\b/g, m => m.replace(/\s*,\s*/g, ','));
 
   const footnotes = html.match(/<span class="footnote">/g);
   if (footnotes) {
