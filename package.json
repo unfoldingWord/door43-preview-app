@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "1.3.1",
+  "version": "1.3.4",
   "type": "module",
   "engines": {
     "node": ">=22.0.0",
