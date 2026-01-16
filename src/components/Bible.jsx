@@ -382,9 +382,9 @@ h1 {
 :root{
   /* Adjust these 4 until it looks perfect */
   --chapter-gutter: 4.5em;       /* width reserved for big chapter */
-  --verse-gutter:   -1.0em;       /* width reserved for verse numbers */
-  --label-gap:      .45em;       /* space between chapter + verse */
-  --chapter-nudge:  3.0em;       /* how far to push chapter left */
+  --verse-gutter:  -2.0em;       /* width reserved for verse numbers */
+  --label-gap:      1.0em;       /* space between chapter + verse */
+  --chapter-nudge:  4.0em;       /* how far to push chapter left */
 
   --poetry-gutter: calc(var(--chapter-gutter) + var(--verse-gutter) + var(--label-gap));
 
