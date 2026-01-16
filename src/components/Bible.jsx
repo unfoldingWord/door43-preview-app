@@ -369,6 +369,132 @@ h1 {
   font-weight: bold;
   font-size: 0.9em;
 }
+
+/* ==========================================
+   Psalms poetry layout override (END OF CSS)
+   Fixes:
+   - chapter to left of verse
+   - chapter raised without breaking layout
+   - verse 1 stays on same line as text
+   - consistent gutter for q/q2/q3/q4
+   ========================================== */
+
+:root{
+  /* Adjust these 4 until it looks perfect */
+  --chapter-gutter: 4.5em;       /* width reserved for big chapter */
+  --verse-gutter:   -1.0em;       /* width reserved for verse numbers */
+  --label-gap:      .45em;       /* space between chapter + verse */
+  --chapter-nudge:  3.0em;       /* how far to push chapter left */
+
+  --poetry-gutter: calc(var(--chapter-gutter) + var(--verse-gutter) + var(--label-gap));
+
+  /* Indents for deeper poetry levels */
+  --q2-extra: 2.0em;
+  --q3-extra: 3.5em;
+  --q4-extra: 5.0em;
+
+  /* Vertical tuning */
+  --chapter-raise: 1em;       /* how much higher chapter appears */
+  --label-top: 0.4em;           /* baseline-ish alignment for verse labels */
+  --chapter-break: 1.2em;        /* space before a new chapter */
+}
+
+/* Poetry paragraphs */
+p.paras_usfm_q,
+p.paras_usfm_q2,
+p.paras_usfm_q3,
+p.paras_usfm_q4{
+  position: relative !important;
+  text-indent: 0 !important;
+}
+
+/* Reserve gutter + apply level indents */
+p.paras_usfm_q  { padding-left: var(--poetry-gutter) !important; }
+p.paras_usfm_q2 { padding-left: calc(var(--poetry-gutter) + var(--q2-extra)) !important; }
+p.paras_usfm_q3 { padding-left: calc(var(--poetry-gutter) + var(--q3-extra)) !important; }
+p.paras_usfm_q4 { padding-left: calc(var(--poetry-gutter) + var(--q4-extra)) !important; }
+
+/* Hard reset labels so renderer rules can't keep them in flow */
+p.paras_usfm_q  > .marks_chapter_label,
+p.paras_usfm_q2 > .marks_chapter_label,
+p.paras_usfm_q3 > .marks_chapter_label,
+p.paras_usfm_q4 > .marks_chapter_label,
+p.paras_usfm_q  > .marks_verses_label,
+p.paras_usfm_q2 > .marks_verses_label,
+p.paras_usfm_q3 > .marks_verses_label,
+p.paras_usfm_q4 > .marks_verses_label{
+  position: absolute !important;
+  float: none !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  z-index: 2 !important;
+}
+
+/* Chapter: left slot, nudged left safely, raised visually (transform) */
+p.paras_usfm_q  > .marks_chapter_label,
+p.paras_usfm_q2 > .marks_chapter_label,
+p.paras_usfm_q3 > .marks_chapter_label,
+p.paras_usfm_q4 > .marks_chapter_label{
+  left: calc(-1 * var(--chapter-nudge)) !important;
+  top: var(--label-top) !important;
+  width: var(--chapter-gutter) !important;
+  text-align: right !important;
+
+  /* Visual raise only (doesn't change layout flow) */
+  transform: translateY(calc(-1 * var(--chapter-raise))) !important;
+  transform-origin: top right;
+}
+
+/* Verse: always to the right of chapter slot, aligned with first text line */
+p.paras_usfm_q  > .marks_verses_label,
+p.paras_usfm_q2 > .marks_verses_label,
+p.paras_usfm_q3 > .marks_verses_label,
+p.paras_usfm_q4 > .marks_verses_label{
+  left: calc(var(--chapter-gutter) + var(--label-gap) - var(--chapter-nudge)) !important;
+  top: var(--label-top) !important;
+  width: var(--verse-gutter) !important;
+  text-align: right !important;
+}
+
+/* Neutralize renderer anchor styling inside labels */
+p.paras_usfm_q  > .marks_chapter_label a,
+p.paras_usfm_q2 > .marks_chapter_label a,
+p.paras_usfm_q3 > .marks_chapter_label a,
+p.paras_usfm_q4 > .marks_chapter_label a,
+p.paras_usfm_q  > .marks_verses_label a,
+p.paras_usfm_q2 > .marks_verses_label a,
+p.paras_usfm_q3 > .marks_verses_label a,
+p.paras_usfm_q4 > .marks_verses_label a{
+  display: inline !important;
+  float: none !important;
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-decoration: none;
+}
+
+/* Chapter breaks:
+   Add space before any q line that contains a chapter label.
+   (Uses :has; see fallback below)
+*/
+p.paras_usfm_q:has(> .marks_chapter_label){
+  margin-top: var(--chapter-break) !important;
+
+  /* reserve a little extra vertical room so the raised chapter doesn't overlap previous content */
+  padding-top: calc(var(--chapter-raise) * 0.6) !important;
+}
+
+/* Fallback if :has() isn't supported */
+@supports not selector(p:has(> span)) {
+  p.paras_usfm_q > .marks_chapter_label::before{
+    content: "";
+    display: block;
+    height: var(--chapter-break);
+  }
+}
 `;
 
 const defaultFlags = {
