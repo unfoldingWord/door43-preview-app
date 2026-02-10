@@ -5,7 +5,7 @@ import { useState, useEffect, useContext } from 'react';
 import { ThemeProvider, createTheme, Checkbox, FormControlLabel, Tooltip } from '@mui/material';
 
 // USFM parsing library
-import { removeAlignments } from '@helpers/usfm';
+import { removeAlignments } from 'usfm-alignment-remover';
 
 // Bible reference component
 import BibleReference, { useBibleReference } from 'bible-reference-rcl';
@@ -371,12 +371,7 @@ h1 {
 }
 
 /* ==========================================
-   Psalms poetry layout override (END OF CSS)
-   Fixes:
-   - chapter to left of verse
-   - chapter raised without breaking layout
-   - verse 1 stays on same line as text
-   - consistent gutter for q/q2/q3/q4
+   Bible poetry layout
    ========================================== */
 
 :root{

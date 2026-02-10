@@ -906,7 +906,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
               if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `
                 <h4 class="header tn-note-header">
-                  <a href="#nav-${noteLink}" class="header-link" data-descr="${row.ID}">
+                  <a href="#${noteLink}" class="header-link" data-descr="${row.ID}">
                   Note: ${verseBridge}
                   </a>
                 </h4>
