@@ -47,7 +47,6 @@ const webCss = `
 ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.styles)}
 
 .wrappers_usfm_qs { float: right; }
-.marks_chapter_label { float: left; }
 .wrappers_usfm_wj { color: #D00; }
 .paras_usfm_b { height: 1em; }
 .paras_usfm_d {
