@@ -4,17 +4,17 @@ FROM cgr.dev/chainguard/node:latest AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install dependencies using npx pnpm (no global install needed)
-RUN npx pnpm@latest install --frozen-lockfile
+# Install dependencies using pinned pnpm (no global install needed)
+RUN npx pnpm@11.0.9 install --frozen-lockfile
 
 # Copy source files
 
 COPY . .
 
 # Build the React app (no build-time secrets needed)
-RUN npx pnpm build
+RUN npx pnpm@11.0.9 build
 
 # Production stage
 FROM cgr.dev/chainguard/node:latest
@@ -22,10 +22,10 @@ FROM cgr.dev/chainguard/node:latest
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install only production dependencies
-RUN npx pnpm@latest install --prod --frozen-lockfile
+RUN npx pnpm@11.0.9 install --prod --frozen-lockfile
 
 # Copy built app from builder
 COPY --from=builder /app/dist ./dist
