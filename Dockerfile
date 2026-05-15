@@ -6,15 +6,15 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
+# Approve all builds
+RUN npx pnpm@latest approve-builds --all
+
 # Install dependencies using npx pnpm (no global install needed)
 RUN npx pnpm@latest install --frozen-lockfile
 
 # Copy source files
 
 COPY . .
-
-# Approve all builds
-RUN npx pnpm approve-builds --all
 
 # Build the React app (no build-time secrets needed)
 RUN npx pnpm build
