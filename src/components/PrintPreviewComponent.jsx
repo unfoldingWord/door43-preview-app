@@ -111,7 +111,7 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
       const cssStr = `
 @page {
   size: ${printOptions.pageWidth} ${printOptions.pageHeight};
-  margin: 1cm;
+  margin: 20mm 25mm;
 
   @footnote {
     float: bottom;
@@ -122,6 +122,11 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
 
   @bottom-center {
     content: counter(page);
+  }
+
+  @top-center {
+    font-size: 10px;
+    content: element(titleRunning);
   }
 }
 
@@ -164,28 +169,6 @@ export const PrintPreviewComponent = forwardRef(({ style, view }, ref) => {
 
   @top-right {
     content: none;
-  }
-}
-
-@page :left {
-  margin-right: 30mm;
-  margin-left: 20mm;
-
-  @top-left {
-    font-size: 10px;
-    content: element(titleRunning);
-    text-align: left;
-  }
-}
-
-@page :right {
-  margin-left: 30mm;
-  margin-right: 20mm;
-
-  @top-right {
-    font-size: 10px;
-    content: element(titleRunning);
-    text-align: right;
   }
 }
 
