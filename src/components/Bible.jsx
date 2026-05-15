@@ -45,6 +45,7 @@ const theme = createTheme({
 
 const webCss = `
 ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.styles)}
+
 .wrappers_usfm_qs { float: right; }
 .marks_chapter_label { float: left; }
 .wrappers_usfm_wj { color: #D00; }
@@ -517,6 +518,7 @@ const renderFlags = {
   showXrefs: true,
   showChapterLabels: true,
   showVersesLabels: true,
+  showFirstVerseLabel: true,
   showCharacterMarkup: true,
   showParaStyles: true,
   selectedBcvNotes: [],
@@ -524,10 +526,12 @@ const renderFlags = {
 
 const pk = new Proskomma();
 
+const escapeAttr = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
 const parseHtml = (html, book, showChapters = true) => {
-  const titleMatch = html.match(/<p [^>]*>(.*?)<\/p>/);
-  const title = titleMatch ? titleMatch[1] : '';
-  html = html.replace(/<p /, `<p id="nav-${book}" `);
+  const titleMatch = html.match(/<h1 class="paras_usfm_mt"[^>]*>([\s\S]*?)<\/h1>/);
+  const title = escapeAttr((titleMatch ? titleMatch[1] : '').replace(/<[^>]+>/g, '').trim());
+  html = html.replace(/<(h[1-6]|p)\b/, `<$1 id="nav-${book}" `);
 
   // Convert chapter:verse data in spans to nav anchors
   html = html.replaceAll(

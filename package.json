@@ -1,7 +1,7 @@
 {
   "name": "door43-preview-app",
   "private": true,
-  "version": "1.3.9",
+  "version": "1.4.0",
   "type": "module",
   "engines": {
     "node": ">=22.0.0",
@@ -55,7 +55,7 @@
     "papaparse": "^5.5.3",
     "prop-types": "^15.8.1",
     "proskomma-core": "^0.10.7",
-    "proskomma-json-tools": "0.8.12",
+    "proskomma-json-tools": "^0.9.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.5.0",
