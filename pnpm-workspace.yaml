@@ -1,6 +1,6 @@
-onlyBuiltDependencies:
-  - '@swc/core'
-  - core-js
-  - core-js-pure
-  - es5-ext
-  - esbuild
+allowBuilds:
+  '@swc/core': true
+  core-js: true
+  core-js-pure: true
+  es5-ext: true
+  esbuild: true
