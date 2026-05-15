@@ -50,6 +50,9 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
 .marks_chapter_label { float: left; }
 .wrappers_usfm_wj { color: #D00; }
 .paras_usfm_b { height: 1em; }
+.paras_usfm_d {
+    font-size: 1em !important;
+}
 
 pre {
     font-family: inherit;
