@@ -6,9 +6,6 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Approve all builds
-RUN npx pnpm@latest approve-builds --all
-
 # Install dependencies using npx pnpm (no global install needed)
 RUN npx pnpm@latest install --frozen-lockfile
 
