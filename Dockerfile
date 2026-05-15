@@ -13,6 +13,9 @@ RUN npx pnpm@latest install --frozen-lockfile
 
 COPY . .
 
+# Approve all builds
+RUN npx pnpm approve-builds --all
+
 # Build the React app (no build-time secrets needed)
 RUN npx pnpm build
 
