@@ -52,49 +52,95 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
     font-size: 1em !important;
 }
 
-.paras_usfm_p:has(.marks_chapter_label),
-.paras_usfm_q:has(.marks_chapter_label) {
+/* Prose chapter starts keep the renderer's floated drop-cap (unchanged).
+   Poetry chapter starts are handled by the \q rules further below. */
+.paras_usfm_p:has(.marks_chapter_label) {
      padding-left: 0 !important;
      text-indent: 0 !important
 }
 
-.paras_usfm_q {
-  color: red;
-}
+/* ------------------------------------------------------------------ *
+ * Poetry (\q, \q2, \q3) hanging-indent alignment.
+ *
+ * Goal: the body text after a verse number lands on the SAME x for a
+ * given level, whether the number is "1" or "10", whether or not a
+ * verse label is present, and progressively further in per level.
+ *
+ *   --c-gutter : fixed left column reserved for the (large) chapter
+ *                number. Present on every poetry line so the whole poem
+ *                shares one left margin; chapter starts park their drop-
+ *                cap number here (out of flow) while their verse text
+ *                still aligns with every other verse of the level.
+ *   --q-gutter : fixed width reserved for the verse number. The label
+ *                is a fixed-width inline-block of this width, so "1" and
+ *                "10" both end at the same point -> text always aligns.
+ *   --q-step   : extra indent added per nesting level (q < q2 < q3).
+ *
+ * Body-text x  = c-gutter + q-gutter + level*step   (level = 0, 1, 2)
+ * Mechanism    = padding-left places the text edge; a negative
+ *                text-indent of one gutter pulls the first line (the
+ *                label) back so it "hangs" in the reserved gutter.
+ * ------------------------------------------------------------------ */
+.paras_usfm_q  { --q-level: 0; }
+.paras_usfm_q2 { --q-level: 1; }
+.paras_usfm_q3 { --q-level: 2; }
 
-.paras_usfm_q2 {
-  color: orange;
-}
-  
+.paras_usfm_q,
+.paras_usfm_q2,
 .paras_usfm_q3 {
-  color: green;
+  --c-gutter: 2.5rem;
+  --q-gutter: 1.6rem;
+  --q-step: 1.5rem;
+  padding-left: calc(var(--c-gutter) + var(--q-gutter) + var(--q-level) * var(--q-step));
 }
 
-.paras_usfm_q:not(:has(.marks_verses_label)) {
-  color: white;
-  background-color: red;
+/* Labeled lines: hang the number back into the reserved gutter so the
+   body text still lands on the padding edge. Unlabeled lines keep the
+   default text-indent: 0, so their text starts on that same edge. */
+.paras_usfm_q:has(.marks_verses_label),
+.paras_usfm_q2:has(.marks_verses_label),
+.paras_usfm_q3:has(.marks_verses_label) {
+  text-indent: calc(-1 * var(--q-gutter));
 }
 
-.paras_usfm_q2:not(:has(.marks_verses_label)) {
-  color: white;
-  background-color: orange;
+/* The number occupies exactly one gutter (overriding the renderer's
+   margin-right:0.5em), so its width no longer depends on the digits. */
+.paras_usfm_q  > .marks_verses_label,
+.paras_usfm_q2 > .marks_verses_label,
+.paras_usfm_q3 > .marks_verses_label {
+  display: inline-block;
+  box-sizing: border-box;
+  width: var(--q-gutter);
+  margin-right: 0;
+  padding-right: 0.35rem;
+  text-indent: 0;       /* don't let the parent's negative indent shift the digits */
+  text-align: left;     /* number sits at the left of the gutter */
 }
 
-.paras_usfm_q3:not(:has(.marks_verses_label)) {
-  color: white;
-  background-color: green;
+/* Poetry chapter starts: take the large chapter number OUT of the inline
+   flow and park it in the reserved left column. Because it no longer
+   consumes inline width, the verse number still hangs in its gutter and
+   the verse-1 text lands on the SAME x as every other verse of the level
+   (drop-cap behaviour: tall number overhangs the lines below in the
+   margin, without pushing them). */
+.paras_usfm_q:has(.marks_chapter_label),
+.paras_usfm_q2:has(.marks_chapter_label),
+.paras_usfm_q3:has(.marks_chapter_label) {
+  position: relative;
+  padding-top: 1em;  /* give some vertical space for the chapter number parked in the gutter */
 }
 
-.paras_usfm_q2:has(.marks_verses_label) {
-  padding-left: 1.5em;
-}
-
-p.paras_usfm_q2 > .marks_verses_label {
-    padding-right: 1.5em;
-}
-
-.paras_usfm_q:not(:has(.marks_verses_label)) {
-    padding-left: 2.5em;
+.paras_usfm_q  > .marks_chapter_label,
+.paras_usfm_q2 > .marks_chapter_label,
+.paras_usfm_q3 > .marks_chapter_label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--c-gutter);
+  box-sizing: border-box;
+  float: none;          /* override the renderer's float:left */
+  margin-right: 0;
+  padding-right: 0.3rem;
 }
 
 pre {
