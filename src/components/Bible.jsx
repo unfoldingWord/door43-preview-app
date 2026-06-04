@@ -56,7 +56,7 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
    Poetry chapter starts are handled by the \q rules further below. */
 .paras_usfm_p:has(.marks_chapter_label) {
      padding-left: 0 !important;
-     text-indent: 0 !important
+     text-indent: 0 !important;
 }
 
 /* ------------------------------------------------------------------ *
@@ -81,33 +81,69 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
  *                text-indent of one gutter pulls the first line (the
  *                label) back so it "hangs" in the reserved gutter.
  * ------------------------------------------------------------------ */
+.paras_usfm_d,
 .paras_usfm_q  { --q-level: 0; }
 .paras_usfm_q2 { --q-level: 1; }
 .paras_usfm_q3 { --q-level: 2; }
 
+.paras_usfm_d,
 .paras_usfm_q,
 .paras_usfm_q2,
-.paras_usfm_q3 {
+.paras_usfm_q3,
+.paras_usfm_q4 {
   --c-gutter: 2.5rem;
   --q-gutter: 1.6rem;
   --q-step: 1.5rem;
   padding-left: calc(var(--c-gutter) + var(--q-gutter) + var(--q-level) * var(--q-step));
 }
 
-/* Labeled lines: hang the number back into the reserved gutter so the
-   body text still lands on the padding edge. Unlabeled lines keep the
-   default text-indent: 0, so their text starts on that same edge. */
-.paras_usfm_q:has(.marks_verses_label),
-.paras_usfm_q2:has(.marks_verses_label),
-.paras_usfm_q3:has(.marks_verses_label) {
+/* \d (Hebrew title/superscription) is laid out exactly like \q level 1:
+   chapter number parked in the column, text on the q1 alignment. It just
+   reads italic + bold. (No padding-left override here -- it must keep the
+   calc() above so its column math matches the poetry.) */
+.paras_usfm_d {
+  font-style: italic;
+  font-weight: bold;
+}
+
+/* The big chapter number is parked in the column as a plain (non-italic,
+   non-bold) drop-cap, even inside an italic/bold \d. */
+.marks_chapter_label {
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
+/* Hang ONLY when the line LEADS with a verse number -- i.e. the verse
+   label is the first child, or it sits right after the chapter label.
+   A verse label that appears mid-line (a verse that starts partway
+   through a poetic line) must NOT hang and must NOT get the gutter box;
+   it stays an ordinary inline superscript. */
+.paras_usfm_d:has(> .marks_verses_label:first-child),
+.paras_usfm_q:has(> .marks_verses_label:first-child),
+.paras_usfm_q2:has(> .marks_verses_label:first-child),
+.paras_usfm_q3:has(> .marks_verses_label:first-child),
+.paras_usfm_q4:has(> .marks_verses_label:first-child),
+.paras_usfm_d:has(> .marks_chapter_label:first-child + .marks_verses_label),
+.paras_usfm_q:has(> .marks_chapter_label:first-child + .marks_verses_label),
+.paras_usfm_q2:has(> .marks_chapter_label:first-child + .marks_verses_label),
+.paras_usfm_q3:has(> .marks_chapter_label:first-child + .marks_verses_label),
+.paras_usfm_q4:has(> .marks_chapter_label:first-child + .marks_verses_label) {
   text-indent: calc(-1 * var(--q-gutter));
 }
 
-/* The number occupies exactly one gutter (overriding the renderer's
-   margin-right:0.5em), so its width no longer depends on the digits. */
-.paras_usfm_q  > .marks_verses_label,
-.paras_usfm_q2 > .marks_verses_label,
-.paras_usfm_q3 > .marks_verses_label {
+/* The LEADING verse number occupies exactly one gutter (overriding the
+   renderer's margin-right:0.5em), so its width no longer depends on the
+   digits. Mid-line verse labels are deliberately excluded. */
+.paras_usfm_d  > .marks_verses_label:first-child,
+.paras_usfm_q  > .marks_verses_label:first-child,
+.paras_usfm_q2 > .marks_verses_label:first-child,
+.paras_usfm_q3 > .marks_verses_label:first-child,
+.paras_usfm_q4 > .marks_verses_label:first-child,
+.paras_usfm_d  > .marks_chapter_label:first-child + .marks_verses_label,
+.paras_usfm_q  > .marks_chapter_label:first-child + .marks_verses_label,
+.paras_usfm_q2 > .marks_chapter_label:first-child + .marks_verses_label,
+.paras_usfm_q3 > .marks_chapter_label:first-child + .marks_verses_label,
+.paras_usfm_q4 > .marks_chapter_label:first-child + .marks_verses_label {
   display: inline-block;
   box-sizing: border-box;
   width: var(--q-gutter);
@@ -123,16 +159,20 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
    the verse-1 text lands on the SAME x as every other verse of the level
    (drop-cap behaviour: tall number overhangs the lines below in the
    margin, without pushing them). */
+.paras_usfm_d:has(.marks_chapter_label),
 .paras_usfm_q:has(.marks_chapter_label),
 .paras_usfm_q2:has(.marks_chapter_label),
-.paras_usfm_q3:has(.marks_chapter_label) {
+.paras_usfm_q3:has(.marks_chapter_label),
+.paras_usfm_q4:has(.marks_chapter_label) {
   position: relative;
   padding-top: 1em;  /* give some vertical space for the chapter number parked in the gutter */
 }
 
+.paras_usfm_d > .marks_chapter_label,
 .paras_usfm_q  > .marks_chapter_label,
 .paras_usfm_q2 > .marks_chapter_label,
-.paras_usfm_q3 > .marks_chapter_label {
+.paras_usfm_q3 > .marks_chapter_label,
+.paras_usfm_q4 > .marks_chapter_label {
   position: absolute;
   top: 0;
   left: 0;

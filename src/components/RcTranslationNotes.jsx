@@ -839,8 +839,18 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 `;
         }
 
+        // A chapter can have zero or more `<chapter>:front` notes (chapter front matter such as
+        // the \d descriptor, e.g. a Psalm's "A Psalm of David"). These behave like verses, so we
+        // render them first (only when present) and then the numbered verses.
+        const verseStrs = [];
+        if (tnTsvDataWithGLQuotes?.[chapterStr]?.['front']) {
+          verseStrs.push('front');
+        }
         for (let verseIdx = 0; verseIdx < numVerses; verseIdx++) {
-          const verseStr = String(verseIdx + 1);
+          verseStrs.push(String(verseIdx + 1));
+        }
+
+        for (let verseStr of verseStrs) {
           const refStr = `${chapterStr}:${verseStr}`;
           const verseLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}`;
           let usfmJSONVerseStr = verseStr;

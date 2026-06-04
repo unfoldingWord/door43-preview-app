@@ -11,6 +11,23 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
       for (let targetUsfm of targetUsfms) {
         targetBooks.push(getParsedUSFM(targetUsfm)?.chapters);
       }
+
+      // uw-quote-helpers' getTargetQuoteFromSourceQuote only handles numeric `chapter:verse`
+      // references: its internal REF_PATTERN is `\d+:\d+` and it runs parseInt() on the verse.
+      // Chapter front matter (e.g. a Psalm's \d descriptor) lives under the non-numeric "front"
+      // verse key, so quotes there never convert. Alias "front" to the numeric verse key "0" in
+      // both the source and target books, and pass a "<chapter>:0" ref for those rows, so the
+      // existing alignment lookup works unchanged.
+      const aliasFrontToZero = (book) => {
+        for (const chapterKey in book) {
+          if (book[chapterKey]?.front && !('0' in book[chapterKey])) {
+            book[chapterKey]['0'] = book[chapterKey].front;
+          }
+        }
+      };
+      aliasFrontToZero(sourceBook);
+      targetBooks.forEach((targetBook) => targetBook && aliasFrontToZero(targetBook));
+
       let data = JSON.parse(JSON.stringify(tsvData));
 
       for (let chapter in data) {
@@ -20,10 +37,11 @@ export default function useFetchGLQuotesForTsvData({ tsvData, sourceUsfm, target
               row.Quote = row.OrigWords;
             }
             if (row.Quote && !row.Quote.endsWith(':') && row.Occurrence && row.Occurrence != '0') {
+              const ref = verse === 'front' ? `${chapter}:0` : row.Reference;
               for (let targetBookIdx in targetBooks) {
                 const params = {
                   quote: row.Quote || row.OrigWords,
-                  ref: row.Reference,
+                  ref,
                   sourceBook,
                   targetBook: targetBooks[targetBookIdx],
                   options: { occurrence: row.Occurrence, fromOrigLang: true, quoteTokenDelimiter },
