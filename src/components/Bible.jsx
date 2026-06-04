@@ -85,6 +85,7 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
 .paras_usfm_q  { --q-level: 0; }
 .paras_usfm_q2 { --q-level: 1; }
 .paras_usfm_q3 { --q-level: 2; }
+.paras_usfm_q4 { --q-level: 3; }
 
 .paras_usfm_d,
 .paras_usfm_q,
@@ -94,16 +95,26 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
   --c-gutter: 2.5rem;
   --q-gutter: 1.6rem;
   --q-step: 1.5rem;
-  padding-left: calc(var(--c-gutter) + var(--q-gutter) + var(--q-level) * var(--q-step));
+  padding-left: calc(var(--c-gutter) + var(--q-gutter) + var(--q-level, 0) * var(--q-step));
 }
 
-/* \d (Hebrew title/superscription) is laid out exactly like \q level 1:
-   chapter number parked in the column, text on the q1 alignment. It just
-   reads italic + bold. (No padding-left override here -- it must keep the
-   calc() above so its column math matches the poetry.) */
+/* \d (Hebrew title/superscription): align its text with the verse-number
+   column (--c-gutter) rather than the q1 body indent, so it sits right
+   after the chapter number instead of a full gutter further in. It reads
+   italic + bold. The chapter number is still parked in the column to its
+   left by the chapter-start rules below.
+   If a \d ever LEADS with a verse number, keep the body past the gutter
+   (the higher-specificity :has() rule) so the text doesn't overlap the
+   number parked at --c-gutter. */
 .paras_usfm_d {
   font-style: italic;
   font-weight: bold;
+  padding-left: var(--c-gutter);
+}
+
+.paras_usfm_d:has(> .marks_verses_label:first-child),
+.paras_usfm_d:has(> .marks_chapter_label:first-child + .marks_verses_label) {
+  padding-left: calc(var(--c-gutter) + var(--q-gutter));
 }
 
 /* The big chapter number is parked in the column as a plain (non-italic,
@@ -113,11 +124,16 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
   font-style: normal !important;
 }
 
-/* Hang ONLY when the line LEADS with a verse number -- i.e. the verse
-   label is the first child, or it sits right after the chapter label.
-   A verse label that appears mid-line (a verse that starts partway
-   through a poetic line) must NOT hang and must NOT get the gutter box;
-   it stays an ordinary inline superscript. */
+/* Park the verse number in a SINGLE left gutter ONLY when the line LEADS
+   with it -- i.e. the verse label is the first child, or it sits right
+   after the chapter label. The number is pulled OUT of flow and pinned to
+   the same x (--c-gutter) for every line, regardless of \q level, so all
+   leading verse numbers line up in one column while the body text keeps
+   its per-level indent. (An inline hanging-indent could only pull the
+   number back by one gutter, leaving deeper \q levels misaligned.)
+   A verse label that appears mid-line (a verse that starts partway through
+   a poetic line) must NOT be parked; it stays an ordinary inline
+   superscript. The position:relative here anchors that parked number. */
 .paras_usfm_d:has(> .marks_verses_label:first-child),
 .paras_usfm_q:has(> .marks_verses_label:first-child),
 .paras_usfm_q2:has(> .marks_verses_label:first-child),
@@ -128,12 +144,16 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
 .paras_usfm_q2:has(> .marks_chapter_label:first-child + .marks_verses_label),
 .paras_usfm_q3:has(> .marks_chapter_label:first-child + .marks_verses_label),
 .paras_usfm_q4:has(> .marks_chapter_label:first-child + .marks_verses_label) {
-  text-indent: calc(-1 * var(--q-gutter));
+  position: relative;
+  text-indent: 0;       /* number is out of flow; first line aligns at the level indent */
 }
 
-/* The LEADING verse number occupies exactly one gutter (overriding the
-   renderer's margin-right:0.5em), so its width no longer depends on the
-   digits. Mid-line verse labels are deliberately excluded. */
+/* The LEADING verse number is taken out of flow and parked at --c-gutter
+   (the single verse-number column). Because it no longer consumes inline
+   width, the verse text after it starts at the line's full level indent.
+   left is fixed, top is left to its static position so it stays vertically
+   aligned with the first line on both ordinary and chapter-start lines.
+   Mid-line verse labels are deliberately excluded. */
 .paras_usfm_d  > .marks_verses_label:first-child,
 .paras_usfm_q  > .marks_verses_label:first-child,
 .paras_usfm_q2 > .marks_verses_label:first-child,
@@ -144,12 +164,13 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
 .paras_usfm_q2 > .marks_chapter_label:first-child + .marks_verses_label,
 .paras_usfm_q3 > .marks_chapter_label:first-child + .marks_verses_label,
 .paras_usfm_q4 > .marks_chapter_label:first-child + .marks_verses_label {
-  display: inline-block;
+  position: absolute;
+  left: var(--c-gutter);  /* single column for every leading verse number */
   box-sizing: border-box;
   width: var(--q-gutter);
   margin-right: 0;
   padding-right: 0.35rem;
-  text-indent: 0;       /* don't let the parent's negative indent shift the digits */
+  text-indent: 0;
   text-align: left;     /* number sits at the left of the gutter */
 }
 
