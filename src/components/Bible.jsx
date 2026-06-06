@@ -92,7 +92,8 @@ ${render.sofria2web.renderStyles.styleAsCSS(render.sofria2web.renderStyles.style
 .paras_usfm_q2,
 .paras_usfm_q3,
 .paras_usfm_q4 {
-  --c-gutter: 2.5rem;
+  --c-gutter: 4rem;   /* wide enough for 3-digit chapter numbers (e.g. Psalm 100+) so the
+                         drop-cap doesn't overlap the verse label parked at left:var(--c-gutter) */
   --q-gutter: 1.6rem;
   --q-step: 1.5rem;
   padding-left: calc(var(--c-gutter) + var(--q-gutter) + var(--q-level, 0) * var(--q-step));
