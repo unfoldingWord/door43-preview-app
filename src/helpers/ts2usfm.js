@@ -27,7 +27,7 @@ export async function ts2usfm(catalogEntry, ingredient, zipFileData) {
 \\toc1 ${bookTitle}
 \\toc2 ${bookTitle}
 \\toc3 ${bookTitle}
-\\mt ${bookTitle}
+\\mt1 ${bookTitle}
 
 `;
     for (let chapterIdx = 0; chapterIdx < chapters.length; ++chapterIdx) {
