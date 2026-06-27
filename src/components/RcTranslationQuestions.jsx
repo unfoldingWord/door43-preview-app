@@ -45,6 +45,12 @@ const webCss = `
 }
 
 .tq-chapter-verse-section {
+  /* Keep a verse's Bible-text box and its question(s) together on one page... */
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  /* ...but allow page breaks BETWEEN verses so several short verses pack onto
+     one page instead of each verse claiming its own. */
+  break-before: auto !important;
   break-after: auto !important;
   page-break-after: auto !important;
 }
@@ -126,26 +132,58 @@ a.header-link:hover::after {
   -o-transform: rotate(-135deg) scale(1.0);
 }
 
-.tq-scripture-block {
-  border: 1px solid black;
-  padding: 10px;
-  margin-bottom: 10px;
+/* ─── Compact study-Bible layout ──────────────────────────
+   Scripture renders as parallel columns (one per aligned Bible, e.g. ULT | UST). */
+.tq-chapter-header,
+.tq-verse-header {
+  break-after: avoid !important;
 }
 
-.tq-scripture-header {
-  margin: 0;
+table.tq-scripture-cols {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 4px 0 8px 0;
+  font-size: 0.95em;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  break-inside: avoid;
 }
 
-.tq-scripture-text {
+table.tq-scripture-cols th.tq-col-label {
+  text-align: left;
+  font-size: 0.72em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 1px 6px;
+}
+
+table.tq-scripture-cols td {
+  vertical-align: top;
+  padding: 3px 6px;
+  border: none;
+  border-right: 1px solid #eee;
+}
+
+table.tq-scripture-cols td:last-child {
+  border-right: none;
+}
+
+td.tq-scripture-text {
   font-style: italic;
 }
 
+/* Page breaks fall only between chapters — each chapter starts a new page.
+   We intentionally do NOT force break-inside:avoid on every descendant here;
+   that blanket rule pushed each small verse onto its own page. Keeping a verse
+   intact is handled at the .tq-chapter-verse-section level above. */
 .tq-chapter-section {
   break-after: page !important;
-}
-
-.tq-chapter-section * {
-  break-inside: avoid !important;
 }
 
 `;
@@ -324,7 +362,7 @@ export default function RcTranslationQuestions() {
       for (let chapterIdx = 0; chapterIdx < BibleBookData[expandedBooks[0]].chapters.length; chapterIdx++) {
         const numVerses = BibleBookData[expandedBooks[0]].chapters[chapterIdx];
         const chapterStr = String(chapterIdx + 1);
-        if (renderOptions.chapters && !renderOptions.chapters.incldues(chapterStr)) {
+        if (renderOptions.chapters && !renderOptions.chapters.includes(chapterStr)) {
           continue;
         }
         html += `
@@ -372,8 +410,12 @@ export default function RcTranslationQuestions() {
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
+          const scriptureCells = [];
           for (let targetIdx in targetBibleCatalogEntries) {
             const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
+            if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
+              continue;
+            }
             if (!(verseStr in usfmJSONs[targetIdx].chapters[chapterStr])) {
               for (let v of Object.keys(usfmJSONs[targetIdx].chapters[chapterStr])) {
                 if (v.includes('-') || v.includes(',')) {
@@ -397,18 +439,19 @@ export default function RcTranslationQuestions() {
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            scriptureCells.push({
+              abbr: targetBibleCatalogEntry.abbreviation.toUpperCase(),
+              text: scripture[targetIdx] || '',
+              bridge: usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : '',
+            });
+          }
+          // Scripture as parallel columns (one per aligned Bible, e.g. ULT | UST)
+          if (scriptureCells.length && scriptureCells.some((c) => c.text)) {
             html += `
-          <div class="tq-scripture-block" id="${scriptureLink}">
-            <h4 class="header tq-scripture-header">
-              <a href="#${scriptureLink}" class="header-link">
-                ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
-              </a>
-            </h4>
-            <div class="tq-scripture-text">
-              ${scripture[targetIdx]}${usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : ''}
-            </div>
-          </div>
+          <table class="tq-scripture-cols">
+            <thead><tr>${scriptureCells.map((c) => `<th class="tq-col-label">${c.abbr}</th>`).join('')}</tr></thead>
+            <tbody><tr>${scriptureCells.map((c) => `<td class="tq-scripture-text">${c.text}${c.bridge ? ` ${c.bridge}` : ''}</td>`).join('')}</tr></tbody>
+          </table>
 `;
           }
           if (tqTsvData?.[chapterStr]?.[verseStr]) {
