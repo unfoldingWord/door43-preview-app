@@ -325,33 +325,141 @@ dd {
   break-after: avoid !important;
 }
 
-.tn-scripture-block {
-  border: 1px solid black;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.tn-scripture-header {
-  margin: 0;
-}
-
-.tn-scripture-text {
-  font-style: italic;
-}
-
 .tn-note-body h3 {
   font-size: 1.3em;
   margin: 10px 0;
 }
 
-.tn-note-label,
-.tn-note-quote {
+.tn-note-label {
   font-weight: bold;
 }
 
-.tn-note-support-reference,
+/* ─── Compact study-Bible layout ──────────────────────────
+   Scripture and Translation Words render as parallel columns
+   (one per aligned Bible, e.g. ULT | UST). */
+
+.tn-chapter-header,
+.tn-verse-header {
+  break-after: avoid !important;
+}
+
+table.tn-scripture-cols,
+table.tn-verse-twl-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 4px 0 8px 0;
+  font-size: 0.95em;
+  border: none;
+}
+
+table.tn-scripture-cols th.tn-col-label,
+table.tn-verse-twl-table th.tn-col-label {
+  text-align: left;
+  font-size: 0.72em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 1px 6px;
+}
+
+table.tn-scripture-cols td,
+table.tn-verse-twl-table td {
+  vertical-align: top;
+  padding: 3px 6px;
+  border: none;
+  border-right: 1px solid #eee;
+}
+
+table.tn-scripture-cols td:last-child,
+table.tn-verse-twl-table td:last-child {
+  border-right: none;
+}
+
+table.tn-scripture-cols {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  break-inside: avoid;
+}
+
+table.tn-scripture-cols tbody tr:nth-child(even),
+table.tn-verse-twl-table tbody tr:nth-child(even) {
+  background-color: transparent;
+}
+
+td.tn-scripture-text {
+  font-style: italic;
+}
+
+.tn-verse-twl-header {
+  font-size: 0.85em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  margin: 8px 0 1px 0;
+}
+
+.tn-verse-twl-table a {
+  text-decoration: none;
+}
+
+/* Notes — compact, with a per-Bible quote line and a small Bible tag. */
+.tn-note-article {
+  break-inside: avoid;
+  orphans: 2;
+  widows: 2;
+}
+
+.tn-note-header {
+  font-size: 0.95em;
+  margin: 5px 0 1px 0;
+  padding: 2px 8px;
+  background-color: #f1f1f1;
+  border-left: 3px solid #ccc;
+}
+
 .tn-note-quote {
-  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.tn-bible-tag {
+  display: inline-block;
+  font-size: 0.68em;
+  font-weight: bold;
+  color: #fff;
+  background-color: #8a8a8a;
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.tn-note-orig {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.tn-note-body {
+  padding: 2px 0;
+}
+
+.tn-note-support-reference {
+  font-size: 0.8em;
+  color: #555;
+  margin: 1px 0 0 0;
+}
+
+hr.note-divider {
+  border: none;
+  height: auto;
+  background: none;
+  border-top: 1px solid #eee;
+  margin: 4px 0;
 }
 
 .tn-book-section .article {
@@ -391,18 +499,6 @@ a.header-link:hover::after {
 
 .title-page {
   text-align: center;
-}
-
-.tn-verse-twl-bible {
-  margin-bottom: 0;
-}
-
-.tn-verse-twl-list {
-  margin: 0;
-}
-
-.tn-verse-twl-list-item a {
-  text-decoration: none;
 }
 
 .tn-note-body h4 ~ p,
@@ -484,10 +580,6 @@ h4 + h4 {
     border-top: none;
     border-radius: 0 0 4px 4px;
     margin-bottom: 1.5em;
-}
-
-ul.tn-verse-twl-list li.tn-verse-twl-list-item {
-  margin: 0;
 }
 `;
 
@@ -860,6 +952,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
+          const scriptureCells = [];
           for (let targetIdx in targetBibleCatalogEntries) {
             const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
             if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
@@ -888,18 +981,19 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            scriptureCells.push({
+              abbr: targetBibleCatalogEntry.abbreviation.toUpperCase(),
+              text: scripture[targetIdx] || '',
+              bridge: usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : '',
+            });
+          }
+          // Scripture as parallel columns (one per aligned Bible, e.g. ULT | UST)
+          if (scriptureCells.length && scriptureCells.some((c) => c.text)) {
             html += `
-          <div class="article tn-scripture-block" id="${scriptureLink}">
-            <h4 class="header tn-scripture-header">
-              <a href="#${scriptureLink}" class="header-link" data-descr="${targetBibleCatalogEntry.abbreviation}">
-                ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
-              </a>
-            </h4>
-            <div class="tn-scripture-text">
-              ${scripture[targetIdx]}${usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : ''}
-            </div>
-          </div>
+          <table class="tn-scripture-cols">
+            <thead><tr>${scriptureCells.map((c) => `<th class="tn-col-label">${c.abbr}</th>`).join('')}</tr></thead>
+            <tbody><tr>${scriptureCells.map((c) => `<td class="tn-scripture-text">${c.text}${c.bridge ? ` ${c.bridge}` : ''}</td>`).join('')}</tr></tbody>
+          </table>
 `;
           }
           if (tnTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
@@ -915,33 +1009,44 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 `;
               if (!row.Quote || row.Quote.endsWith(':')) {
                 article += `
-                <h4 class="header tn-note-header">
-                  <a href="#${noteLink}" class="header-link" data-descr="${row.ID}">
-                  Note: ${verseBridge}
-                  </a>
-                </h4>
+                <div class="tn-note-header">
+                  <div class="tn-note-quote"><strong>Note:</strong>${verseBridge ? ` ${verseBridge}` : ''}</div>
+                </div>
 `;
               } else {
+                // One quote line per aligned Bible (literal Bible bold), tagged with the
+                // Bible abbreviation, plus the original-language quote shown once.
+                let quoteLines = '';
+                let anyGl = false;
                 for (let targetIdx in targetBibleCatalogEntries) {
                   const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
                   const glQuoteCol = `GLQuote${targetIdx}`;
-                  let quote = row[glQuoteCol]
-                    ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter)
-                    : row.Quote
-                    ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>`
-                    : '';
-                  let verseBridge = '';
-                  if (refStr != row.Reference) {
-                    verseBridge += `(${row.Reference})`;
+                  if (!row[glQuoteCol]) {
+                    continue;
                   }
-                  article += `
-                <h4 class="header tn-note-header">
-                  <a href="#${noteLink}" class="header-link" data-descr="${row.ID}">
-                  ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
-                  </a>
-                </h4>
-`;
+                  anyGl = true;
+                  const quote = insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter);
+                  const tag = targetBibleCatalogEntry.abbreviation.toUpperCase();
+                  const quoteHtml = Number(targetIdx) === 0 ? `<strong>${quote}</strong>` : quote;
+                  quoteLines += `
+                  <div class="tn-note-quote"><span class="tn-bible-tag">${tag}</span> ${quoteHtml}</div>`;
                 }
+                article += `
+                <div class="tn-note-header">`;
+                if (anyGl) {
+                  article += quoteLines;
+                  if (row.Quote) {
+                    article += `
+                  <div class="tn-note-orig">(${row.Quote})${verseBridge ? ` ${verseBridge}` : ''}</div>`;
+                  }
+                } else {
+                  // No GL quotes converted — fall back to the original-language quote alone.
+                  article += `
+                  <div class="tn-note-quote"><strong>${row.Quote}</strong> <span class="tn-note-orig">(ORIG QUOTE)${verseBridge ? ` ${verseBridge}` : ''}</span></div>`;
+                }
+                article += `
+                </div>
+`;
               }
               article += `
               <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${row.Reference}</span>
@@ -958,7 +1063,7 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 `;
               }
               article += `
-        <hr style="width: 75%"/>
+        <hr class="note-divider"/>
       </div>
 `;
               html += article;
@@ -972,32 +1077,33 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
 `;
           }
 
-          // TW LINKS
+          // TW LINKS — parallel columns (one per aligned Bible), one row per linked word.
           if (twlTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
             const twlLink = `twl-${expandedBooks[0]}-${chapterStr}-${verseStr}`;
-            let article = `
+            const twlRows = twlTsvDataWithGLQuotes[chapterStr][verseStr];
+            const head = targetBibleCatalogEntries
+              .map((entry) => `<th class="tn-col-label">${entry.abbreviation.toUpperCase()}</th>`)
+              .join('');
+            let body = '';
+            for (let row of twlRows) {
+              const cells = targetBibleCatalogEntries
+                .map((entry, targetidx) => {
+                  const glQuoteCol = `GLQuote${targetidx}`;
+                  const glQuote = row[glQuoteCol]
+                    ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter)
+                    : `${row.Quote} (ORIG QUOTE)`;
+                  return `<td class="tn-verse-twl-cell"><a href="${row.TWLink}">${glQuote}</a></td>`;
+                })
+                .join('');
+              body += `<tr>${cells}</tr>`;
+            }
+            const article = `
           <div class="article tn-verse-twls" id="${twlLink}">
             <h4 class="header tn-verse-twl-header">${twCatalogEntries?.[0].title}</h4>
-`;
-            for (let targetidx in targetBibleCatalogEntries) {
-              const targetBibleCatalogEntry = targetBibleCatalogEntries[targetidx];
-              const glQuoteCol = `GLQuote${targetidx}`;
-              article += `
-            <h5 class="tn-verse-twl-bible">${targetBibleCatalogEntry.abbreviation.toUpperCase()}</h4>
-            <ul class="tn-verse-twl-list">
-`;
-              for (let row of twlTsvDataWithGLQuotes[chapterStr][verseStr]) {
-                let glQuote = row[glQuoteCol];
-                glQuote = glQuote ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetidx], quoteTokenDelimiter) : row.Quote + ' (ORIG QUOTE)';
-                article += `
-                <li class="tn-verse-twl-list-item"><a href="${row.TWLink}">${glQuote}</a></li>
-`;
-              }
-              article += `
-            </ul>
-`;
-            }
-            article += `
+            <table class="tn-verse-twl-table">
+              <thead><tr>${head}</tr></thead>
+              <tbody>${body}</tbody>
+            </table>
           </div>
 `;
             html += article;
