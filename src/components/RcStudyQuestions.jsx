@@ -31,33 +31,158 @@ const webCss = `
   break-after: avoid !important;
 }
 
-.sq-scripture-block {
-  border: 1px solid black;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
-.sq-scripture-header {
-  margin: 0;
-}
-
-.sq-scripture-text {
-  font-style: italic;
-}
-
 .sq-question-body h3 {
   font-size: 1.3em;
   margin: 10px 0;
 }
 
-.sq-question-label,
-.sq-question-quote {
+.sq-question-label {
   font-weight: bold;
 }
 
-.sq-question-support-reference,
+/* ─── Compact study-Bible layout ──────────────────────────
+   Scripture renders as parallel columns (one per aligned Bible, e.g. ULT | UST). */
+.sq-chapter-header,
+.sq-verse-header {
+  break-after: avoid !important;
+}
+
+/* Page breaks fall only between chapters — each chapter starts a new page. */
+.sq-chapter-section {
+  break-after: page !important;
+}
+
+/* Keep a verse's Bible-text box and its question(s) together on one page... */
+.sq-chapter-verse-section {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  /* ...but allow page breaks BETWEEN verses so several short verses pack onto
+     one page instead of each verse claiming its own. */
+  break-before: auto !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+}
+
+table.sq-scripture-cols {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 4px 0 8px 0;
+  font-size: 0.95em;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  break-inside: avoid;
+}
+
+table.sq-scripture-cols th.sq-col-label {
+  text-align: left;
+  font-size: 0.72em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #555;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 1px 6px;
+}
+
+table.sq-scripture-cols td {
+  vertical-align: top;
+  padding: 3px 6px;
+  border: none;
+  border-right: 1px solid #eee;
+}
+
+table.sq-scripture-cols td:last-child {
+  border-right: none;
+}
+
+td.sq-scripture-text {
+  font-style: italic;
+}
+
+/* Question quote header — one line per Bible (literal bold) with a small Bible tag. */
+.sq-question-header {
+  font-size: 0.95em;
+  margin: 5px 0 1px 0;
+  padding: 2px 8px;
+  background-color: #f1f1f1;
+  border-left: 3px solid #ccc;
+}
+
 .sq-question-quote {
-  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.sq-bible-tag {
+  display: inline-block;
+  font-size: 0.68em;
+  font-weight: bold;
+  color: #fff;
+  background-color: #8a8a8a;
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.sq-question-orig {
+  font-size: 0.85em;
+  color: #666;
+}
+
+/* Collapsible answers (click the chevron to reveal). */
+.sq-entry {
+  margin-left: 30px;
+}
+
+#web-preview h4.sq-entry-question {
+  display: inline-block;
+}
+
+#web-preview label.response-show-label {
+  margin-left: 20px;
+  display: inline-box;
+}
+
+.response-show-checkbox {
+  display: none;
+}
+
+#web-preview .response-show-checkbox ~ div.sq-entry-response {
+  display: none;
+  clear: both;
+  margin-bottom: 20px;
+}
+
+#web-preview .response-show-checkbox:checked ~ div.sq-entry-response {
+  display: block;
+}
+
+#web-preview label.response-show-label::after {
+  background-color: white;
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 10px;
+  display: inline-block;
+  height: 10px;
+  transform: rotate(45deg);
+  -webkit-transform: scale(1) rotate(45deg) translate(0px, 0px);
+  -moz-transform: rotate(45deg) scale(1.0);
+  -o-transform: rotate(45deg) scale(1.0);
+  margin-top: 10px;
+  content: "";
+  margin-left: 5px;
+}
+
+#web-preview .response-show-checkbox:checked ~ label.response-show-label::after {
+  border-right: 3px solid black;
+  border-bottom: 3px solid black;
+  transform: rotate(-135deg);
+  -webkit-transform: scale(1) rotate(-135deg) translate(0px, 0px);
+  -moz-transform: rotate(-135deg) scale(1.0);
+  -o-transform: rotate(-135deg) scale(1.0);
 }
 
 .article {
@@ -398,6 +523,7 @@ ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
           <span class="header-title">${catalogEntry.title} :: ${bookTitle} ${chapterStr}:${verseStr}</span>
 `;
           let scripture = {};
+          const scriptureCells = [];
           for (let targetIdx in targetBibleCatalogEntries) {
             const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
             if (!(chapterStr in (usfmJSONs[targetIdx]?.chapters || {}))) {
@@ -426,18 +552,19 @@ ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
               }
             }
             scripture[targetIdx] = verseObjectsToString(usfmJSONs[targetIdx]?.chapters[chapterStr]?.[usfmJSONVerseStr]?.verseObjects || []);
-            const scriptureLink = `nav-${expandedBooks[0]}-${chapterStr}-${verseStr}-${targetBibleCatalogEntry.abbreviation}`;
+            scriptureCells.push({
+              abbr: targetBibleCatalogEntry.abbreviation.toUpperCase(),
+              text: scripture[targetIdx] || '',
+              bridge: usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : '',
+            });
+          }
+          // Scripture as parallel columns (one per aligned Bible, e.g. ULT | UST)
+          if (scriptureCells.length && scriptureCells.some((c) => c.text)) {
             html += `
-          <div class="article sq-scripture-block" id="${scriptureLink}">
-            <h4 class="header sq-scripture-header">
-              <a href="#${scriptureLink}" class="header-link">
-                ${targetBibleCatalogEntry.abbreviation.toUpperCase()}:
-              </a>
-            </h4>
-            <div class="sq-scripture-text">
-              ${scripture[targetIdx]}${usfmJSONVerseStr != verseStr ? `(vv${usfmJSONVerseStr})` : ''}
-            </div>
-          </div>
+          <table class="sq-scripture-cols">
+            <thead><tr>${scriptureCells.map((c) => `<th class="sq-col-label">${c.abbr}</th>`).join('')}</tr></thead>
+            <tbody><tr>${scriptureCells.map((c) => `<td class="sq-scripture-text">${c.text}${c.bridge ? ` ${c.bridge}` : ''}</td>`).join('')}</tr></tbody>
+          </table>
 `;
           }
           if (sqTsvDataWithGLQuotes?.[chapterStr]?.[verseStr]) {
@@ -449,44 +576,45 @@ ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
                 verseBridge += `(${row.Reference})`;
               }
               let article = `
-              <div class="article sq-question-article" id="nav-${questionLink}">
+              <div class="article sq-question-article" id="${questionLink}">
 `;
-              if (!row.Quote || row.Quote.endsWith(':')) {
-                article += `
-                <h4 class="header sq-question-header">
-                  <a href="#{questionLink}" class="header-link">
-                  Question: ${verseBridge}
-                  </a>
-                </h4>
-`;
-              } else {
+              // Compact scripture-quote header (one line per Bible, literal bold), shown
+              // only when the question targets a specific quote.
+              if (row.Quote && !row.Quote.endsWith(':')) {
+                let quoteLines = '';
+                let anyGl = false;
                 for (let targetIdx in targetBibleCatalogEntries) {
                   const targetBibleCatalogEntry = targetBibleCatalogEntries[targetIdx];
                   const glQuoteCol = `GLQuote${targetIdx}`;
-                  let quote = row[glQuoteCol]
-                    ? insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter)
-                    : row.Quote
-                    ? `<span style="color: red">“${row.Quote}” (ORIG QUOTE)</span>`
-                    : '';
-                  let verseBridge = '';
-                  if (refStr != row.Reference) {
-                    verseBridge += `(${row.Reference})`;
+                  if (!row[glQuoteCol]) {
+                    continue;
                   }
-                  article += `
-                <h4 class="header sq-question-header">
-                  <a href="#${questionLink}" class="header-link">
-                  ${quote} ${verseBridge} (${targetBibleCatalogEntry.abbreviation.toUpperCase()})
-                  </a>
-                </h4>
-`;
+                  anyGl = true;
+                  const quote = insertUnmatchedCurlyBracesInQuote(row[glQuoteCol], scripture[targetIdx], quoteTokenDelimiter);
+                  const tag = targetBibleCatalogEntry.abbreviation.toUpperCase();
+                  const quoteHtml = Number(targetIdx) === 0 ? `<strong>${quote}</strong>` : quote;
+                  quoteLines += `
+                  <div class="sq-question-quote"><span class="sq-bible-tag">${tag}</span> ${quoteHtml}</div>`;
                 }
+                article += `
+                <div class="sq-question-header">`;
+                if (anyGl) {
+                  article += quoteLines;
+                  article += `
+                  <div class="sq-question-orig">(${row.Quote})${verseBridge ? ` ${verseBridge}` : ''}</div>`;
+                } else {
+                  article += `
+                  <div class="sq-question-quote"><strong>${row.Quote}</strong> <span class="sq-question-orig">(ORIG QUOTE)${verseBridge ? ` ${verseBridge}` : ''}</span></div>`;
+                }
+                article += `
+                </div>
+`;
               }
 
               if (row.Question) {
                 article += `
-              <div id="${questionLink}" class="tq-question-article">
-                <div class="tq-entry">
-                  <h4 class="tq-entry-question">
+                <div class="sq-entry">
+                  <h4 class="sq-entry-question">
                     <a class="header-link" href="#${questionLink}">
                       ${row.Question} ${verseBridge}
                     </a>
@@ -496,14 +624,13 @@ ${convertNoteFromMD2HTML(row.Question, expandedBooks[0], 'front')}
                   article += `
                   <input type="checkbox" class="response-show-checkbox" id="checkbox-${row.ID}" style="display:none;">
                   <label class="response-show-label" for="checkbox-${row.ID}"></label>
-                  <div class="tq-entry-response">
+                  <div class="sq-entry-response">
                     ${convertNoteFromMD2HTML(row.Response, expandedBooks[0], chapterStr)}
                   </div>
 `;
                 }
                 article += `
                 </div>
-              </div>
 `;
               }
               article += `

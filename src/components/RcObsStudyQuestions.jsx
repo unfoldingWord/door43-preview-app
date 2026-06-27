@@ -132,18 +132,20 @@ a.header-link:hover::after {
   -o-transform: rotate(-135deg) scale(1.0);
 }
 
-.sq-scripture-block {
-  border: 1px solid black;
-  padding: 10px;
-  margin-bottom: 10px;
+/* ─── Compact study layout ──────────────────────────
+   OBS is story-based (no Bible verses), so the story frame text takes the place
+   of the scripture panel. */
+.sq-frame-header {
+  break-after: avoid !important;
 }
 
-.sq-scripture-header {
-  margin: 0;
-}
-
-.sq-scripture-text {
-  font-style: italic;
+.sq-frame-text {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 8px 12px;
+  margin: 4px 0 8px 0;
+  break-inside: avoid;
 }
 
 .sq-chapter-intro-section *, .sq-chapter-frame-section * {
