@@ -8,6 +8,7 @@ import saveHtmltoCacheHandler from './routes/save-html-to-cache.js';
 import getCachedHtmlHandler from './routes/get-cached-html.js';
 import serveCachedPage from './routes/serve-cached-page.js';
 import configRoute from './routes/config.js';
+import weasyprintHandler from './routes/weasyprint.js';
 
 dotenv.config();
 
@@ -42,6 +43,13 @@ app.get('/api/get-cached-html', getCachedHtmlHandler);
 
 // Direct cached page serving (fast path)
 app.get('/api/cached-page', serveCachedPage);
+
+// HTML -> PDF via the internal weasyprint-service (text/html in, application/pdf out)
+app.post(
+  '/api/weasyprint',
+  express.text({ type: ['text/html', 'text/plain'], limit: '50mb' }),
+  weasyprintHandler
+);
 
 // Serve static files from dist folder (production)
 if (process.env.NODE_ENV === 'production') {
