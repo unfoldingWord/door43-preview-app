@@ -18,7 +18,7 @@ USER root
 
 # Native deps for WeasyPrint + a base font. cairo / glib / harfbuzz come in as
 # transitive deps of pango / gdk-pixbuf.
-RUN apk add --no-cache pango gdk-pixbuf fontconfig font-dejavu \
+RUN apk add --no-cache pango gdk-pixbuf fontconfig ttf-dejavu \
  && python -m venv /venv
 
 WORKDIR /app
