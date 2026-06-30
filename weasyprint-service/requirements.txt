@@ -1,0 +1,2 @@
+# Pinned to the version verified locally; bump as needed (and re-test).
+weasyprint==68.1
