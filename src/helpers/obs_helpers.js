@@ -60,10 +60,11 @@ export async function getOBSData(catalogEntry, zipFileData) {
     if (frontTitlePath in zipFileData.files) {
       obsData.title = await zipFileData.file(frontTitlePath).async('text');
     } else {
-     frontTitlePath = `${obsRootPath}/00/title.txt`;
-     if (frontTitlePath in zipFileData.files) {
-       obsData.title = await zipFileData.file(frontTitlePath).async('text');
-     }
+      frontTitlePath = `${obsRootPath}/00/title.txt`;
+      if (frontTitlePath in zipFileData.files) {
+        obsData.title = await zipFileData.file(frontTitlePath).async('text');
+      }
+    }
   } else {
     let frontFilePath = `${obsRootPath}/front.md`;
     if (frontFilePath in zipFileData.files) {
