@@ -5,10 +5,6 @@
 # We use the `:latest-dev` variant because it ships `apk` + a shell to install
 # that native stack — it is still a low-CVE Chainguard image, not a generic distro.
 #
-# ⚠️ Authored without registry access — confirm with a real `docker build`:
-#   - exact Wolfi apk package names (`apk search pango cairo gdk-pixbuf …` in a
-#     `cgr.dev/chainguard/wolfi-base:latest-dev` shell);
-#   - that the `nonroot` user exists in this image.
 # A smaller distroless multi-stage build is possible, but the minimal runtime
 # stage must also carry WeasyPrint's native .so libs (not just the Python venv) —
 # see README.md.
@@ -33,4 +29,7 @@ EXPOSE 8080
 # Drop privileges for the runtime.
 USER nonroot
 
+# Clear the base image's `python` entrypoint, otherwise it prepends to CMD and
+# runs `python python server.py` (Python then tries to open a file named "python").
+ENTRYPOINT []
 CMD ["python", "server.py"]
