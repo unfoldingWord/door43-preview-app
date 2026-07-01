@@ -27,15 +27,22 @@ export function htmlDataKey({ owner, repo, version, books }) {
 }
 
 export async function getHtmlData({ owner, repo, ref = '', books = [] }) {
+  const t0 = Date.now();
+  const label = `${owner}/${repo} ${books.join(',') || '_whole'}`;
   // Resolve the requested version to a concrete ref + sha (empty -> latest release).
   const { ref: version, sha } = await resolveVersion(owner, repo, ref);
+  const tResolve = Date.now();
   const key = htmlDataKey({ owner, repo, version, books });
 
   const cachedStr = await getCached(key, { ext: 'json' });
+  const tCache = Date.now();
   if (cachedStr) {
     try {
       const obj = JSON.parse(cachedStr);
       if (obj && obj.sha === sha && obj.htmlData) {
+        console.log(
+          `[html-data] ${label}@${version}: HIT  resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms`
+        );
         return { htmlData: obj.htmlData, sha, version, key, cache: 'HIT' };
       }
       // sha mismatch -> content changed; fall through and re-render (P4: serve stale).
@@ -48,11 +55,18 @@ export async function getHtmlData({ owner, repo, ref = '', books = [] }) {
     { owner, repo, ref: version, books },
     { dcs_api_url: DCS_API_URL, quiet: true }
   );
+  const tData = Date.now();
   const htmlData = renderHtmlData(resourceData, { books });
+  const tRender = Date.now();
   await setCached(
     key,
     JSON.stringify({ sha, renderedAt: new Date().toISOString(), htmlData }),
     { ext: 'json' }
+  );
+  console.log(
+    `[html-data] ${label}@${version}: ${cachedStr ? 'REPLACED' : 'MISS'}  ` +
+      `resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms ` +
+      `getResourceData=${tData - tCache}ms renderHtmlData=${tRender - tData}ms cachePut=${Date.now() - tRender}ms`
   );
   return { htmlData, sha, version, key, cache: cachedStr ? 'REPLACED' : 'MISS' };
 }
