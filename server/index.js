@@ -1,7 +1,11 @@
 // Express server to replace Netlify Functions
+// Load .env FIRST — before any other import — so modules that read env at load
+// time (e.g. preview-cache picking S3 vs disk from AWS_S3_BUCKET) see the values.
+// In ESM, imports are evaluated before the module body, so a later dotenv.config()
+// runs too late. (Harmless in prod: no .env -> dotenv no-ops, env comes from docker.)
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import saveHtmltoCacheHandler from './routes/save-html-to-cache.js';
@@ -13,8 +17,6 @@ import renderHtmlHandler from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
 import catalogSearch from './routes/catalog.js';
 import previewNav from './routes/nav.js';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
