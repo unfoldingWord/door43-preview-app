@@ -1,11 +1,12 @@
-// PreviewApp — the rebuilt, thin client. It renders NOTHING itself: it points an
-// isolated <iframe> at the server route (/api/preview/html), which renders the
-// resource via @unfoldingword/door43-preview-renderers. No proskomma / usfm-js /
-// RCL rendering in the browser — the app is UI + navigation only.
+// PreviewApp — the rebuilt, thin client. It renders nothing itself: it points an
+// isolated <iframe> at the server routes (/api/preview/html, /api/preview/pdf),
+// which render via @unfoldingword/door43-preview-renderers. No proskomma/usfm-js
+// in the browser — the app is catalog browsing, navigation, and job orchestration.
 //
-// First slice: Open Bible Stories (story/frame based, no book/chapter/verse
-// selector needed). A catalog-driven selector and the PDF job come next.
-import { useState, useRef } from 'react';
+// Flow: search the catalog -> pick a resource -> pick a book -> view; navigate to
+// a chapter/verse (scrolls the iframe to the <abbr>-<book>-<chap>[-<verse>] anchor)
+// or switch books; and render a PDF via the async job queue.
+import { useState, useRef, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -13,13 +14,15 @@ import {
   Box,
   TextField,
   Button,
-  ToggleButton,
-  ToggleButtonGroup,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Autocomplete,
   LinearProgress,
   CircularProgress,
   Alert,
   Stack,
-  Chip,
   ThemeProvider,
   createTheme,
   CssBaseline,
@@ -36,22 +39,35 @@ const theme = createTheme({
   shape: { borderRadius: 8 },
 });
 
-const PRESETS = [
-  { label: 'OBS (en)', owner: 'unfoldingWord', repo: 'en_obs', ref: 'master' },
+const SUBJECTS = [
+  'Aligned Bible',
+  'Bible',
+  'Open Bible Stories',
+  'TSV Translation Notes',
+  'TSV Translation Questions',
+  'Translation Words',
+  'Translation Academy',
 ];
 
+const NON_BOOK_INGREDIENTS = new Set(['frt', 'bak', 'int']);
+
 export default function PreviewApp() {
-  const [owner, setOwner] = useState('unfoldingWord');
-  const [repo, setRepo] = useState('en_obs');
-  const [ref, setRef] = useState('master');
-  const [media, setMedia] = useState('web');
+  const [lang, setLang] = useState('en');
+  const [subject, setSubject] = useState('Aligned Bible');
+  const [searching, setSearching] = useState(false);
+  const [entries, setEntries] = useState([]);
+  const [entry, setEntry] = useState(null); // selected catalog entry
+  const [book, setBook] = useState(''); // selected book ingredient id
+  const [chapter, setChapter] = useState('');
+  const [verse, setVerse] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pdfJob, setPdfJob] = useState(null); // async PDF job status
+  const [pdfJob, setPdfJob] = useState(null);
   const [error, setError] = useState(null);
+  const iframeRef = useRef(null);
   const pollRef = useRef(null);
 
-  const canPreview = owner.trim() && repo.trim();
+  const bookBased = !!(entry && entry.books && entry.books.length > 1);
 
   const stopPoll = () => {
     if (pollRef.current) {
@@ -60,53 +76,107 @@ export default function PreviewApp() {
     }
   };
 
-  const jobLabel = (j) => {
-    if (!j) return '';
-    if (j.state === 'starting') return 'Submitting…';
-    if (j.state === 'queued') {
-      const pos = j.queuePosition ? ` (position ${j.queuePosition})` : '';
-      const eta = j.etaSeconds ? ` · ~${j.etaSeconds}s` : '';
-      return `Queued${pos}${eta}…`;
+  const search = async (l = lang, s = subject) => {
+    stopPoll();
+    setSearching(true);
+    setError(null);
+    setEntries([]);
+    setEntry(null);
+    setBook('');
+    setPreviewUrl('');
+    setPdfJob(null);
+    try {
+      const qs = new URLSearchParams({ lang: (l || 'en').trim(), subject: s });
+      const r = await fetch(`/api/catalog/search?${qs.toString()}`);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || `catalog search failed (${r.status})`);
+      setEntries(data.entries || []);
+      if (!data.entries || !data.entries.length) setError('No resources found for that language + subject.');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSearching(false);
     }
-    if (j.state === 'active') {
-      return `Rendering PDF${j.etaSeconds ? ` · ~${j.etaSeconds}s` : ''}…`;
-    }
-    return `${j.state}…`;
   };
 
-  const runPreview = () => {
-    if (!canPreview) return;
-    const qs = new URLSearchParams({
-      owner: owner.trim(),
-      repo: repo.trim(),
-      ref: ref.trim() || 'master',
-      media,
-    });
+  // Populate the picker on first load with the defaults.
+  useEffect(() => {
+    search('en', 'Aligned Bible');
+    return stopPoll;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const htmlUrl = (e, b) => {
+    const qs = new URLSearchParams({ owner: e.owner, repo: e.repo, ref: e.ref, media: 'web' });
+    if (b) qs.set('books', b);
+    return `/api/preview/html?${qs.toString()}`;
+  };
+
+  const renderView = (e, b) => {
+    if (!e) return;
+    stopPoll();
+    setPdfJob(null);
+    setError(null);
     setLoading(true);
-    setPreviewUrl(`/api/preview/html?${qs.toString()}`);
+    setPreviewUrl(htmlUrl(e, b));
   };
 
-  // PDF is an async job: enqueue -> poll status -> serve the cached PDF when done.
-  // Rendered by the WeasyPrint sidecar server-side; the queue handles concurrency
-  // and heavy renders without holding the request open.
+  const pickEntry = (e) => {
+    setEntry(e);
+    setChapter('');
+    setVerse('');
+    if (!e) {
+      setBook('');
+      setPreviewUrl('');
+      return;
+    }
+    const books = e.books || [];
+    let b = '';
+    if (books.length > 1) {
+      const firstBook = books.find((x) => !NON_BOOK_INGREDIENTS.has(x.id)) || books[0];
+      b = firstBook ? firstBook.id : '';
+    }
+    setBook(b);
+    renderView(e, b);
+  };
+
+  const changeBook = (b) => {
+    setBook(b);
+    setChapter('');
+    setVerse('');
+    renderView(entry, b);
+  };
+
+  // Scroll the iframe (same-origin) to the chapter/verse anchor without reloading.
+  const goTo = () => {
+    if (!entry || !book || !chapter.trim()) return;
+    let anchor = `${entry.abbreviation}-${book}-${chapter.trim()}`;
+    if (verse.trim()) anchor += `-${verse.trim()}`;
+    const win = iframeRef.current && iframeRef.current.contentWindow;
+    try {
+      // Toggle so the browser re-scrolls even if the hash is unchanged.
+      win.location.hash = '';
+      win.location.hash = `#${anchor}`;
+    } catch {
+      // Cross-origin fallback: reload the doc at the anchor.
+      setLoading(true);
+      setPreviewUrl(`${htmlUrl(entry, book)}#${anchor}`);
+    }
+  };
+
   const runPdf = async () => {
-    if (!canPreview) return;
+    if (!entry) return;
     stopPoll();
     setError(null);
     setPreviewUrl('');
-    const descriptor = {
-      owner: owner.trim(),
-      repo: repo.trim(),
-      ref: ref.trim() || 'master',
-      pageSize: 'A4_PORTRAIT',
-    };
+    const descriptor = { owner: entry.owner, repo: entry.repo, ref: entry.ref, pageSize: 'A4_PORTRAIT' };
+    if (book) descriptor.books = book;
     const serveUrl = `/api/preview/pdf?${new URLSearchParams(descriptor).toString()}`;
     const showPdf = () => {
       setPdfJob(null);
       setLoading(true);
-      setPreviewUrl(serveUrl); // cache HIT now that the job populated it
+      setPreviewUrl(serveUrl);
     };
-
     setPdfJob({ state: 'starting' });
     try {
       const r = await fetch('/api/preview/pdf', {
@@ -117,13 +187,12 @@ export default function PreviewApp() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || `enqueue failed (${r.status})`);
       if (data.state === 'completed') return showPdf();
-
       const jobId = data.jobId;
       setPdfJob(data);
       const poll = async () => {
         try {
           const sr = await fetch(`/api/preview/pdf/${jobId}`);
-          if (sr.status === 404) return showPdf(); // job evicted -> serve from cache
+          if (sr.status === 404) return showPdf();
           const s = await sr.json();
           if (s.state === 'completed') return showPdf();
           if (s.state === 'failed') {
@@ -145,11 +214,20 @@ export default function PreviewApp() {
     }
   };
 
-  const applyPreset = (p) => {
-    setOwner(p.owner);
-    setRepo(p.repo);
-    setRef(p.ref);
+  const jobLabel = (j) => {
+    if (!j) return '';
+    if (j.state === 'starting') return 'Submitting…';
+    if (j.state === 'queued') {
+      const pos = j.queuePosition ? ` (position ${j.queuePosition})` : '';
+      const eta = j.etaSeconds ? ` · ~${j.etaSeconds}s` : '';
+      return `Queued${pos}${eta}…`;
+    }
+    if (j.state === 'active') return `Rendering PDF${j.etaSeconds ? ` · ~${j.etaSeconds}s` : ''}…`;
+    return `${j.state}…`;
   };
+
+  const resourceLabel = (e) =>
+    e ? `${e.title} — ${e.owner}/${e.repo}@${e.ref}` : '';
 
   return (
     <ThemeProvider theme={theme}>
@@ -166,64 +244,89 @@ export default function PreviewApp() {
           </Toolbar>
         </AppBar>
 
-        <Box
-          component="form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            runPreview();
-          }}
-          sx={{ p: 2, borderBottom: '1px solid #e0e0e0', bgcolor: 'background.paper' }}
-        >
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            alignItems={{ md: 'center' }}
-          >
-            <TextField
-              label="Owner"
-              size="small"
-              value={owner}
-              onChange={(e) => setOwner(e.target.value)}
-            />
-            <TextField
-              label="Repo"
-              size="small"
-              value={repo}
-              onChange={(e) => setRepo(e.target.value)}
-            />
-            <TextField
-              label="Ref"
-              size="small"
-              value={ref}
-              onChange={(e) => setRef(e.target.value)}
-              sx={{ width: 120 }}
-            />
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={media}
-              onChange={(e, v) => v && setMedia(v)}
-            >
-              <ToggleButton value="web">Web</ToggleButton>
-              <ToggleButton value="print">Print</ToggleButton>
-            </ToggleButtonGroup>
-            <Button type="submit" variant="contained" disabled={!canPreview}>
-              Preview
-            </Button>
-            <Button type="button" variant="outlined" onClick={runPdf} disabled={!canPreview}>
-              PDF
-            </Button>
-            <Stack direction="row" spacing={1}>
-              {PRESETS.map((p) => (
-                <Chip
-                  key={p.label}
-                  label={p.label}
-                  onClick={() => applyPreset(p)}
-                  variant="outlined"
-                  size="small"
-                />
-              ))}
+        <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0', bgcolor: 'background.paper' }}>
+          <Stack spacing={1.5}>
+            {/* Row 1: find resources */}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+              <TextField
+                label="Language"
+                size="small"
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                sx={{ width: 120 }}
+              />
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Subject</InputLabel>
+                <Select label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
+                  {SUBJECTS.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button variant="contained" onClick={() => search()} disabled={searching}>
+                {searching ? 'Searching…' : 'Find'}
+              </Button>
+              <Autocomplete
+                sx={{ flexGrow: 1, minWidth: 280 }}
+                size="small"
+                options={entries}
+                value={entry}
+                onChange={(e, v) => pickEntry(v)}
+                getOptionLabel={resourceLabel}
+                isOptionEqualToValue={(a, b) => a.owner === b.owner && a.repo === b.repo && a.ref === b.ref}
+                renderInput={(params) => (
+                  <TextField {...params} label={`Resource (${entries.length})`} placeholder="Select a resource…" />
+                )}
+              />
             </Stack>
+
+            {/* Row 2: book + navigation (book-based resources) */}
+            {entry && (
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+                {bookBased && (
+                  <>
+                    <FormControl size="small" sx={{ minWidth: 220 }}>
+                      <InputLabel>Book</InputLabel>
+                      <Select label="Book" value={book} onChange={(e) => changeBook(e.target.value)}>
+                        {entry.books.map((b) => (
+                          <MenuItem key={b.id} value={b.id}>
+                            {b.title || b.id} ({b.id})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="Chapter"
+                      size="small"
+                      value={chapter}
+                      onChange={(e) => setChapter(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && goTo()}
+                      sx={{ width: 100 }}
+                    />
+                    <TextField
+                      label="Verse"
+                      size="small"
+                      value={verse}
+                      onChange={(e) => setVerse(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && goTo()}
+                      sx={{ width: 90 }}
+                    />
+                    <Button variant="outlined" onClick={goTo} disabled={!chapter.trim()}>
+                      Go
+                    </Button>
+                  </>
+                )}
+                <Box sx={{ flexGrow: 1 }} />
+                <Button variant="outlined" onClick={() => renderView(entry, book)}>
+                  Web
+                </Button>
+                <Button type="button" variant="contained" onClick={runPdf}>
+                  PDF
+                </Button>
+              </Stack>
+            )}
           </Stack>
         </Box>
 
@@ -249,6 +352,7 @@ export default function PreviewApp() {
         <Box sx={{ flexGrow: 1, position: 'relative', bgcolor: '#fafafa' }}>
           {previewUrl ? (
             <iframe
+              ref={iframeRef}
               title="preview"
               src={previewUrl}
               onLoad={() => setLoading(false)}
@@ -257,8 +361,8 @@ export default function PreviewApp() {
           ) : (
             <Box sx={{ p: 4, color: 'text.secondary' }}>
               <Typography>
-                Choose a resource and click <strong>Preview</strong>. Try the{' '}
-                <em>OBS (en)</em> preset.
+                Pick a <strong>Subject</strong> and language, click <strong>Find</strong>, then choose a
+                resource. For a Bible, pick a book and jump to a chapter/verse.
               </Typography>
             </Box>
           )}
