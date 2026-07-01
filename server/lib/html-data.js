@@ -12,7 +12,7 @@
 // while revalidating in the background (allowStale, for the web view + nav) or
 // re-renders the current sha before returning (the PDF path).
 import { getResourceData, renderHtmlData } from '@unfoldingword/door43-preview-renderers';
-import { resolveVersion } from './versions.js';
+import { resolveRenderIdentity } from './render-identity.js';
 import { getCached, setCached, CACHE_VERSION } from './preview-cache.js';
 import { resolveDcsHost, dcsApiUrl, dcsHostLabel } from './dcs-host.js';
 
@@ -74,8 +74,10 @@ export async function getHtmlData({
 }) {
   const t0 = Date.now();
   const label = `${owner}/${repo} ${books.join(',') || '_whole'} [${dcsHostLabel(api)}]`;
-  // Resolve the requested version to a concrete ref + sha (empty -> latest release).
-  const { ref: version, sha } = await resolveVersion(owner, repo, ref, api);
+  // `sha` here is the COMPOSITE identity across every resource the render uses
+  // (per-book blob shas for book-organized repos, commit shas for Markdown), so a
+  // book only goes stale when content it actually uses changed. Empty ref -> latest.
+  const { version, composite: sha } = await resolveRenderIdentity({ owner, repo, ref, books, api });
   const tResolve = Date.now();
   const key = htmlDataKey({ owner, repo, version, books, dcsApiUrl: api });
 

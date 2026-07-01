@@ -9,7 +9,7 @@
 //   cache: 'FRESH'  cached sha == current sha (or nothing to compare against yet)
 //          'STALE'  cached sha != current sha  -> a revalidation is in flight
 //          'MISS'   nothing cached yet         -> the web view render is populating it
-import { resolveVersion } from '../lib/versions.js';
+import { resolveRenderIdentity } from '../lib/render-identity.js';
 import { htmlDataKey } from '../lib/html-data.js';
 import { getCached } from '../lib/preview-cache.js';
 import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
@@ -30,7 +30,8 @@ export default async function previewStatus(req, res) {
 
   const api = dcsApiUrlFromReq(req);
   try {
-    const { ref: version, sha } = await resolveVersion(owner, repo, ref, api);
+    // Compare the cached render's stored composite identity to the current one.
+    const { version, composite: sha } = await resolveRenderIdentity({ owner, repo, ref, books, api });
     const key = htmlDataKey({ owner, repo, version, books, dcsApiUrl: api });
     const cachedStr = await getCached(key, { ext: 'json' });
 
