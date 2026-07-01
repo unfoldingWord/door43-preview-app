@@ -197,6 +197,7 @@ export default function PreviewApp() {
   const [subject, setSubject] = useState('Aligned Bible');
   const [searching, setSearching] = useState(false);
   const [entries, setEntries] = useState([]);
+  const [noResults, setNoResults] = useState(false);
   const [entry, setEntry] = useState(null);
 
   const [showDevVersions, setShowDevVersions] = useState(false);
@@ -246,19 +247,20 @@ export default function PreviewApp() {
     stopPoll();
     setSearching(true);
     setError(null);
+    setNoResults(false);
     setEntries([]);
     setEntry(null);
     setBook('');
     setPreviewUrl('');
     setPdfJob(null);
-    setVersions(null);
     try {
       const qs = new URLSearchParams({ lang: (l || 'en').trim(), subject: s });
-      const r = await fetch(`/api/catalog/search?${qs.toString()}`);
+      const r = await fetch(`/api/catalog/search?${qs.toString()}`, { signal: AbortSignal.timeout(30000) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || `catalog search failed (${r.status})`);
-      setEntries(data.entries || []);
-      if (!data.entries || !data.entries.length) setError('No resources found for that language + subject.');
+      const found = data.entries || [];
+      setEntries(found);
+      setNoResults(found.length === 0);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -385,6 +387,10 @@ export default function PreviewApp() {
       if (!r.ok) throw new Error(e.error || `resource not found: ${route.owner}/${route.repo}`);
       setEntries((prev) => (prev.some((x) => x.owner === e.owner && x.repo === e.repo) ? prev : [e, ...prev]));
       setEntry(e);
+      // Reflect the loaded resource's language + subject in the search controls.
+      if (e.language) setLang(e.language);
+      if (e.subject) setSubject(e.subject);
+      setNoResults(false);
       setVersion(e.ref);
       setLatestRelease(e.latestRelease || '');
       const b = route.book || defaultBook(e);
@@ -521,6 +527,7 @@ export default function PreviewApp() {
               <FormControl size="small" sx={{ minWidth: 190 }}>
                 <InputLabel>Subject</InputLabel>
                 <Select label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
+                  {subject && !SUBJECTS.includes(subject) && <MenuItem value={subject}>{subject}</MenuItem>}
                   {SUBJECTS.map((s) => (
                     <MenuItem key={s} value={s}>
                       {s}
@@ -531,22 +538,31 @@ export default function PreviewApp() {
               <Button variant="contained" onClick={() => search()} disabled={searching}>
                 {searching ? 'Searching…' : 'Find'}
               </Button>
-              <Autocomplete
-                sx={{ flexGrow: 1, minWidth: 260 }}
-                size="small"
-                options={entries}
-                value={entry}
-                onChange={(e, v) => pickEntry(v)}
-                getOptionLabel={resourceLabel}
-                isOptionEqualToValue={(a, b) => a.owner === b.owner && a.repo === b.repo}
-                renderInput={(params) => (
-                  <TextField {...params} label={`Resource (${entries.length})`} placeholder="Select a resource…" />
-                )}
-              />
-              <FormControlLabel
-                control={<Checkbox size="small" checked={showDevVersions} onChange={(e) => setShowDevVersions(e.target.checked)} />}
-                label="Branches & older versions"
-              />
+              {noResults && !searching && (
+                <Typography variant="body2" color="error">
+                  No resources found — try another language or subject.
+                </Typography>
+              )}
+              {entries.length > 0 && (
+                <>
+                  <Autocomplete
+                    sx={{ flexGrow: 1, minWidth: 260 }}
+                    size="small"
+                    options={entries}
+                    value={entry}
+                    onChange={(e, v) => pickEntry(v)}
+                    getOptionLabel={resourceLabel}
+                    isOptionEqualToValue={(a, b) => a.owner === b.owner && a.repo === b.repo}
+                    renderInput={(params) => (
+                      <TextField {...params} label={`Resource (${entries.length})`} placeholder="Select a resource…" />
+                    )}
+                  />
+                  <FormControlLabel
+                    control={<Checkbox size="small" checked={showDevVersions} onChange={(e) => setShowDevVersions(e.target.checked)} />}
+                    label="Branches & older versions"
+                  />
+                </>
+              )}
             </Stack>
 
             {/* Row 2: version + book + navigation */}
@@ -647,9 +663,9 @@ export default function PreviewApp() {
           ) : (
             <Box sx={{ p: 4, color: 'text.secondary' }}>
               <Typography>
-                Pick a <strong>Subject</strong> and language, click <strong>Find</strong>, then choose a resource. For a
-                Bible, pick a book and jump to a chapter/verse. Check <em>Branches &amp; older versions</em> to preview
-                work-in-progress.
+                Choose a <strong>language</strong> and <strong>subject</strong>, then click <strong>Find</strong> and
+                pick a resource to preview it. Once a resource is loaded you can choose a book and jump to a
+                chapter/verse, or switch to another version or branch.
               </Typography>
             </Box>
           )}
