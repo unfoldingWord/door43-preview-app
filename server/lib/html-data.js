@@ -26,6 +26,10 @@ export function htmlDataKey({ owner, repo, version, books }) {
   return `htmldata/${owner}/${repo}/${version}/${bookSegment(books)}.${CACHE_VERSION}`;
 }
 
+// In-flight renders keyed by cache key, so concurrent misses for the same resource
+// (e.g. the web view and the nav lookup) fetch/parse the source once, not twice.
+const inflightRenders = new Map();
+
 export async function getHtmlData({ owner, repo, ref = '', books = [] }) {
   const t0 = Date.now();
   const label = `${owner}/${repo} ${books.join(',') || '_whole'}`;
@@ -51,22 +55,37 @@ export async function getHtmlData({ owner, repo, ref = '', books = [] }) {
     }
   }
 
-  const resourceData = await getResourceData(
-    { owner, repo, ref: version, books },
-    { dcs_api_url: DCS_API_URL, quiet: true }
-  );
-  const tData = Date.now();
-  const htmlData = renderHtmlData(resourceData, { books });
-  const tRender = Date.now();
-  await setCached(
-    key,
-    JSON.stringify({ sha, renderedAt: new Date().toISOString(), htmlData }),
-    { ext: 'json' }
-  );
-  console.log(
-    `[html-data] ${label}@${version}: ${cachedStr ? 'REPLACED' : 'MISS'}  ` +
-      `resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms ` +
-      `getResourceData=${tData - tCache}ms renderHtmlData=${tRender - tData}ms cachePut=${Date.now() - tRender}ms`
-  );
-  return { htmlData, sha, version, key, cache: cachedStr ? 'REPLACED' : 'MISS' };
+  // MISS: coalesce concurrent renders of the same key so the source is fetched and
+  // parsed once even when the web view + nav (or several tabs) ask at the same time.
+  if (inflightRenders.has(key)) {
+    const htmlData = await inflightRenders.get(key);
+    console.log(`[html-data] ${label}@${version}: COALESCED (joined in-flight render)`);
+    return { htmlData, sha, version, key, cache: 'COALESCED' };
+  }
+
+  const renderPromise = (async () => {
+    const resourceData = await getResourceData(
+      { owner, repo, ref: version, books },
+      { dcs_api_url: DCS_API_URL, quiet: true }
+    );
+    const htmlData = renderHtmlData(resourceData, { books });
+    await setCached(
+      key,
+      JSON.stringify({ sha, renderedAt: new Date().toISOString(), htmlData }),
+      { ext: 'json' }
+    );
+    return htmlData;
+  })();
+  inflightRenders.set(key, renderPromise);
+
+  try {
+    const htmlData = await renderPromise;
+    console.log(
+      `[html-data] ${label}@${version}: ${cachedStr ? 'REPLACED' : 'MISS'}  ` +
+        `resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms fetch+render=${Date.now() - tCache}ms`
+    );
+    return { htmlData, sha, version, key, cache: cachedStr ? 'REPLACED' : 'MISS' };
+  } finally {
+    inflightRenders.delete(key);
+  }
 }
