@@ -1,24 +1,27 @@
-// Content-addressed cache for rendered preview HTML.
+// Content-addressed cache for rendered preview artifacts (HTML JSON, PDF).
 //
-// Pluggable by design: a disk backend now (reuses the app's CACHE_DIR), so we can
-// build and test without AWS; an S3 backend drops in behind the same
-// getCached/setCached interface once the openbao creds land.
+// Pluggable backend, selected by env:
+//   AWS_S3_BUCKET set -> S3 (shared, durable; prod)
+//   otherwise         -> local disk (dev, no infra)
+// Both expose the same async get/set: getCached(key,{ext,binary}) / setCached(key,data,{ext}).
 //
-// The key is derived from the resolved commit SHA (not the moving ref), so it
-// auto-invalidates when the resource content changes, and CACHE_VERSION lets us
-// invalidate everything on a renderer upgrade.
+// CACHE_VERSION invalidates everything on a renderer-output change (the cache key
+// doesn't include the renderer version).
 import { createHash } from 'crypto';
-import { promises as fs } from 'fs';
-import path from 'path';
+import * as disk from './cache-disk.js';
+import * as s3 from './cache-s3.js';
 
-const CACHE_DIR = process.env.CACHE_DIR || path.resolve(process.cwd(), 'cache');
-const PREVIEW_DIR = path.join(CACHE_DIR, 'preview');
-
-// Bump (or set env) when the renderer output format changes in a way that should
-// invalidate all cached HTML — e.g. a @unfoldingword/door43-preview-renderers upgrade.
-// Bump on renderer-output changes (the cache key doesn't include the renderer
-// version). r2: door43-preview-renderers 1.5.2 anchors Psalm superscriptions (-front).
+// Bump on renderer-output changes. r2: door43-preview-renderers 1.5.2 anchors
+// Psalm superscriptions (-front).
 export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r2';
+
+const useS3 = !!process.env.AWS_S3_BUCKET;
+const backend = useS3 ? s3 : disk;
+console.log(
+  `[preview-cache] backend: ${
+    useS3 ? `S3 (${process.env.AWS_S3_BUCKET} @ ${process.env.AWS_REGION || 'us-west-2'})` : 'disk'
+  }`
+);
 
 export function cacheKey({ owner, repo, sha, media, books, pageSize, columns }) {
   const canon = [
@@ -34,24 +37,5 @@ export function cacheKey({ owner, repo, sha, media, books, pageSize, columns }) 
   return createHash('sha256').update(canon).digest('hex');
 }
 
-// get/set handle both text (HTML, utf8 string) and binary (PDF, Buffer) via the
-// `ext`/`binary` options, so one content-addressed store serves both artifacts.
-export async function getCached(key, { ext = 'html', binary = false } = {}) {
-  try {
-    return await fs.readFile(
-      path.join(PREVIEW_DIR, `${key}.${ext}`),
-      binary ? undefined : 'utf8'
-    );
-  } catch {
-    return null; // miss (not found) — treat any read error as a miss
-  }
-}
-
-export async function setCached(key, data, { ext = 'html' } = {}) {
-  await fs.mkdir(PREVIEW_DIR, { recursive: true });
-  const file = path.join(PREVIEW_DIR, `${key}.${ext}`);
-  // Write to a temp file then rename so a concurrent reader never sees a partial file.
-  const tmp = `${file}.${process.pid}.tmp`;
-  await fs.writeFile(tmp, data);
-  await fs.rename(tmp, file);
-}
+export const getCached = (key, opts) => backend.getCached(key, opts);
+export const setCached = (key, data, opts) => backend.setCached(key, data, opts);
