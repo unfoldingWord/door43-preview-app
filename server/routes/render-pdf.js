@@ -15,7 +15,7 @@
 // Descriptor: owner (req), repo (req), ref (default master), books (comma/array;
 // empty = whole resource), pageSize (default A4_PORTRAIT), columns (default 1).
 import { renderPdf } from '@unfoldingword/door43-preview-renderers';
-import { resolveCommitSha } from '../lib/dcs.js';
+import { resolveVersion } from '../lib/versions.js';
 import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
 import { getHtmlData } from '../lib/html-data.js';
 import { createJobQueue } from '../lib/job-queue.js';
@@ -36,7 +36,7 @@ function descriptorFrom(req) {
   return {
     owner: s.owner,
     repo: s.repo,
-    ref: s.ref || 'master',
+    ref: s.ref || '', // empty -> resolveVersion picks the latest release
     books: parseBooks(s.books),
     pageSize: s.pageSize || 'A4_PORTRAIT',
     columns: s.columns ? Number(s.columns) : 1,
@@ -44,8 +44,9 @@ function descriptorFrom(req) {
 }
 
 // Resolve the descriptor to the immutable content cache key (used as the job id).
+// resolveVersion defaults an empty ref to the latest release (same as getHtmlData).
 async function keyFor(d) {
-  const sha = await resolveCommitSha(d.owner, d.repo, d.ref);
+  const { sha } = await resolveVersion(d.owner, d.repo, d.ref);
   return cacheKey({
     owner: d.owner,
     repo: d.repo,

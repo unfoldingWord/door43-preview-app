@@ -11,7 +11,7 @@
 // mismatch (branch moved / tag re-cut) re-renders. (Phase 4 will serve the stale
 // copy while revalidating instead of blocking.)
 import { getResourceData, renderHtmlData } from '@unfoldingword/door43-preview-renderers';
-import { resolveCommitSha } from './dcs.js';
+import { resolveVersion } from './versions.js';
 import { getCached, setCached, CACHE_VERSION } from './preview-cache.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
@@ -26,16 +26,17 @@ export function htmlDataKey({ owner, repo, version, books }) {
   return `htmldata/${owner}/${repo}/${version}/${bookSegment(books)}.${CACHE_VERSION}`;
 }
 
-export async function getHtmlData({ owner, repo, ref = 'master', books = [] }) {
-  const sha = await resolveCommitSha(owner, repo, ref);
-  const key = htmlDataKey({ owner, repo, version: ref, books });
+export async function getHtmlData({ owner, repo, ref = '', books = [] }) {
+  // Resolve the requested version to a concrete ref + sha (empty -> latest release).
+  const { ref: version, sha } = await resolveVersion(owner, repo, ref);
+  const key = htmlDataKey({ owner, repo, version, books });
 
   const cachedStr = await getCached(key, { ext: 'json' });
   if (cachedStr) {
     try {
       const obj = JSON.parse(cachedStr);
       if (obj && obj.sha === sha && obj.htmlData) {
-        return { htmlData: obj.htmlData, sha, key, cache: 'HIT' };
+        return { htmlData: obj.htmlData, sha, version, key, cache: 'HIT' };
       }
       // sha mismatch -> content changed; fall through and re-render (P4: serve stale).
     } catch {
@@ -44,7 +45,7 @@ export async function getHtmlData({ owner, repo, ref = 'master', books = [] }) {
   }
 
   const resourceData = await getResourceData(
-    { owner, repo, ref, books },
+    { owner, repo, ref: version, books },
     { dcs_api_url: DCS_API_URL, quiet: true }
   );
   const htmlData = renderHtmlData(resourceData, { books });
@@ -53,5 +54,5 @@ export async function getHtmlData({ owner, repo, ref = 'master', books = [] }) {
     JSON.stringify({ sha, renderedAt: new Date().toISOString(), htmlData }),
     { ext: 'json' }
   );
-  return { htmlData, sha, key, cache: cachedStr ? 'REPLACED' : 'MISS' };
+  return { htmlData, sha, version, key, cache: cachedStr ? 'REPLACED' : 'MISS' };
 }

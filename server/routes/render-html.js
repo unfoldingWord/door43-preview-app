@@ -30,7 +30,7 @@ export default async function renderHtml(req, res) {
   const src = req.method === 'POST' ? req.body || {} : req.query || {};
   const owner = src.owner;
   const repo = src.repo;
-  const ref = src.ref || 'master';
+  const ref = src.ref || ''; // empty -> resolveVersion picks the latest release
   const books = parseBooks(src.books);
 
   if (!owner || !repo) {

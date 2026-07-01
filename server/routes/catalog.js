@@ -4,7 +4,23 @@
 // abbreviation used to build navigation anchors.
 //
 // Query: lang (default en), subject, owner, q, stage (default prod), limit.
+import { listVersions } from '../lib/versions.js';
+
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
+
+// GET /api/catalog/versions?owner&repo — for the version picker: latest release,
+// plus all releases and branches (shown when the user opts into dev versions).
+export async function catalogVersions(req, res) {
+  const { owner, repo } = req.query;
+  if (!owner || !repo) {
+    return res.status(400).json({ error: 'owner and repo are required.' });
+  }
+  try {
+    res.json(await listVersions(owner, repo));
+  } catch (e) {
+    res.status(502).json({ error: `versions lookup failed for ${owner}/${repo}: ${e.message}` });
+  }
+}
 
 export default async function catalogSearch(req, res) {
   const q = req.query || {};

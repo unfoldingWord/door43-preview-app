@@ -16,7 +16,7 @@ function escapeRegex(s) {
 export default async function previewNav(req, res) {
   const owner = req.query.owner;
   const repo = req.query.repo;
-  const ref = req.query.ref || 'master';
+  const ref = req.query.ref || ''; // empty -> resolveVersion picks the latest release
   const book = (req.query.book || '').trim().toLowerCase();
   if (!owner || !repo || !book) {
     return res.status(400).json({ error: 'owner, repo and book are required.' });
