@@ -60,6 +60,19 @@ export default function PreviewApp() {
     setPreviewUrl(`/api/preview/html?${qs.toString()}`);
   };
 
+  const runPdf = () => {
+    if (!canPreview) return;
+    // PDF is always print media; rendered by the WeasyPrint sidecar server-side.
+    const qs = new URLSearchParams({
+      owner: owner.trim(),
+      repo: repo.trim(),
+      ref: ref.trim() || 'master',
+      pageSize: 'A4_PORTRAIT',
+    });
+    setLoading(true);
+    setPreviewUrl(`/api/preview/pdf?${qs.toString()}`);
+  };
+
   const applyPreset = (p) => {
     setOwner(p.owner);
     setRepo(p.repo);
@@ -124,6 +137,9 @@ export default function PreviewApp() {
             </ToggleButtonGroup>
             <Button type="submit" variant="contained" disabled={!canPreview}>
               Preview
+            </Button>
+            <Button variant="outlined" onClick={runPdf} disabled={!canPreview}>
+              PDF
             </Button>
             <Stack direction="row" spacing={1}>
               {PRESETS.map((p) => (
