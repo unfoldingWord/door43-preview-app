@@ -18,6 +18,8 @@ import {
   renderHtmlData,
   renderHTML,
 } from '@unfoldingword/door43-preview-renderers';
+import { resolveCommitSha } from '../lib/dcs.js';
+import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
 
@@ -48,6 +50,18 @@ export default async function renderHtml(req, res) {
   }
 
   try {
+    // Resolve the ref to an immutable commit sha so the cache auto-invalidates
+    // when content changes (a moving ref like "master" would never invalidate).
+    const sha = await resolveCommitSha(owner, repo, ref);
+    const key = cacheKey({ owner, repo, sha, media, books });
+
+    const cached = await getCached(key);
+    if (cached) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('X-Cache', 'HIT');
+      return res.send(cached);
+    }
+
     const resourceData = await getResourceData(
       { owner, repo, ref, books },
       { dcs_api_url: DCS_API_URL, quiet: true }
@@ -55,7 +69,10 @@ export default async function renderHtml(req, res) {
     const htmlData = renderHtmlData(resourceData, { books });
     const html = renderHTML(htmlData, { media });
 
+    await setCached(key, html);
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('X-Cache', 'MISS');
     res.send(html);
   } catch (e) {
     res

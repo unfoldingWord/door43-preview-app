@@ -70,12 +70,12 @@ export default function PreviewApp() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        <AppBar position="static" sx={{ bgcolor: '#014263' }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: '#31ADE3', color: '#ffffff' }}>
           <Toolbar variant="dense">
-            <Typography variant="h6" sx={{ fontWeight: 700, mr: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mr: 2, color: '#ffffff' }}>
               Door43 Preview
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.75 }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)' }}>
               rebuild · server-rendered
             </Typography>
           </Toolbar>
