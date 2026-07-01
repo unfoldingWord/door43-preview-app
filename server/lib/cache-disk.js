@@ -32,3 +32,11 @@ export async function setCached(key, data, { ext = 'html' } = {}) {
   await fs.writeFile(tmp, data);
   await fs.rename(tmp, file);
 }
+
+export async function delCached(key, { ext = 'html' } = {}) {
+  try {
+    await fs.unlink(fileFor(key, ext));
+  } catch (e) {
+    if (e && e.code !== 'ENOENT') throw e; // already gone -> fine
+  }
+}

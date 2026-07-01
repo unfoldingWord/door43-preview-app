@@ -45,3 +45,4 @@ export function cacheKey({ owner, repo, sha, media, books, pageSize, columns }) 
 
 export const getCached = (key, opts) => backend.getCached(key, opts);
 export const setCached = (key, data, opts) => backend.setCached(key, data, opts);
+export const delCached = (key, opts) => backend.delCached(key, opts);

@@ -15,11 +15,11 @@
 // Descriptor: owner (req), repo (req), ref (default master), books (comma/array;
 // empty = whole resource), pageSize (default A4_PORTRAIT), columns (default 1).
 import { renderPdf } from '@unfoldingword/door43-preview-renderers';
-import { resolveVersion } from '../lib/versions.js';
-import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
+import { resolveRenderIdentity } from '../lib/render-identity.js';
+import { cacheKey, getCached, setCached, delCached } from '../lib/preview-cache.js';
 import { getHtmlData } from '../lib/html-data.js';
 import { createJobQueue } from '../lib/job-queue.js';
-import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
+import { dcsApiUrlFromReq, dcsHostLabel } from '../lib/dcs-host.js';
 
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
@@ -47,14 +47,21 @@ function descriptorFrom(req) {
   };
 }
 
-// Resolve the descriptor to the immutable content cache key (used as the job id).
-// resolveVersion defaults an empty ref to the latest release (same as getHtmlData).
+// Resolve the descriptor to the content cache key (used as the job id). The key is
+// keyed on the COMPOSITE identity (per-book blob shas + Markdown commit shas), same
+// as the web view — so a PDF is only re-rendered when content the book uses changed.
 async function keyFor(d) {
-  const { sha } = await resolveVersion(d.owner, d.repo, d.ref, d.dcsApiUrl);
+  const { composite } = await resolveRenderIdentity({
+    owner: d.owner,
+    repo: d.repo,
+    ref: d.ref,
+    books: d.books,
+    api: d.dcsApiUrl,
+  });
   return cacheKey({
     owner: d.owner,
     repo: d.repo,
-    sha,
+    sha: composite,
     media: 'print',
     books: d.books,
     pageSize: d.pageSize,
@@ -62,10 +69,52 @@ async function keyFor(d) {
   });
 }
 
+// Pointer: the last sha we cached a PDF for, per (host, ref, books, pageSize,
+// columns). Lets us find and delete the superseded PDF once a fresh one exists.
+function pdfPointerKey(d) {
+  const host = dcsHostLabel(d.dcsApiUrl);
+  const books = (d.books || []).join('+') || '_whole';
+  return `pdfsha/${host}/${d.owner}/${d.repo}/${d.ref || '_latest'}/${books}/${d.pageSize}/c${d.columns}`;
+}
+
+// Once a fresh PDF is safely cached, remove the previous sha's PDF for this
+// ref+params and advance the pointer. Best-effort: the old PDF is only removed
+// AFTER the new one is stored, so a stale-but-valid PDF is always available until
+// its replacement exists; a failed cleanup never fails the render.
+async function reapSupersededPdf(d, newSha, newKey) {
+  const ptr = pdfPointerKey(d);
+  let prevSha = null;
+  try {
+    const s = await getCached(ptr, { ext: 'json' });
+    if (s) prevSha = JSON.parse(s).sha || null;
+  } catch {
+    /* unreadable pointer -> treat as none */
+  }
+  if (prevSha && prevSha !== newSha) {
+    const oldKey = cacheKey({
+      owner: d.owner,
+      repo: d.repo,
+      sha: prevSha,
+      media: 'print',
+      books: d.books,
+      pageSize: d.pageSize,
+      columns: d.columns,
+    });
+    if (oldKey !== newKey) {
+      await delCached(oldKey, { ext: 'pdf' });
+      console.log(
+        `[pdf] reaped superseded PDF ${d.owner}/${d.repo}@${d.ref || '_latest'} ` +
+          `${String(prevSha).slice(0, 8)} -> ${String(newSha).slice(0, 8)}`
+      );
+    }
+  }
+  await setCached(ptr, JSON.stringify({ sha: newSha, at: new Date().toISOString() }), { ext: 'json' });
+}
+
 // The actual render: reuse the cached htmlData, then library assembles print HTML
 // -> WeasyPrint sidecar -> PDF, then cache the PDF bytes.
 async function renderAndCache(d, key) {
-  const { htmlData } = await getHtmlData({
+  const { htmlData, sha } = await getHtmlData({
     owner: d.owner,
     repo: d.repo,
     ref: d.ref,
@@ -78,6 +127,10 @@ async function renderAndCache(d, key) {
     columns: d.columns,
   });
   await setCached(key, pdf, { ext: 'pdf' });
+  // New PDF is now cached -> retire the old sha's PDF (best-effort, never fatal).
+  await reapSupersededPdf(d, sha, key).catch((e) =>
+    console.error('[pdf] cleanup failed (ignored):', e.message)
+  );
   return pdf;
 }
 

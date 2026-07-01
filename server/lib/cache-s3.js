@@ -8,7 +8,12 @@
 //
 // Fail-soft: a get/set failure is logged and treated as a miss / no-op so caching
 // problems never break a render request.
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 
 const REGION = process.env.AWS_REGION || 'us-west-2';
 const BUCKET = process.env.AWS_S3_BUCKET;
@@ -64,5 +69,15 @@ export async function setCached(key, data, { ext = 'html' } = {}) {
   } catch (e) {
     console.error('[cache-s3] set failed for', objectKey(key, ext), '-', e.message);
     // fail soft -> not caching shouldn't break the request
+  }
+}
+
+export async function delCached(key, { ext = 'html' } = {}) {
+  try {
+    // DeleteObject is idempotent — a missing key is not an error.
+    await client().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: objectKey(key, ext) }));
+  } catch (e) {
+    console.error('[cache-s3] delete failed for', objectKey(key, ext), '-', e.message);
+    // fail soft -> a failed cleanup shouldn't break the request
   }
 }
