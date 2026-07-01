@@ -23,7 +23,9 @@ export default async function previewNav(req, res) {
   }
 
   try {
-    const { htmlData } = await getHtmlData({ owner, repo, ref, books: [book] });
+    // allowStale: the nav tree from a slightly-old render is fine; it refreshes when
+    // the client reloads after revalidation. Keeps book switching snappy on branches.
+    const { htmlData } = await getHtmlData({ owner, repo, ref, books: [book], allowStale: true });
     const html = renderHTML(htmlData, { media: 'web' });
 
     // Element ids only (scroll targets), not href cross-references.

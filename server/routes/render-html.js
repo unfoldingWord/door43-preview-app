@@ -58,10 +58,12 @@ export default async function renderHtml(req, res) {
   }
 
   try {
-    const { htmlData, cache } = await getHtmlData({ owner, repo, ref, books });
+    // allowStale: on a moved branch, serve the last render immediately and let the
+    // cache refresh in the background — the client's status poll handles the swap.
+    const { htmlData, cache } = await getHtmlData({ owner, repo, ref, books, allowStale: true });
     const html = renderHTML(htmlData, composeOptions(src));
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('X-Cache', cache); // HIT | MISS | REPLACED (htmlData cache)
+    res.setHeader('X-Cache', cache); // HIT | STALE | COALESCED | MISS | REPLACED
     res.send(html);
   } catch (e) {
     errorPage(res, `Couldn't render ${owner}/${repo}${ref ? `@${ref}` : ''}: ${e.message}`);

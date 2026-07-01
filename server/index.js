@@ -17,6 +17,7 @@ import renderHtmlHandler from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
 import catalogSearch, { catalogTags, catalogBranches, catalogEntry } from './routes/catalog.js';
 import previewNav from './routes/nav.js';
+import previewStatus from './routes/preview-status.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,6 +57,10 @@ app.post('/api/preview/html', renderHtmlHandler);
 
 // Chapter/verse structure for a book (derived from the rendered content).
 app.get('/api/preview/nav', previewNav);
+
+// Is the cached web view current? (branch moved -> STALE). Drives the client's
+// "source changed — updating…" banner + auto-reload after revalidation.
+app.get('/api/preview/status', previewStatus);
 
 // Render a resource to PDF via the library + WeasyPrint sidecar (cached).
 // POST enqueues an async job; GET /:jobId polls status; GET (descriptor) serves.

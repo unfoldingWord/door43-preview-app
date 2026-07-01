@@ -215,9 +215,11 @@ export default function PreviewApp() {
   const [pdfJob, setPdfJob] = useState(null);
   const [error, setError] = useState(null);
   const [pendingScroll, setPendingScroll] = useState(null); // {chapter, verse} to scroll after load
+  const [stale, setStale] = useState(false); // branch moved -> showing last render while revalidating
 
   const iframeRef = useRef(null);
-  const pollRef = useRef(null);
+  const pollRef = useRef(null); // PDF job poll
+  const statusPollRef = useRef(null); // freshness (serve-stale) poll
 
   const bookBased = !!(entry && entry.books && entry.books.length > 1);
 
@@ -225,6 +227,13 @@ export default function PreviewApp() {
     if (pollRef.current) {
       clearTimeout(pollRef.current);
       pollRef.current = null;
+    }
+  };
+
+  const stopStatusPoll = () => {
+    if (statusPollRef.current) {
+      clearTimeout(statusPollRef.current);
+      statusPollRef.current = null;
     }
   };
 
@@ -296,6 +305,8 @@ export default function PreviewApp() {
   const renderView = (e, ver, b) => {
     if (!e) return;
     stopPoll();
+    stopStatusPoll();
+    setStale(false);
     setPdfJob(null);
     setError(null);
     setLoading(true);
@@ -306,6 +317,64 @@ export default function PreviewApp() {
       setChapterOpt(null);
       setVerseOpt(null);
     }
+    checkFreshness(e.owner, e.repo, ver, b);
+  };
+
+  // ---- serve-stale freshness (branch previews) ----
+  const statusUrl = (owner, repo, ver, b) => {
+    const qs = new URLSearchParams({ owner, repo, ref: ver || '' });
+    if (b) qs.set('book', b);
+    return `/api/preview/status?${qs.toString()}`;
+  };
+
+  const reloadPreview = () => {
+    setLoading(true);
+    try {
+      const win = iframeRef.current && iframeRef.current.contentWindow;
+      if (win) {
+        win.location.reload();
+        return;
+      }
+    } catch {
+      /* detached/cross-origin -> fall back to a src bump */
+    }
+    setPreviewUrl((u) => (u ? `${u}${u.includes('?') ? '&' : '?'}_r=${Date.now()}` : u));
+  };
+
+  // After a render, ask whether what we served is current. A moved branch is served
+  // from the last render (fast) with an "updating…" banner; poll until the background
+  // revalidation lands, then reload the iframe to the fresh commit.
+  const checkFreshness = async (owner, repo, ver, b) => {
+    try {
+      const r = await fetch(statusUrl(owner, repo, ver, b));
+      if (!r.ok) return;
+      const s = await r.json();
+      if (s.cache === 'STALE') {
+        setStale(true);
+        pollFreshness(owner, repo, ver, b);
+      }
+    } catch {
+      /* best effort — no banner on a failed probe */
+    }
+  };
+
+  const pollFreshness = (owner, repo, ver, b) => {
+    const tick = async () => {
+      try {
+        const r = await fetch(statusUrl(owner, repo, ver, b));
+        const s = await r.json();
+        if (r.ok && s.cache === 'FRESH') {
+          setStale(false);
+          statusPollRef.current = null;
+          reloadPreview();
+          return;
+        }
+      } catch {
+        /* keep polling */
+      }
+      statusPollRef.current = setTimeout(tick, 3000);
+    };
+    statusPollRef.current = setTimeout(tick, 3000);
   };
 
   const scrollToAnchor = (anchor) => {
@@ -414,6 +483,7 @@ export default function PreviewApp() {
     return () => {
       window.removeEventListener('popstate', load);
       stopPoll();
+      stopStatusPoll();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -442,6 +512,8 @@ export default function PreviewApp() {
   const runPdf = async () => {
     if (!entry) return;
     stopPoll();
+    stopStatusPoll();
+    setStale(false);
     setError(null);
     setPreviewUrl('');
     const descriptor = { owner: entry.owner, repo: entry.repo, ref: version, pageSize: 'A4_PORTRAIT' };
@@ -624,7 +696,7 @@ export default function PreviewApp() {
                 <Button variant="outlined" onClick={() => renderView(entry, version, book)}>
                   Web
                 </Button>
-                <Button type="button" variant="contained" onClick={runPdf}>
+                <Button type="button" variant="contained" onClick={runPdf} disabled={stale}>
                   PDF
                 </Button>
               </Stack>
@@ -644,6 +716,17 @@ export default function PreviewApp() {
               <CircularProgress size={16} />
               <Typography variant="body2" sx={{ color: '#014263' }}>
                 {jobLabel(pdfJob)}
+              </Typography>
+            </Stack>
+          </Box>
+        )}
+
+        {stale && !pdfJob && (
+          <Box sx={{ px: 2, py: 1, bgcolor: '#fff6e6', borderBottom: '1px solid #f0dcae' }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <CircularProgress size={16} sx={{ color: '#E59D33' }} />
+              <Typography variant="body2" sx={{ color: '#8a5a00' }}>
+                Source changed — showing the last render while updating to the latest commit…
               </Typography>
             </Stack>
           </Box>
