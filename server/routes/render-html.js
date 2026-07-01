@@ -1,57 +1,29 @@
-// GET|POST /api/preview/html — render a resource to HTML via the shared
-// @unfoldingword/door43-preview-renderers library, server-side. Descriptor in,
-// HTML out. This is the seam that replaces the app's in-React rendering: the
-// browser stops parsing USFM/TSV and just displays server-rendered HTML.
+// GET|POST /api/preview/html — render a resource to HTML.
 //
-// The S3 cache (check by content hash) and the PDF job queue layer in around
-// this route next; for now it renders on every request.
+// Two-stage: getHtmlData() returns the cached renderHtmlData() JSON (data fetch +
+// parse, the expensive part, cached under a readable version path); renderHTML()
+// composes the final HTML per request with the requested options — so media,
+// columns, hide cover/toc, etc. change without re-fetching or re-parsing.
 //
-// Descriptor (query string for GET, JSON body for POST):
-//   owner  (required)  e.g. "unfoldingWord"
-//   repo   (required)  e.g. "en_obs"
-//   ref                default "master"
-//   media              "web" (default) | "print"
-//   books              comma-separated list or array; empty = whole resource
-//                      (OBS has no book selection, so leave empty)
-import {
-  getResourceData,
-  renderHtmlData,
-  renderHTML,
-} from '@unfoldingword/door43-preview-renderers';
-import { resolveCommitSha } from '../lib/dcs.js';
-import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
-
-const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
+// Descriptor (query for GET, JSON body for POST):
+//   owner (req), repo (req), ref (default master), media ("web"|"print"),
+//   books (comma list / array; empty = whole resource), columns (optional).
+import { renderHTML } from '@unfoldingword/door43-preview-renderers';
+import { getHtmlData } from '../lib/html-data.js';
 
 function parseBooks(books) {
   if (Array.isArray(books)) return books;
   if (typeof books === 'string' && books.trim()) {
-    return books
-      .split(',')
-      .map((b) => b.trim())
-      .filter(Boolean);
+    return books.split(',').map((b) => b.trim()).filter(Boolean);
   }
   return [];
 }
 
-// Cache-aware render: resolve the ref to an immutable commit sha, check the
-// content-addressed cache, else render via the library and cache it. Returns the
-// HTML plus HIT/MISS. Shared by the HTML route and the nav endpoint (which scans
-// the same HTML for chapter/verse anchors).
-export async function getRenderedHtml({ owner, repo, ref = 'master', media = 'web', books = [] }) {
-  const sha = await resolveCommitSha(owner, repo, ref);
-  const key = cacheKey({ owner, repo, sha, media, books });
-
-  const cached = await getCached(key);
-  if (cached) return { html: cached, cache: 'HIT' };
-
-  const resourceData = await getResourceData(
-    { owner, repo, ref, books },
-    { dcs_api_url: DCS_API_URL, quiet: true }
-  );
-  const html = renderHTML(renderHtmlData(resourceData, { books }), { media });
-  await setCached(key, html);
-  return { html, cache: 'MISS' };
+// Build renderHTML() options from the request (applied to cached htmlData).
+function composeOptions(src) {
+  const opts = { media: src.media === 'print' ? 'print' : 'web' };
+  if (src.columns) opts.columns = Number(src.columns);
+  return opts;
 }
 
 export default async function renderHtml(req, res) {
@@ -59,7 +31,6 @@ export default async function renderHtml(req, res) {
   const owner = src.owner;
   const repo = src.repo;
   const ref = src.ref || 'master';
-  const media = src.media === 'print' ? 'print' : 'web';
   const books = parseBooks(src.books);
 
   if (!owner || !repo) {
@@ -70,9 +41,10 @@ export default async function renderHtml(req, res) {
   }
 
   try {
-    const { html, cache } = await getRenderedHtml({ owner, repo, ref, media, books });
+    const { htmlData, cache } = await getHtmlData({ owner, repo, ref, books });
+    const html = renderHTML(htmlData, composeOptions(src));
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('X-Cache', cache);
+    res.setHeader('X-Cache', cache); // HIT | MISS | REPLACED (htmlData cache)
     res.send(html);
   } catch (e) {
     res

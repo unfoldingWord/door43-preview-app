@@ -14,16 +14,12 @@
 //
 // Descriptor: owner (req), repo (req), ref (default master), books (comma/array;
 // empty = whole resource), pageSize (default A4_PORTRAIT), columns (default 1).
-import {
-  getResourceData,
-  renderHtmlData,
-  renderPdf,
-} from '@unfoldingword/door43-preview-renderers';
+import { renderPdf } from '@unfoldingword/door43-preview-renderers';
 import { resolveCommitSha } from '../lib/dcs.js';
 import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
+import { getHtmlData } from '../lib/html-data.js';
 import { createJobQueue } from '../lib/job-queue.js';
 
-const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
 
@@ -61,14 +57,15 @@ async function keyFor(d) {
   });
 }
 
-// The actual render: library assembles print HTML -> WeasyPrint sidecar -> PDF,
-// then cache it. Returns the PDF bytes.
+// The actual render: reuse the cached htmlData, then library assembles print HTML
+// -> WeasyPrint sidecar -> PDF, then cache the PDF bytes.
 async function renderAndCache(d, key) {
-  const resourceData = await getResourceData(
-    { owner: d.owner, repo: d.repo, ref: d.ref, books: d.books },
-    { dcs_api_url: DCS_API_URL, quiet: true }
-  );
-  const htmlData = renderHtmlData(resourceData, { books: d.books });
+  const { htmlData } = await getHtmlData({
+    owner: d.owner,
+    repo: d.repo,
+    ref: d.ref,
+    books: d.books,
+  });
   const pdf = await renderPdf(htmlData, {
     pdfServiceUrl: WEASYPRINT_SERVICE_URL,
     pageSize: d.pageSize,

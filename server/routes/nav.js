@@ -6,7 +6,8 @@
 // It scans the rendered HTML for the renderer's anchor ids
 // (`<abbr>-<book>-<chapter>[-<verse>]`) in document order and returns a tree whose
 // entries are exact scroll targets. Reuses the same cached HTML as the web view.
-import { getRenderedHtml } from './render-html.js';
+import { renderHTML } from '@unfoldingword/door43-preview-renderers';
+import { getHtmlData } from '../lib/html-data.js';
 
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -22,7 +23,8 @@ export default async function previewNav(req, res) {
   }
 
   try {
-    const { html } = await getRenderedHtml({ owner, repo, ref, media: 'web', books: [book] });
+    const { htmlData } = await getHtmlData({ owner, repo, ref, books: [book] });
+    const html = renderHTML(htmlData, { media: 'web' });
 
     // Element ids only (scroll targets), not href cross-references.
     const re = new RegExp(`\\bid=["']([a-z0-9]+)-${escapeRegex(book)}-([^"']+)["']`, 'gi');
