@@ -4,3 +4,6 @@ allowBuilds:
   core-js-pure: true
   es5-ext: true
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@unfoldingword/door43-preview-renderers@1.5.0'
+  - '@unfoldingword/door43-preview-renderers@1.5.1'
