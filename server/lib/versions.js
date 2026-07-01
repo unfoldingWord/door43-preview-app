@@ -35,15 +35,50 @@ async function defaultBranch(owner, repo, api) {
   }
 }
 
+// --- ref -> {ref, sha} resolution cache -------------------------------------
+// resolveVersion runs on every preview request (html + nav + status), so a single
+// page load resolves the same ref several times. Cache the result briefly to
+// collapse those into one DCS lookup and let cache HITs avoid DCS entirely.
+//
+// TTL: immutable release tags (vNN, vNN.NN) never move -> long. Branches and the
+// empty "latest release" ref can move -> short, so a moved branch is detected (and
+// serve-stale kicks in) within that window. Both env-tunable; lower REF_SHA_TTL_MS
+// for snappier branch-change detection while testing.
+const shaCache = new Map(); // `${api}|${owner}|${repo}|${requested}` -> { value, exp }
+const BRANCH_TTL = Number(process.env.REF_SHA_TTL_MS) || 15000;
+const TAG_TTL = Number(process.env.REF_SHA_TAG_TTL_MS) || 24 * 60 * 60 * 1000;
+const MAX_ENTRIES = 5000;
+
+function ttlFor(requestedRef) {
+  const r = String(requestedRef || '').trim();
+  if (!r) return BRANCH_TTL; // empty -> latest release, which changes on a new release
+  return /^v?\d+([._-]\d+)*$/i.test(r) ? TAG_TTL : BRANCH_TTL;
+}
+
+function prune() {
+  if (shaCache.size <= MAX_ENTRIES) return;
+  const now = Date.now();
+  for (const [k, v] of shaCache) if (v.exp <= now) shaCache.delete(k);
+  if (shaCache.size > MAX_ENTRIES) shaCache.clear(); // hard reset if still oversized
+}
+
 // Resolve a requested version to { ref, sha }. Empty -> latest release, else the
-// repo's default branch.
+// repo's default branch. Cached per (host, owner, repo, requested ref).
 export async function resolveVersion(owner, repo, version, api = DEFAULT_API) {
-  let ref = (version || '').trim();
+  const requested = (version || '').trim();
+  const ck = `${api}|${owner}|${repo}|${requested}`;
+  const hit = shaCache.get(ck);
+  if (hit && hit.exp > Date.now()) return hit.value;
+
+  let ref = requested;
   if (!ref) {
     ref = (await latestReleaseTag(owner, repo, api)) || (await defaultBranch(owner, repo, api));
   }
   const sha = await resolveCommitSha(owner, repo, ref, api);
-  return { ref, sha };
+  const value = { ref, sha };
+  shaCache.set(ck, { value, exp: Date.now() + ttlFor(requested) });
+  prune();
+  return value;
 }
 
 // Tag names, newest-first by tag commit date.
