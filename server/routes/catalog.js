@@ -4,7 +4,7 @@
 // abbreviation used to build navigation anchors.
 //
 // Query: lang (default en), subject, owner, q, stage (default prod), limit.
-import { listVersions, resolveVersion } from '../lib/versions.js';
+import { listTags, listBranches, resolveVersion, latestReleaseTag } from '../lib/versions.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
 
@@ -16,7 +16,10 @@ export async function catalogEntry(req, res) {
     return res.status(400).json({ error: 'owner and repo are required.' });
   }
   try {
-    const { ref } = await resolveVersion(owner, repo, req.query.ref || '');
+    const [{ ref }, latestRelease] = await Promise.all([
+      resolveVersion(owner, repo, req.query.ref || ''),
+      latestReleaseTag(owner, repo),
+    ]);
     const url = `${DCS_API_URL}/catalog/entry/${encodeURIComponent(owner)}/${encodeURIComponent(
       repo
     )}/${encodeURIComponent(ref)}`;
@@ -27,6 +30,7 @@ export async function catalogEntry(req, res) {
       owner: e.owner,
       repo: e.name || repo,
       ref: e.branch_or_tag_name || ref,
+      latestRelease,
       subject: e.subject,
       title: e.title,
       language: e.language,
@@ -42,17 +46,27 @@ export async function catalogEntry(req, res) {
   }
 }
 
-// GET /api/catalog/versions?owner&repo — for the version picker: latest release,
-// plus all releases and branches (shown when the user opts into dev versions).
-export async function catalogVersions(req, res) {
+// GET /api/catalog/tags?owner&repo — tag names (newest-first). Fetched lazily when
+// the picker's "Versions" tab is opened.
+export async function catalogTags(req, res) {
   const { owner, repo } = req.query;
-  if (!owner || !repo) {
-    return res.status(400).json({ error: 'owner and repo are required.' });
-  }
+  if (!owner || !repo) return res.status(400).json({ error: 'owner and repo are required.' });
   try {
-    res.json(await listVersions(owner, repo));
+    res.json({ tags: await listTags(owner, repo) });
   } catch (e) {
-    res.status(502).json({ error: `versions lookup failed for ${owner}/${repo}: ${e.message}` });
+    res.status(502).json({ error: `tags lookup failed for ${owner}/${repo}: ${e.message}` });
+  }
+}
+
+// GET /api/catalog/branches?owner&repo — branch names (master/main first). Fetched
+// lazily when the picker's "Branches" tab is opened.
+export async function catalogBranches(req, res) {
+  const { owner, repo } = req.query;
+  if (!owner || !repo) return res.status(400).json({ error: 'owner and repo are required.' });
+  try {
+    res.json({ branches: await listBranches(owner, repo) });
+  } catch (e) {
+    res.status(502).json({ error: `branches lookup failed for ${owner}/${repo}: ${e.message}` });
   }
 }
 

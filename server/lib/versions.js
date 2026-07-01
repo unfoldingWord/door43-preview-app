@@ -1,11 +1,6 @@
-// Version resolution + listing for a repo.
-//
-// resolveVersion: turn a requested version (v89 / master / a user branch / empty)
-// into a concrete { ref, sha }. Empty -> the latest *release* (not prerelease, not
-// a branch), falling back to the repo's default branch if it has no releases.
-//
-// listVersions: powers the version picker — the latest release plus (for content
-// workers) all releases and branches.
+// Version resolution + tag/branch listing, using the lightweight git endpoints
+// (/repos/.../tags, /repos/.../branches, /releases/latest) — fast, and users can
+// pick any ref even if it isn't renderable (the render just reports an error).
 import { resolveCommitSha } from './dcs.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
@@ -23,7 +18,7 @@ export async function latestReleaseTag(owner, repo) {
     const rel = await dcsJson(`/repos/${enc(owner)}/${enc(repo)}/releases/latest`);
     return rel && rel.tag_name ? rel.tag_name : null;
   } catch {
-    return null; // no releases (only branches)
+    return null;
   }
 }
 
@@ -36,6 +31,8 @@ async function defaultBranch(owner, repo) {
   }
 }
 
+// Resolve a requested version to { ref, sha }. Empty -> latest release, else the
+// repo's default branch.
 export async function resolveVersion(owner, repo, version) {
   let ref = (version || '').trim();
   if (!ref) {
@@ -45,17 +42,28 @@ export async function resolveVersion(owner, repo, version) {
   return { ref, sha };
 }
 
-export async function listVersions(owner, repo) {
-  const [latestRelease, releases, branches] = await Promise.all([
-    latestReleaseTag(owner, repo),
-    dcsJson(`/repos/${enc(owner)}/${enc(repo)}/releases?limit=50`).catch(() => []),
-    dcsJson(`/repos/${enc(owner)}/${enc(repo)}/branches?limit=100`).catch(() => []),
-  ]);
-  return {
-    latestRelease,
-    releases: (Array.isArray(releases) ? releases : [])
-      .filter((r) => !r.draft)
-      .map((r) => ({ tag: r.tag_name, name: r.name || r.tag_name, prerelease: !!r.prerelease })),
-    branches: (Array.isArray(branches) ? branches : []).map((b) => b.name),
+// Tag names, newest-first by tag commit date.
+export async function listTags(owner, repo, limit = 300) {
+  const tags = await dcsJson(`/repos/${enc(owner)}/${enc(repo)}/tags?limit=${limit}`).catch(() => []);
+  return (Array.isArray(tags) ? tags : [])
+    .map((t) => ({ name: t.name, date: (t.commit && t.commit.created) || '' }))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .map((t) => t.name);
+}
+
+// Branch names: master then main pinned on top, then the rest newest-first by
+// last-commit date.
+export async function listBranches(owner, repo, limit = 300) {
+  const branches = await dcsJson(`/repos/${enc(owner)}/${enc(repo)}/branches?limit=${limit}`).catch(() => []);
+  const list = (Array.isArray(branches) ? branches : []).map((b) => ({
+    name: b.name,
+    date: (b.commit && (b.commit.timestamp || (b.commit.author && b.commit.author.date))) || '',
+  }));
+  const PINNED = ['master', 'main'];
+  const rank = (n) => {
+    const i = PINNED.indexOf(n);
+    return i === -1 ? PINNED.length : i;
   };
+  list.sort((a, b) => rank(a.name) - rank(b.name) || (b.date || '').localeCompare(a.date || ''));
+  return list.map((b) => b.name);
 }

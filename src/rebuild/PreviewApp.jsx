@@ -19,7 +19,9 @@ import {
   Select,
   FormControl,
   InputLabel,
-  ListSubheader,
+  Popover,
+  Tabs,
+  Tab,
   Autocomplete,
   Checkbox,
   FormControlLabel,
@@ -87,6 +89,109 @@ function urlFor({ owner, repo, version, book, chapter, verse }) {
   return qs ? `${path}?${qs}` : path;
 }
 
+// GitHub-style version picker: a button opening a popover with Versions | Branches
+// tabs + a filter. Each tab fetches its own endpoint LAZILY on first activation
+// (/api/catalog/tags, /api/catalog/branches) — light, and only in dev mode.
+function VersionPicker({ owner, repo, value, latestRelease, onChange }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [tab, setTab] = useState(0); // 0 Versions (tags), 1 Branches
+  const [tags, setTags] = useState(null);
+  const [branches, setBranches] = useState(null);
+  const [loadingTags, setLoadingTags] = useState(false);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+  const [filter, setFilter] = useState('');
+  const open = Boolean(anchorEl);
+
+  const loadTags = async () => {
+    if (tags || loadingTags) return;
+    setLoadingTags(true);
+    try {
+      const r = await fetch(`/api/catalog/tags?${new URLSearchParams({ owner, repo })}`);
+      const j = await r.json();
+      if (r.ok) setTags(j.tags || []);
+    } catch {
+      /* best effort */
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+  const loadBranches = async () => {
+    if (branches || loadingBranches) return;
+    setLoadingBranches(true);
+    try {
+      const r = await fetch(`/api/catalog/branches?${new URLSearchParams({ owner, repo })}`);
+      const j = await r.json();
+      if (r.ok) setBranches(j.branches || []);
+    } catch {
+      /* best effort */
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
+
+  const openPicker = (e) => {
+    setAnchorEl(e.currentTarget);
+    setFilter('');
+    tab === 0 ? loadTags() : loadBranches();
+  };
+  const switchTab = (t) => {
+    setTab(t);
+    setFilter('');
+    t === 0 ? loadTags() : loadBranches();
+  };
+
+  const list = tab === 0 ? tags : branches;
+  const loading = tab === 0 ? loadingTags : loadingBranches;
+  const f = filter.trim().toLowerCase();
+  const items = (list || []).filter((n) => !f || n.toLowerCase().includes(f));
+
+  return (
+    <>
+      <Button variant="outlined" size="small" onClick={openPicker} sx={{ minWidth: 170, justifyContent: 'space-between' }}>
+        {value || 'version'} ▾
+      </Button>
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Box sx={{ width: 300 }}>
+          <Tabs value={tab} onChange={(e, t) => switchTab(t)} variant="fullWidth">
+            <Tab label={`Versions${tags ? ` (${tags.length})` : ''}`} />
+            <Tab label={`Branches${branches ? ` (${branches.length})` : ''}`} />
+          </Tabs>
+          <Box sx={{ p: 1 }}>
+            <TextField size="small" fullWidth autoFocus placeholder="Filter…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </Box>
+          <Box sx={{ maxHeight: 320, overflowY: 'auto', pb: 0.5 }}>
+            {loading && (
+              <Box sx={{ p: 2, textAlign: 'center' }}>
+                <CircularProgress size={20} />
+              </Box>
+            )}
+            {!loading &&
+              items.map((n) => (
+                <MenuItem
+                  key={n}
+                  selected={n === value}
+                  onClick={() => {
+                    onChange(n);
+                    setAnchorEl(null);
+                  }}
+                >
+                  {n}
+                  {tab === 0 && n === latestRelease ? ' · latest' : ''}
+                </MenuItem>
+              ))}
+            {!loading && list && !items.length && <MenuItem disabled>none</MenuItem>}
+          </Box>
+        </Box>
+      </Popover>
+    </>
+  );
+}
+
 export default function PreviewApp() {
   const [lang, setLang] = useState('en');
   const [subject, setSubject] = useState('Aligned Bible');
@@ -95,8 +200,8 @@ export default function PreviewApp() {
   const [entry, setEntry] = useState(null);
 
   const [showDevVersions, setShowDevVersions] = useState(false);
-  const [versions, setVersions] = useState(null); // { latestRelease, releases[], branches[] }
   const [version, setVersion] = useState('');
+  const [latestRelease, setLatestRelease] = useState('');
 
   const [book, setBook] = useState('');
   const [nav, setNav] = useState(null);
@@ -158,17 +263,6 @@ export default function PreviewApp() {
       setError(e.message);
     } finally {
       setSearching(false);
-    }
-  };
-
-  const fetchVersions = async (owner, repo) => {
-    setVersions(null);
-    try {
-      const r = await fetch(`/api/catalog/versions?${new URLSearchParams({ owner, repo })}`);
-      const data = await r.json();
-      if (r.ok) setVersions(data);
-    } catch {
-      /* versions are best-effort */
     }
   };
 
@@ -239,8 +333,8 @@ export default function PreviewApp() {
     const ver = e.ref; // search returns latest-release entries
     const b = defaultBook(e);
     setVersion(ver);
+    setLatestRelease(ver); // search entries are the latest release
     setBook(b);
-    fetchVersions(e.owner, e.repo);
     renderView(e, ver, b);
     pushUrl({ owner: e.owner, repo: e.repo, version: ver, book: b });
   };
@@ -292,7 +386,7 @@ export default function PreviewApp() {
       setEntries((prev) => (prev.some((x) => x.owner === e.owner && x.repo === e.repo) ? prev : [e, ...prev]));
       setEntry(e);
       setVersion(e.ref);
-      fetchVersions(e.owner, e.repo);
+      setLatestRelease(e.latestRelease || '');
       const b = route.book || defaultBook(e);
       setBook(b);
       setPendingScroll(route.chapter ? { chapter: route.chapter, verse: route.verse } : null);
@@ -402,7 +496,7 @@ export default function PreviewApp() {
   };
 
   const resourceLabel = (e) => (e ? `${e.title} — ${e.owner}/${e.repo}` : '');
-  const isLatest = versions && version === versions.latestRelease;
+  const isLatest = !!version && version === latestRelease;
 
   return (
     <ThemeProvider theme={theme}>
@@ -459,30 +553,19 @@ export default function PreviewApp() {
             {entry && (
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
                 {showDevVersions ? (
-                  <FormControl size="small" sx={{ minWidth: 220 }}>
-                    <InputLabel>Version</InputLabel>
-                    <Select label="Version" value={version} onChange={(e) => changeVersion(e.target.value)}>
-                      {versions && !versions.releases.some((r) => r.tag === version) && !versions.branches.includes(version) && (
-                        <MenuItem value={version}>{version}</MenuItem>
-                      )}
-                      <ListSubheader>Releases</ListSubheader>
-                      {(versions?.releases || []).map((r) => (
-                        <MenuItem key={r.tag} value={r.tag}>
-                          {r.tag}
-                          {r.tag === versions.latestRelease ? ' (latest)' : ''}
-                          {r.prerelease ? ' — pre' : ''}
-                        </MenuItem>
-                      ))}
-                      <ListSubheader>Branches</ListSubheader>
-                      {(versions?.branches || []).map((b) => (
-                        <MenuItem key={b} value={b}>
-                          {b}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <VersionPicker
+                    owner={entry.owner}
+                    repo={entry.repo}
+                    value={version}
+                    latestRelease={latestRelease}
+                    onChange={changeVersion}
+                  />
                 ) : (
-                  <Chip variant="outlined" color={isLatest ? 'primary' : 'default'} label={`${version}${isLatest ? ' · latest release' : ''}`} />
+                  <Chip
+                    variant="outlined"
+                    color={isLatest ? 'primary' : 'default'}
+                    label={`${version}${isLatest ? ' · latest release' : ''}`}
+                  />
                 )}
 
                 {bookBased && (

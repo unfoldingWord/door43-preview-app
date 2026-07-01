@@ -26,6 +26,23 @@ function composeOptions(src) {
   return opts;
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+// A readable error page for the <iframe> (a resource/ref may not be renderable).
+// Served 200 so the iframe reliably displays it instead of a raw error body.
+function errorPage(res, message) {
+  res.status(200).set('Content-Type', 'text/html; charset=utf-8').send(
+    `<!doctype html><meta charset="utf-8">` +
+      `<body style="font-family:system-ui,-apple-system,sans-serif;color:#231F20;padding:2.5rem;line-height:1.6">` +
+      `<h2 style="color:#014263;margin:0 0 .5rem">Unable to preview</h2>` +
+      `<p>${escapeHtml(message)}</p>` +
+      `<p style="color:#888">Check the owner, repository and version/branch — or pick a different one.</p>` +
+      `</body>`
+  );
+}
+
 export default async function renderHtml(req, res) {
   const src = req.method === 'POST' ? req.body || {} : req.query || {};
   const owner = src.owner;
@@ -47,8 +64,6 @@ export default async function renderHtml(req, res) {
     res.setHeader('X-Cache', cache); // HIT | MISS | REPLACED (htmlData cache)
     res.send(html);
   } catch (e) {
-    res
-      .status(502)
-      .json({ error: `render failed for ${owner}/${repo}@${ref}: ${e.message}` });
+    errorPage(res, `Couldn't render ${owner}/${repo}${ref ? `@${ref}` : ''}: ${e.message}`);
   }
 }
