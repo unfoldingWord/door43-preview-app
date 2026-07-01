@@ -21,7 +21,7 @@ import {
 } from '@unfoldingword/door43-preview-renderers';
 import { resolveCommitSha } from '../lib/dcs.js';
 import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
-import { enqueue, getJob } from '../lib/job-queue.js';
+import { createJobQueue } from '../lib/job-queue.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
 const WEASYPRINT_SERVICE_URL =
@@ -78,6 +78,15 @@ async function renderAndCache(d, key) {
   return pdf;
 }
 
+// One queue + processor for PDF jobs. The processor reconstructs the render from
+// the serializable job data (not a closure), so a BullMQ worker — in this process
+// or a separate worker container — can run it.
+const pdfQueue = createJobQueue({
+  name: 'preview-pdf',
+  concurrency: Number(process.env.PREVIEW_JOB_CONCURRENCY) || 2,
+  processor: (data) => renderAndCache(data.descriptor, data.key),
+});
+
 // POST /api/preview/pdf — enqueue (dedup by content key), or report completed on hit.
 export async function enqueuePdf(req, res) {
   const d = descriptorFrom(req);
@@ -88,7 +97,7 @@ export async function enqueuePdf(req, res) {
     const key = await keyFor(d);
     const cached = await getCached(key, { ext: 'pdf', binary: true });
     if (cached) return res.json({ jobId: key, state: 'completed' });
-    const status = enqueue(key, () => renderAndCache(d, key));
+    const status = await pdfQueue.enqueue(key, { descriptor: d, key });
     res.status(202).json({ jobId: key, ...status });
   } catch (e) {
     res
@@ -98,8 +107,8 @@ export async function enqueuePdf(req, res) {
 }
 
 // GET /api/preview/pdf/:jobId — job status (404 once evicted; client then serves from cache).
-export function pdfJobStatus(req, res) {
-  const status = getJob(req.params.jobId);
+export async function pdfJobStatus(req, res) {
+  const status = await pdfQueue.getJob(req.params.jobId);
   if (!status) return res.status(404).json({ state: 'unknown' });
   res.json(status);
 }

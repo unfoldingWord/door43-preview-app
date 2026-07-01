@@ -44,6 +44,7 @@
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.16.1",
     "bible-reference-rcl": "^1.4.1",
+    "bullmq": "^5.79.2",
     "cors": "^2.8.6",
     "dompurify": "^3.4.3",
     "dotenv": "^16.4.7",

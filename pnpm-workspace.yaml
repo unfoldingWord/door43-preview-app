@@ -4,6 +4,7 @@ allowBuilds:
   core-js-pure: true
   es5-ext: true
   esbuild: true
+  msgpackr-extract: false
 # Exempt our own first-party packages from the minimum-release-age supply-chain
 # guard (we control + just published these; the guard still applies to 3rd-party
 # deps). Matched by package-name pattern, not name@version.
