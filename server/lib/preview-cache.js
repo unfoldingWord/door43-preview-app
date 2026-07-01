@@ -15,7 +15,11 @@ import * as s3 from './cache-s3.js';
 // Psalm superscriptions (-front).
 export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r2';
 
-const useS3 = !!process.env.AWS_S3_BUCKET;
+// Backend: PREVIEW_CACHE_BACKEND=disk|s3 forces it; otherwise S3 when AWS_S3_BUCKET
+// is set, else disk. Use disk for local dev — reading cached objects from S3 over a
+// slow link is slower than re-rendering; S3 belongs in prod where bandwidth is real.
+const forced = process.env.PREVIEW_CACHE_BACKEND;
+const useS3 = forced ? forced === 's3' : !!process.env.AWS_S3_BUCKET;
 const backend = useS3 ? s3 : disk;
 console.log(
   `[preview-cache] backend: ${
