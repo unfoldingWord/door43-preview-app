@@ -1,18 +1,19 @@
-// GET|POST /api/preview/pdf — render a resource to a PDF via the shared library
-// and the WeasyPrint sidecar container. Descriptor in, application/pdf out.
+// PDF rendering via the shared library + the WeasyPrint sidecar container, with
+// a content-addressed cache and an async job queue.
 //
 // The library's renderPdf() assembles the print HTML and POSTs it to the sidecar
-// at WEASYPRINT_SERVICE_URL (a dumb, stateless HTML->PDF container); we never run
-// weasyprint on the host or in this process. The rendered PDF is cached the same
-// content-addressed way as HTML (disk now, S3 later).
+// at WEASYPRINT_SERVICE_URL (a dumb, stateless HTML->PDF container) — we never run
+// weasyprint on the host or in this process.
 //
-// Synchronous for now (fine for small resources like OBS). Large resources will
-// route through the async job queue — that layer wraps this same render call.
+// Endpoints:
+//   POST /api/preview/pdf            enqueue an async render; -> { jobId, state, ... }
+//                                    (or { state: 'completed' } on a cache hit)
+//   GET  /api/preview/pdf/:jobId     job status -> { state, queuePosition?, etaSeconds?, error? }
+//   GET  /api/preview/pdf?<desc>     render/serve synchronously (a cache HIT once a
+//                                    job has completed; also a direct-link path)
 //
-// Descriptor (query for GET, JSON body for POST):
-//   owner (required), repo (required), ref (default master),
-//   books (comma list / array; empty = whole resource),
-//   pageSize (default "A4_PORTRAIT"), columns (default 1)
+// Descriptor: owner (req), repo (req), ref (default master), books (comma/array;
+// empty = whole resource), pageSize (default A4_PORTRAIT), columns (default 1).
 import {
   getResourceData,
   renderHtmlData,
@@ -20,6 +21,7 @@ import {
 } from '@unfoldingword/door43-preview-renderers';
 import { resolveCommitSha } from '../lib/dcs.js';
 import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
+import { enqueue, getJob } from '../lib/job-queue.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
 const WEASYPRINT_SERVICE_URL =
@@ -33,55 +35,96 @@ function parseBooks(books) {
   return [];
 }
 
-export default async function renderPdfRoute(req, res) {
-  const src = req.method === 'POST' ? req.body || {} : req.query || {};
-  const owner = src.owner;
-  const repo = src.repo;
-  const ref = src.ref || 'master';
-  const books = parseBooks(src.books);
-  const pageSize = src.pageSize || 'A4_PORTRAIT';
-  const columns = src.columns ? Number(src.columns) : 1;
+function descriptorFrom(req) {
+  const s = req.method === 'POST' ? req.body || {} : req.query || {};
+  return {
+    owner: s.owner,
+    repo: s.repo,
+    ref: s.ref || 'master',
+    books: parseBooks(s.books),
+    pageSize: s.pageSize || 'A4_PORTRAIT',
+    columns: s.columns ? Number(s.columns) : 1,
+  };
+}
 
-  if (!owner || !repo) {
-    return res.status(400).json({
-      error:
-        'owner and repo are required, e.g. /api/preview/pdf?owner=unfoldingWord&repo=en_obs&ref=master',
-    });
+// Resolve the descriptor to the immutable content cache key (used as the job id).
+async function keyFor(d) {
+  const sha = await resolveCommitSha(d.owner, d.repo, d.ref);
+  return cacheKey({
+    owner: d.owner,
+    repo: d.repo,
+    sha,
+    media: 'print',
+    books: d.books,
+    pageSize: d.pageSize,
+    columns: d.columns,
+  });
+}
+
+// The actual render: library assembles print HTML -> WeasyPrint sidecar -> PDF,
+// then cache it. Returns the PDF bytes.
+async function renderAndCache(d, key) {
+  const resourceData = await getResourceData(
+    { owner: d.owner, repo: d.repo, ref: d.ref, books: d.books },
+    { dcs_api_url: DCS_API_URL, quiet: true }
+  );
+  const htmlData = renderHtmlData(resourceData, { books: d.books });
+  const pdf = await renderPdf(htmlData, {
+    pdfServiceUrl: WEASYPRINT_SERVICE_URL,
+    pageSize: d.pageSize,
+    columns: d.columns,
+  });
+  await setCached(key, pdf, { ext: 'pdf' });
+  return pdf;
+}
+
+// POST /api/preview/pdf — enqueue (dedup by content key), or report completed on hit.
+export async function enqueuePdf(req, res) {
+  const d = descriptorFrom(req);
+  if (!d.owner || !d.repo) {
+    return res.status(400).json({ error: 'owner and repo are required.' });
   }
-
   try {
-    const sha = await resolveCommitSha(owner, repo, ref);
-    const key = cacheKey({ owner, repo, sha, media: 'print', books, pageSize, columns });
-
-    const sendPdf = (buf, cache) => {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${repo}.pdf"`);
-      res.setHeader('X-Cache', cache);
-      res.send(buf);
-    };
-
+    const key = await keyFor(d);
     const cached = await getCached(key, { ext: 'pdf', binary: true });
-    if (cached) return sendPdf(cached, 'HIT');
-
-    const resourceData = await getResourceData(
-      { owner, repo, ref, books },
-      { dcs_api_url: DCS_API_URL, quiet: true }
-    );
-    const htmlData = renderHtmlData(resourceData, { books });
-
-    // renderPdf assembles the print HTML and POSTs it to the WeasyPrint sidecar,
-    // returning the PDF bytes. No local weasyprint binary is used.
-    const pdf = await renderPdf(htmlData, {
-      pdfServiceUrl: WEASYPRINT_SERVICE_URL,
-      pageSize,
-      columns,
-    });
-
-    await setCached(key, pdf, { ext: 'pdf' });
-    sendPdf(pdf, 'MISS');
+    if (cached) return res.json({ jobId: key, state: 'completed' });
+    const status = enqueue(key, () => renderAndCache(d, key));
+    res.status(202).json({ jobId: key, ...status });
   } catch (e) {
     res
       .status(502)
-      .json({ error: `PDF render failed for ${owner}/${repo}@${ref}: ${e.message}` });
+      .json({ error: `PDF enqueue failed for ${d.owner}/${d.repo}@${d.ref}: ${e.message}` });
+  }
+}
+
+// GET /api/preview/pdf/:jobId — job status (404 once evicted; client then serves from cache).
+export function pdfJobStatus(req, res) {
+  const status = getJob(req.params.jobId);
+  if (!status) return res.status(404).json({ state: 'unknown' });
+  res.json(status);
+}
+
+// GET /api/preview/pdf?<descriptor> — synchronous render/serve (cache HIT after a job).
+export async function renderPdfSync(req, res) {
+  const d = descriptorFrom(req);
+  if (!d.owner || !d.repo) {
+    return res.status(400).json({ error: 'owner and repo are required.' });
+  }
+  try {
+    const key = await keyFor(d);
+    let pdf = await getCached(key, { ext: 'pdf', binary: true });
+    let cache = 'HIT';
+    if (!pdf) {
+      pdf = await renderAndCache(d, key);
+      cache = 'MISS';
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${d.repo}.pdf"`);
+    res.setHeader('X-Cache', cache);
+    res.send(pdf);
+  } catch (e) {
+    res
+      .status(502)
+      .json({ error: `PDF render failed for ${d.owner}/${d.repo}@${d.ref}: ${e.message}` });
   }
 }

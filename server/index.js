@@ -10,7 +10,7 @@ import serveCachedPage from './routes/serve-cached-page.js';
 import configRoute from './routes/config.js';
 import weasyprintHandler from './routes/weasyprint.js';
 import renderHtmlHandler from './routes/render-html.js';
-import renderPdfHandler from './routes/render-pdf.js';
+import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
 
 dotenv.config();
 
@@ -45,8 +45,10 @@ app.get('/api/preview/html', renderHtmlHandler);
 app.post('/api/preview/html', renderHtmlHandler);
 
 // Render a resource to PDF via the library + WeasyPrint sidecar (cached).
-app.get('/api/preview/pdf', renderPdfHandler);
-app.post('/api/preview/pdf', renderPdfHandler);
+// POST enqueues an async job; GET /:jobId polls status; GET (descriptor) serves.
+app.post('/api/preview/pdf', enqueuePdf);
+app.get('/api/preview/pdf/:jobId', pdfJobStatus);
+app.get('/api/preview/pdf', renderPdfSync);
 
 // API Routes (replacing Netlify functions)
 app.post('/api/save-html-to-cache', saveHtmltoCacheHandler);
