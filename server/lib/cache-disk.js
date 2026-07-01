@@ -1,10 +1,15 @@
 // Disk cache backend (dev / single instance). get/set by key + ext; handles both
 // text (utf8) and binary (Buffer). Keys may contain "/" (readable layout) — parent
 // dirs are created as needed.
+//
+// Local/"mock" cache: defaults to a TEMP dir so it's ephemeral and easy to clear
+// (`pnpm cache:clean`, and the OS reaps temp). Prod sets CACHE_DIR (e.g. /app/cache)
+// or uses the S3 backend.
 import { promises as fs } from 'fs';
 import path from 'path';
+import os from 'os';
 
-const CACHE_DIR = process.env.CACHE_DIR || path.resolve(process.cwd(), 'cache');
+export const CACHE_DIR = process.env.CACHE_DIR || path.join(os.tmpdir(), 'door43-preview-cache');
 const PREVIEW_DIR = path.join(CACHE_DIR, 'preview');
 
 function fileFor(key, ext) {

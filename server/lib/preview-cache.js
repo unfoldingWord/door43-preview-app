@@ -23,7 +23,9 @@ const useS3 = forced ? forced === 's3' : !!process.env.AWS_S3_BUCKET;
 const backend = useS3 ? s3 : disk;
 console.log(
   `[preview-cache] backend: ${
-    useS3 ? `S3 (${process.env.AWS_S3_BUCKET} @ ${process.env.AWS_REGION || 'us-west-2'})` : 'disk'
+    useS3
+      ? `S3 (${process.env.AWS_S3_BUCKET} @ ${process.env.AWS_REGION || 'us-west-2'})`
+      : `disk — ${disk.CACHE_DIR} (temporary; run "pnpm cache:clean" to clear)`
   }`
 );
 
