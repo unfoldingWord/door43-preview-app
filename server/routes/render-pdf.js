@@ -19,6 +19,7 @@ import { resolveVersion } from '../lib/versions.js';
 import { cacheKey, getCached, setCached } from '../lib/preview-cache.js';
 import { getHtmlData } from '../lib/html-data.js';
 import { createJobQueue } from '../lib/job-queue.js';
+import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
 
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
@@ -40,13 +41,16 @@ function descriptorFrom(req) {
     books: parseBooks(s.books),
     pageSize: s.pageSize || 'A4_PORTRAIT',
     columns: s.columns ? Number(s.columns) : 1,
+    // Resolved here (request context) so it survives serialization into the job —
+    // the worker may run out-of-process and can't re-resolve from a request.
+    dcsApiUrl: dcsApiUrlFromReq(req),
   };
 }
 
 // Resolve the descriptor to the immutable content cache key (used as the job id).
 // resolveVersion defaults an empty ref to the latest release (same as getHtmlData).
 async function keyFor(d) {
-  const { sha } = await resolveVersion(d.owner, d.repo, d.ref);
+  const { sha } = await resolveVersion(d.owner, d.repo, d.ref, d.dcsApiUrl);
   return cacheKey({
     owner: d.owner,
     repo: d.repo,
@@ -66,6 +70,7 @@ async function renderAndCache(d, key) {
     repo: d.repo,
     ref: d.ref,
     books: d.books,
+    dcsApiUrl: d.dcsApiUrl,
   });
   const pdf = await renderPdf(htmlData, {
     pdfServiceUrl: WEASYPRINT_SERVICE_URL,

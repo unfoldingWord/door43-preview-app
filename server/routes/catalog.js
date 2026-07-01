@@ -4,9 +4,9 @@
 // abbreviation used to build navigation anchors.
 //
 // Query: lang (default en), subject, owner, q, stage (default prod), limit.
+// All endpoints honor ?server= / DCS_HOST for host selection (see dcs-host.js).
 import { listTags, listBranches, resolveVersion, latestReleaseTag } from '../lib/versions.js';
-
-const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
+import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
 
 // GET /api/catalog/entry?owner&repo&ref — one resource's metadata + books (for
 // direct hot-link loads). Empty ref -> latest release.
@@ -15,12 +15,13 @@ export async function catalogEntry(req, res) {
   if (!owner || !repo) {
     return res.status(400).json({ error: 'owner and repo are required.' });
   }
+  const api = dcsApiUrlFromReq(req);
   try {
     const [{ ref }, latestRelease] = await Promise.all([
-      resolveVersion(owner, repo, req.query.ref || ''),
-      latestReleaseTag(owner, repo),
+      resolveVersion(owner, repo, req.query.ref || '', api),
+      latestReleaseTag(owner, repo, api),
     ]);
-    const url = `${DCS_API_URL}/catalog/entry/${encodeURIComponent(owner)}/${encodeURIComponent(
+    const url = `${api}/catalog/entry/${encodeURIComponent(owner)}/${encodeURIComponent(
       repo
     )}/${encodeURIComponent(ref)}`;
     const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
@@ -52,7 +53,7 @@ export async function catalogTags(req, res) {
   const { owner, repo } = req.query;
   if (!owner || !repo) return res.status(400).json({ error: 'owner and repo are required.' });
   try {
-    res.json({ tags: await listTags(owner, repo) });
+    res.json({ tags: await listTags(owner, repo, dcsApiUrlFromReq(req)) });
   } catch (e) {
     res.status(502).json({ error: `tags lookup failed for ${owner}/${repo}: ${e.message}` });
   }
@@ -64,7 +65,7 @@ export async function catalogBranches(req, res) {
   const { owner, repo } = req.query;
   if (!owner || !repo) return res.status(400).json({ error: 'owner and repo are required.' });
   try {
-    res.json({ branches: await listBranches(owner, repo) });
+    res.json({ branches: await listBranches(owner, repo, dcsApiUrlFromReq(req)) });
   } catch (e) {
     res.status(502).json({ error: `branches lookup failed for ${owner}/${repo}: ${e.message}` });
   }
@@ -72,6 +73,7 @@ export async function catalogBranches(req, res) {
 
 export default async function catalogSearch(req, res) {
   const q = req.query || {};
+  const api = dcsApiUrlFromReq(req);
   const params = new URLSearchParams();
   if (q.lang) params.set('lang', q.lang);
   if (q.subject) params.set('subject', q.subject);
@@ -81,7 +83,7 @@ export default async function catalogSearch(req, res) {
   params.set('limit', String(Math.min(Number(q.limit) || 100, 300)));
 
   try {
-    const r = await fetch(`${DCS_API_URL}/catalog/search?${params.toString()}`, {
+    const r = await fetch(`${api}/catalog/search?${params.toString()}`, {
       signal: AbortSignal.timeout(20000),
     });
     if (!r.ok) return res.status(502).json({ error: `catalog search failed (${r.status})` });

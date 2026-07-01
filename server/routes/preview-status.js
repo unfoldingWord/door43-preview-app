@@ -12,6 +12,7 @@
 import { resolveVersion } from '../lib/versions.js';
 import { htmlDataKey } from '../lib/html-data.js';
 import { getCached } from '../lib/preview-cache.js';
+import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
 
 function parseBooks(book) {
   const b = (book || '').trim().toLowerCase();
@@ -27,9 +28,10 @@ export default async function previewStatus(req, res) {
     return res.status(400).json({ error: 'owner and repo are required.' });
   }
 
+  const api = dcsApiUrlFromReq(req);
   try {
-    const { ref: version, sha } = await resolveVersion(owner, repo, ref);
-    const key = htmlDataKey({ owner, repo, version, books });
+    const { ref: version, sha } = await resolveVersion(owner, repo, ref, api);
+    const key = htmlDataKey({ owner, repo, version, books, dcsApiUrl: api });
     const cachedStr = await getCached(key, { ext: 'json' });
 
     let cache = 'MISS';

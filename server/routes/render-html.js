@@ -10,6 +10,7 @@
 //   books (comma list / array; empty = whole resource), columns (optional).
 import { renderHTML } from '@unfoldingword/door43-preview-renderers';
 import { getHtmlData } from '../lib/html-data.js';
+import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
 
 function parseBooks(books) {
   if (Array.isArray(books)) return books;
@@ -60,7 +61,14 @@ export default async function renderHtml(req, res) {
   try {
     // allowStale: on a moved branch, serve the last render immediately and let the
     // cache refresh in the background — the client's status poll handles the swap.
-    const { htmlData, cache } = await getHtmlData({ owner, repo, ref, books, allowStale: true });
+    const { htmlData, cache } = await getHtmlData({
+      owner,
+      repo,
+      ref,
+      books,
+      allowStale: true,
+      dcsApiUrl: dcsApiUrlFromReq(req),
+    });
     const html = renderHTML(htmlData, composeOptions(src));
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Cache', cache); // HIT | STALE | COALESCED | MISS | REPLACED

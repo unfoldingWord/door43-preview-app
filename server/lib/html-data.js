@@ -14,8 +14,10 @@
 import { getResourceData, renderHtmlData } from '@unfoldingword/door43-preview-renderers';
 import { resolveVersion } from './versions.js';
 import { getCached, setCached, CACHE_VERSION } from './preview-cache.js';
+import { resolveDcsHost, dcsApiUrl, dcsHostLabel } from './dcs-host.js';
 
-const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
+// Default DCS host when no per-request host is threaded in (env / QA default).
+const DEFAULT_API = dcsApiUrl(resolveDcsHost({}));
 
 function bookSegment(books) {
   if (!books || books.length === 0) return '_whole';
@@ -23,8 +25,10 @@ function bookSegment(books) {
   return books.join('+');
 }
 
-export function htmlDataKey({ owner, repo, version, books }) {
-  return `htmldata/${owner}/${repo}/${version}/${bookSegment(books)}.${CACHE_VERSION}`;
+// Cache is namespaced by DCS host (dcsApiUrl) so a request for one host never
+// serves content cached from another (e.g. ?server=QA vs the default).
+export function htmlDataKey({ owner, repo, version, books, dcsApiUrl: api = DEFAULT_API }) {
+  return `htmldata/${dcsHostLabel(api)}/${owner}/${repo}/${version}/${bookSegment(books)}.${CACHE_VERSION}`;
 }
 
 // In-flight renders keyed by cache key, so concurrent misses for the same resource
@@ -34,12 +38,12 @@ const inflightRenders = new Map();
 // Fetch + parse + render the current sha for `key`, cache it, and return the
 // htmlData. Concurrent callers for the same key share one run (dedup), so a cold
 // miss fetches the source once even when the web view, nav, and PDF all ask at once.
-function renderFor({ owner, repo, version, sha, books, key }) {
+function renderFor({ owner, repo, version, sha, books, key, api }) {
   if (inflightRenders.has(key)) return inflightRenders.get(key);
   const p = (async () => {
     const resourceData = await getResourceData(
       { owner, repo, ref: version, books },
-      { dcs_api_url: DCS_API_URL, quiet: true }
+      { dcs_api_url: api, quiet: true }
     );
     const htmlData = renderHtmlData(resourceData, { books });
     await setCached(
@@ -60,13 +64,20 @@ function renderFor({ owner, repo, version, sha, books, key }) {
 // allowStale (web view + nav): on a moved branch, return the previous render at once
 // and refresh in the background. Off (PDF): always render the current sha so the
 // artifact is never built from stale data.
-export async function getHtmlData({ owner, repo, ref = '', books = [], allowStale = false }) {
+export async function getHtmlData({
+  owner,
+  repo,
+  ref = '',
+  books = [],
+  allowStale = false,
+  dcsApiUrl: api = DEFAULT_API,
+}) {
   const t0 = Date.now();
-  const label = `${owner}/${repo} ${books.join(',') || '_whole'}`;
+  const label = `${owner}/${repo} ${books.join(',') || '_whole'} [${dcsHostLabel(api)}]`;
   // Resolve the requested version to a concrete ref + sha (empty -> latest release).
-  const { ref: version, sha } = await resolveVersion(owner, repo, ref);
+  const { ref: version, sha } = await resolveVersion(owner, repo, ref, api);
   const tResolve = Date.now();
-  const key = htmlDataKey({ owner, repo, version, books });
+  const key = htmlDataKey({ owner, repo, version, books, dcsApiUrl: api });
 
   const cachedStr = await getCached(key, { ext: 'json' });
   const tCache = Date.now();
@@ -89,7 +100,7 @@ export async function getHtmlData({ owner, repo, ref = '', books = [], allowStal
   }
 
   const alreadyRendering = inflightRenders.has(key);
-  const render = renderFor({ owner, repo, version, sha, books, key });
+  const render = renderFor({ owner, repo, version, sha, books, key, api });
 
   // Serve-stale-while-revalidate: hand back the previous render now; `render` above
   // refreshes the cache to `sha` in the background so the next request is a HIT.

@@ -8,6 +8,7 @@
 // entries are exact scroll targets. Reuses the same cached HTML as the web view.
 import { renderHTML } from '@unfoldingword/door43-preview-renderers';
 import { getHtmlData } from '../lib/html-data.js';
+import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
 
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -25,7 +26,14 @@ export default async function previewNav(req, res) {
   try {
     // allowStale: the nav tree from a slightly-old render is fine; it refreshes when
     // the client reloads after revalidation. Keeps book switching snappy on branches.
-    const { htmlData } = await getHtmlData({ owner, repo, ref, books: [book], allowStale: true });
+    const { htmlData } = await getHtmlData({
+      owner,
+      repo,
+      ref,
+      books: [book],
+      allowStale: true,
+      dcsApiUrl: dcsApiUrlFromReq(req),
+    });
     const html = renderHTML(htmlData, { media: 'web' });
 
     // Element ids only (scroll targets), not href cross-references.

@@ -56,6 +56,23 @@ const SUBJECTS = [
 ];
 const NON_BOOK_INGREDIENTS = new Set(['frt', 'bak', 'int']);
 
+// The app's ?server= host selector (PROD|QA|DEV|DEVELOP or a full URL). Forwarded
+// to every API call so the server talks to the DCS host the URL asked for, and
+// preserved across navigation so the choice sticks.
+function currentServerParam() {
+  try {
+    return new URLSearchParams(window.location.search).get('server') || '';
+  } catch {
+    return '';
+  }
+}
+function apiQuery(obj) {
+  const qs = new URLSearchParams(obj);
+  const s = currentServerParam();
+  if (s) qs.set('server', s);
+  return qs;
+}
+
 // --- URL helpers (hot-link routing) ---
 function parseRoute() {
   const m = window.location.pathname.match(/^\/u\/([^/]+)\/([^/]+)(?:\/([^/]+))?\/?$/);
@@ -85,6 +102,8 @@ function urlFor({ owner, repo, version, book, chapter, verse }) {
   const q = new URLSearchParams();
   if (book) q.set('book', book);
   if (chapter) q.set('ref', verse ? `${chapter}:${verse}` : String(chapter));
+  const s = currentServerParam();
+  if (s) q.set('server', s); // keep the host selector across navigation
   const qs = q.toString();
   return qs ? `${path}?${qs}` : path;
 }
@@ -106,7 +125,7 @@ function VersionPicker({ owner, repo, value, latestRelease, onChange }) {
     if (tags || loadingTags) return;
     setLoadingTags(true);
     try {
-      const r = await fetch(`/api/catalog/tags?${new URLSearchParams({ owner, repo })}`);
+      const r = await fetch(`/api/catalog/tags?${apiQuery({ owner, repo })}`);
       const j = await r.json();
       if (r.ok) setTags(j.tags || []);
     } catch {
@@ -119,7 +138,7 @@ function VersionPicker({ owner, repo, value, latestRelease, onChange }) {
     if (branches || loadingBranches) return;
     setLoadingBranches(true);
     try {
-      const r = await fetch(`/api/catalog/branches?${new URLSearchParams({ owner, repo })}`);
+      const r = await fetch(`/api/catalog/branches?${apiQuery({ owner, repo })}`);
       const j = await r.json();
       if (r.ok) setBranches(j.branches || []);
     } catch {
@@ -263,7 +282,7 @@ export default function PreviewApp() {
     setPreviewUrl('');
     setPdfJob(null);
     try {
-      const qs = new URLSearchParams({ lang: (l || 'en').trim(), subject: s });
+      const qs = apiQuery({ lang: (l || 'en').trim(), subject: s });
       const r = await fetch(`/api/catalog/search?${qs.toString()}`, { signal: AbortSignal.timeout(30000) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || `catalog search failed (${r.status})`);
@@ -283,7 +302,7 @@ export default function PreviewApp() {
     setVerseOpt(null);
     setNavLoading(true);
     try {
-      const qs = new URLSearchParams({ owner, repo, ref: ver || '', book: b });
+      const qs = apiQuery({ owner, repo, ref: ver || '', book: b });
       const r = await fetch(`/api/preview/nav?${qs.toString()}`);
       const data = await r.json();
       if (r.ok) setNav(data);
@@ -296,7 +315,7 @@ export default function PreviewApp() {
 
   // ---- rendering ----
   const htmlUrl = (owner, repo, ver, b) => {
-    const qs = new URLSearchParams({ owner, repo, media: 'web' });
+    const qs = apiQuery({ owner, repo, media: 'web' });
     if (ver) qs.set('ref', ver);
     if (b) qs.set('books', b);
     return `/api/preview/html?${qs.toString()}`;
@@ -322,7 +341,7 @@ export default function PreviewApp() {
 
   // ---- serve-stale freshness (branch previews) ----
   const statusUrl = (owner, repo, ver, b) => {
-    const qs = new URLSearchParams({ owner, repo, ref: ver || '' });
+    const qs = apiQuery({ owner, repo, ref: ver || '' });
     if (b) qs.set('book', b);
     return `/api/preview/status?${qs.toString()}`;
   };
@@ -449,7 +468,7 @@ export default function PreviewApp() {
     setError(null);
     setPdfJob(null);
     try {
-      const qs = new URLSearchParams({ owner: route.owner, repo: route.repo });
+      const qs = apiQuery({ owner: route.owner, repo: route.repo });
       if (route.version) qs.set('ref', route.version);
       const r = await fetch(`/api/catalog/entry?${qs.toString()}`);
       const e = await r.json();
@@ -518,6 +537,8 @@ export default function PreviewApp() {
     setPreviewUrl('');
     const descriptor = { owner: entry.owner, repo: entry.repo, ref: version, pageSize: 'A4_PORTRAIT' };
     if (book) descriptor.books = book;
+    const srv = currentServerParam();
+    if (srv) descriptor.server = srv; // carried in the POST body + GET serve URL
     const serveUrl = `/api/preview/pdf?${new URLSearchParams(descriptor).toString()}`;
     const showPdf = () => {
       setPdfJob(null);
