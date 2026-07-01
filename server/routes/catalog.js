@@ -4,9 +4,43 @@
 // abbreviation used to build navigation anchors.
 //
 // Query: lang (default en), subject, owner, q, stage (default prod), limit.
-import { listVersions } from '../lib/versions.js';
+import { listVersions, resolveVersion } from '../lib/versions.js';
 
 const DCS_API_URL = process.env.DCS_API_URL || 'https://git.door43.org/api/v1';
+
+// GET /api/catalog/entry?owner&repo&ref — one resource's metadata + books (for
+// direct hot-link loads). Empty ref -> latest release.
+export async function catalogEntry(req, res) {
+  const { owner, repo } = req.query;
+  if (!owner || !repo) {
+    return res.status(400).json({ error: 'owner and repo are required.' });
+  }
+  try {
+    const { ref } = await resolveVersion(owner, repo, req.query.ref || '');
+    const url = `${DCS_API_URL}/catalog/entry/${encodeURIComponent(owner)}/${encodeURIComponent(
+      repo
+    )}/${encodeURIComponent(ref)}`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
+    if (!r.ok) return res.status(502).json({ error: `catalog entry not found (${r.status}) for ${owner}/${repo}@${ref}` });
+    const e = await r.json();
+    res.json({
+      owner: e.owner,
+      repo: e.name || repo,
+      ref: e.branch_or_tag_name || ref,
+      subject: e.subject,
+      title: e.title,
+      language: e.language,
+      languageTitle: e.language_title,
+      direction: e.language_direction || 'ltr',
+      abbreviation: e.abbreviation,
+      books: (e.ingredients || [])
+        .map((i) => ({ id: i.identifier, title: i.title, sort: i.sort || 0 }))
+        .sort((a, b) => a.sort - b.sort),
+    });
+  } catch (e) {
+    res.status(502).json({ error: `catalog entry lookup failed for ${owner}/${repo}: ${e.message}` });
+  }
+}
 
 // GET /api/catalog/versions?owner&repo — for the version picker: latest release,
 // plus all releases and branches (shown when the user opts into dev versions).

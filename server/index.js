@@ -15,7 +15,7 @@ import configRoute from './routes/config.js';
 import weasyprintHandler from './routes/weasyprint.js';
 import renderHtmlHandler from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
-import catalogSearch, { catalogVersions } from './routes/catalog.js';
+import catalogSearch, { catalogVersions, catalogEntry } from './routes/catalog.js';
 import previewNav from './routes/nav.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -46,6 +46,7 @@ app.get('/api/config', configRoute);
 // Browse the DCS catalog (resource picker) + versions for the version picker.
 app.get('/api/catalog/search', catalogSearch);
 app.get('/api/catalog/versions', catalogVersions);
+app.get('/api/catalog/entry', catalogEntry);
 
 // Render a resource to HTML via the shared renderers library (server-side).
 // The rebuild's core seam — descriptor in, HTML out.
