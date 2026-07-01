@@ -34,6 +34,26 @@ function parseBooks(books) {
   return [];
 }
 
+// Cache-aware render: resolve the ref to an immutable commit sha, check the
+// content-addressed cache, else render via the library and cache it. Returns the
+// HTML plus HIT/MISS. Shared by the HTML route and the nav endpoint (which scans
+// the same HTML for chapter/verse anchors).
+export async function getRenderedHtml({ owner, repo, ref = 'master', media = 'web', books = [] }) {
+  const sha = await resolveCommitSha(owner, repo, ref);
+  const key = cacheKey({ owner, repo, sha, media, books });
+
+  const cached = await getCached(key);
+  if (cached) return { html: cached, cache: 'HIT' };
+
+  const resourceData = await getResourceData(
+    { owner, repo, ref, books },
+    { dcs_api_url: DCS_API_URL, quiet: true }
+  );
+  const html = renderHTML(renderHtmlData(resourceData, { books }), { media });
+  await setCached(key, html);
+  return { html, cache: 'MISS' };
+}
+
 export default async function renderHtml(req, res) {
   const src = req.method === 'POST' ? req.body || {} : req.query || {};
   const owner = src.owner;
@@ -50,29 +70,9 @@ export default async function renderHtml(req, res) {
   }
 
   try {
-    // Resolve the ref to an immutable commit sha so the cache auto-invalidates
-    // when content changes (a moving ref like "master" would never invalidate).
-    const sha = await resolveCommitSha(owner, repo, ref);
-    const key = cacheKey({ owner, repo, sha, media, books });
-
-    const cached = await getCached(key);
-    if (cached) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('X-Cache', 'HIT');
-      return res.send(cached);
-    }
-
-    const resourceData = await getResourceData(
-      { owner, repo, ref, books },
-      { dcs_api_url: DCS_API_URL, quiet: true }
-    );
-    const htmlData = renderHtmlData(resourceData, { books });
-    const html = renderHTML(htmlData, { media });
-
-    await setCached(key, html);
-
+    const { html, cache } = await getRenderedHtml({ owner, repo, ref, media, books });
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('X-Cache', 'MISS');
+    res.setHeader('X-Cache', cache);
     res.send(html);
   } catch (e) {
     res

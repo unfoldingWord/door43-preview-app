@@ -58,8 +58,10 @@ export default function PreviewApp() {
   const [entries, setEntries] = useState([]);
   const [entry, setEntry] = useState(null); // selected catalog entry
   const [book, setBook] = useState(''); // selected book ingredient id
-  const [chapter, setChapter] = useState('');
-  const [verse, setVerse] = useState('');
+  const [nav, setNav] = useState(null); // { chapters: [{ id, anchor, verses:[{id,anchor}] }] }
+  const [navLoading, setNavLoading] = useState(false);
+  const [chapterOpt, setChapterOpt] = useState(null);
+  const [verseOpt, setVerseOpt] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfJob, setPdfJob] = useState(null);
@@ -119,12 +121,19 @@ export default function PreviewApp() {
     setError(null);
     setLoading(true);
     setPreviewUrl(htmlUrl(e, b));
+    if (b) fetchNav(e, b);
+    else {
+      setNav(null);
+      setChapterOpt(null);
+      setVerseOpt(null);
+    }
   };
 
   const pickEntry = (e) => {
     setEntry(e);
-    setChapter('');
-    setVerse('');
+    setChapterOpt(null);
+    setVerseOpt(null);
+    setNav(null);
     if (!e) {
       setBook('');
       setPreviewUrl('');
@@ -142,16 +151,32 @@ export default function PreviewApp() {
 
   const changeBook = (b) => {
     setBook(b);
-    setChapter('');
-    setVerse('');
+    setChapterOpt(null);
+    setVerseOpt(null);
     renderView(entry, b);
   };
 
-  // Scroll the iframe (same-origin) to the chapter/verse anchor without reloading.
-  const goTo = () => {
-    if (!entry || !book || !chapter.trim()) return;
-    let anchor = `${entry.abbreviation}-${book}-${chapter.trim()}`;
-    if (verse.trim()) anchor += `-${verse.trim()}`;
+  // Chapter/verse lists come from the actual rendered content (only what exists).
+  const fetchNav = async (e, b) => {
+    setNav(null);
+    setChapterOpt(null);
+    setVerseOpt(null);
+    setNavLoading(true);
+    try {
+      const qs = new URLSearchParams({ owner: e.owner, repo: e.repo, ref: e.ref, book: b });
+      const r = await fetch(`/api/preview/nav?${qs.toString()}`);
+      const data = await r.json();
+      if (r.ok) setNav(data);
+    } catch {
+      /* nav is best-effort; the view still works without it */
+    } finally {
+      setNavLoading(false);
+    }
+  };
+
+  // Scroll the same-origin iframe to an anchor without reloading.
+  const scrollToAnchor = (anchor) => {
+    if (!anchor) return;
     const win = iframeRef.current && iframeRef.current.contentWindow;
     try {
       // Toggle so the browser re-scrolls even if the hash is unchanged.
@@ -297,25 +322,37 @@ export default function PreviewApp() {
                         ))}
                       </Select>
                     </FormControl>
-                    <TextField
-                      label="Chapter"
+                    <Autocomplete
                       size="small"
-                      value={chapter}
-                      onChange={(e) => setChapter(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && goTo()}
-                      sx={{ width: 100 }}
+                      sx={{ width: 150 }}
+                      options={(nav && nav.chapters) || []}
+                      value={chapterOpt}
+                      loading={navLoading}
+                      getOptionLabel={(c) => (c ? String(c.id) : '')}
+                      isOptionEqualToValue={(a, b) => a.id === b.id}
+                      onChange={(e, c) => {
+                        setChapterOpt(c);
+                        setVerseOpt(null);
+                        if (c) scrollToAnchor(c.anchor);
+                      }}
+                      renderInput={(p) => (
+                        <TextField {...p} label="Chapter" placeholder={navLoading ? 'loading…' : 'ch'} />
+                      )}
                     />
-                    <TextField
-                      label="Verse"
+                    <Autocomplete
                       size="small"
-                      value={verse}
-                      onChange={(e) => setVerse(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && goTo()}
-                      sx={{ width: 90 }}
+                      sx={{ width: 140 }}
+                      options={(chapterOpt && chapterOpt.verses) || []}
+                      value={verseOpt}
+                      disabled={!chapterOpt}
+                      getOptionLabel={(v) => (v ? String(v.id) : '')}
+                      isOptionEqualToValue={(a, b) => a.id === b.id}
+                      onChange={(e, v) => {
+                        setVerseOpt(v);
+                        if (v) scrollToAnchor(v.anchor);
+                      }}
+                      renderInput={(p) => <TextField {...p} label="Verse" placeholder="v" />}
                     />
-                    <Button variant="outlined" onClick={goTo} disabled={!chapter.trim()}>
-                      Go
-                    </Button>
                   </>
                 )}
                 <Box sx={{ flexGrow: 1 }} />

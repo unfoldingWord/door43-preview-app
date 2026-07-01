@@ -12,6 +12,7 @@ import weasyprintHandler from './routes/weasyprint.js';
 import renderHtmlHandler from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
 import catalogSearch from './routes/catalog.js';
+import previewNav from './routes/nav.js';
 
 dotenv.config();
 
@@ -47,6 +48,9 @@ app.get('/api/catalog/search', catalogSearch);
 // The rebuild's core seam — descriptor in, HTML out.
 app.get('/api/preview/html', renderHtmlHandler);
 app.post('/api/preview/html', renderHtmlHandler);
+
+// Chapter/verse structure for a book (derived from the rendered content).
+app.get('/api/preview/nav', previewNav);
 
 // Render a resource to PDF via the library + WeasyPrint sidecar (cached).
 // POST enqueues an async job; GET /:jobId polls status; GET (descriptor) serves.
