@@ -39,7 +39,7 @@
     "@oce-editor-tools/base": "^0.1.30",
     "@swc/types": "^0.1.25",
     "@types/autosuggest-highlight": "^3.2.3",
-    "@unfoldingword/door43-preview-renderers": "^1.5.1",
+    "@unfoldingword/door43-preview-renderers": "^1.5.2",
     "@vivliostyle/react": "^2.42.1",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.16.1",

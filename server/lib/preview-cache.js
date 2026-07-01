@@ -16,7 +16,9 @@ const PREVIEW_DIR = path.join(CACHE_DIR, 'preview');
 
 // Bump (or set env) when the renderer output format changes in a way that should
 // invalidate all cached HTML — e.g. a @unfoldingword/door43-preview-renderers upgrade.
-export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r1';
+// Bump on renderer-output changes (the cache key doesn't include the renderer
+// version). r2: door43-preview-renderers 1.5.2 anchors Psalm superscriptions (-front).
+export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r2';
 
 export function cacheKey({ owner, repo, sha, media, books, pageSize, columns }) {
   const canon = [
