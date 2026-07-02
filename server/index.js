@@ -18,6 +18,7 @@ import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js'
 import catalogSearch, { catalogTags, catalogBranches, catalogEntry } from './routes/catalog.js';
 import previewNav from './routes/nav.js';
 import previewStatus from './routes/preview-status.js';
+import warmHandler from './routes/warm.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,6 +68,10 @@ app.get('/api/preview/status', previewStatus);
 app.post('/api/preview/pdf', enqueuePdf);
 app.get('/api/preview/pdf/:jobId', pdfJobStatus);
 app.get('/api/preview/pdf', renderPdfSync);
+
+// Cache warming — render all books of a resource (+ whole) to the PDF cache.
+// Token-gated (WARM_TOKEN); returns a manifest with per-PDF serve URLs.
+app.get('/api/warm', warmHandler);
 
 // API Routes (replacing Netlify functions)
 app.post('/api/save-html-to-cache', saveHtmltoCacheHandler);

@@ -143,6 +143,25 @@ const pdfQueue = createJobQueue({
   processor: (data) => renderAndCache(data.descriptor, data.key),
 });
 
+// Programmatic enqueue-if-missing (used by cache warming). Takes a plain descriptor
+// (not a request), fills defaults, and returns whether the PDF is already cached.
+export async function ensurePdf(descriptor) {
+  const d = {
+    owner: descriptor.owner,
+    repo: descriptor.repo,
+    ref: descriptor.ref || '',
+    books: parseBooks(descriptor.books),
+    pageSize: descriptor.pageSize || 'A4_PORTRAIT',
+    columns: descriptor.columns ? Number(descriptor.columns) : 1,
+    dcsApiUrl: descriptor.dcsApiUrl,
+  };
+  const key = await keyFor(d);
+  const cached = await getCached(key, { ext: 'pdf', binary: true });
+  if (cached) return { key, cached: true, state: 'completed' };
+  const status = await pdfQueue.enqueue(key, { descriptor: d, key });
+  return { key, cached: false, ...status };
+}
+
 // POST /api/preview/pdf — enqueue (dedup by content key), or report completed on hit.
 export async function enqueuePdf(req, res) {
   const d = descriptorFrom(req);
