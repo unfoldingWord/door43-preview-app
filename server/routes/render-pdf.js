@@ -24,6 +24,10 @@ import { dcsApiUrlFromReq, dcsHostLabel } from '../lib/dcs-host.js';
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
 
+// Job priority (lower = sooner): interactive PDF requests jump ahead of warm/cron
+// jobs, and re-requesting a warm-queued PDF bumps it to interactive.
+const PRIORITY = { INTERACTIVE: 1, WARM: 10 };
+
 function parseBooks(books) {
   if (Array.isArray(books)) return books;
   if (typeof books === 'string' && books.trim()) {
@@ -145,7 +149,7 @@ const pdfQueue = createJobQueue({
 
 // Programmatic enqueue-if-missing (used by cache warming). Takes a plain descriptor
 // (not a request), fills defaults, and returns whether the PDF is already cached.
-export async function ensurePdf(descriptor) {
+export async function ensurePdf(descriptor, { priority = PRIORITY.WARM } = {}) {
   const d = {
     owner: descriptor.owner,
     repo: descriptor.repo,
@@ -158,7 +162,7 @@ export async function ensurePdf(descriptor) {
   const key = await keyFor(d);
   const cached = await getCached(key, { ext: 'pdf', binary: true });
   if (cached) return { key, cached: true, state: 'completed' };
-  const status = await pdfQueue.enqueue(key, { descriptor: d, key });
+  const status = await pdfQueue.enqueue(key, { descriptor: d, key }, { priority });
   return { key, cached: false, ...status };
 }
 
@@ -172,7 +176,8 @@ export async function enqueuePdf(req, res) {
     const key = await keyFor(d);
     const cached = await getCached(key, { ext: 'pdf', binary: true });
     if (cached) return res.json({ jobId: key, state: 'completed' });
-    const status = await pdfQueue.enqueue(key, { descriptor: d, key });
+    // Interactive request -> high priority, jumping ahead of any warm/cron backlog.
+    const status = await pdfQueue.enqueue(key, { descriptor: d, key }, { priority: PRIORITY.INTERACTIVE });
     res.status(202).json({ jobId: key, ...status });
   } catch (e) {
     res

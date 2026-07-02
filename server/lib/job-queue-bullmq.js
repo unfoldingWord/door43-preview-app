@@ -62,12 +62,33 @@ export function createRedisQueue({ name, processor, concurrency = 2 }) {
     return out;
   }
 
+  const DEFAULT_PRIORITY = 5; // lower = sooner (BullMQ: 1 highest)
+
   return {
-    async enqueue(id, data) {
+    async enqueue(id, data, opts = {}) {
+      const priority = opts.priority ?? DEFAULT_PRIORITY;
       // jobId = id: BullMQ ignores a duplicate add while a job with that id exists,
       // giving us the same content-key dedup as the in-process backend.
+      const existing = await queue.getJob(id);
+      if (existing) {
+        // Bump a still-waiting job if this request is higher priority (interactive
+        // over warm). changePriority is a no-op / best-effort once it's running.
+        try {
+          const state = await existing.getState();
+          if (
+            (state === 'waiting' || state === 'prioritized' || state === 'delayed') &&
+            (existing.priority == null || priority < existing.priority)
+          ) {
+            await existing.changePriority({ priority });
+          }
+        } catch {
+          /* best effort */
+        }
+        return getJob(id);
+      }
       await queue.add(name, data, {
         jobId: id,
+        priority,
         removeOnComplete: { age: 3600, count: 1000 },
         removeOnFail: { age: 24 * 3600, count: 1000 },
       });
