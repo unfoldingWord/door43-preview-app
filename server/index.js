@@ -19,6 +19,7 @@ import catalogSearch, { catalogTags, catalogBranches, catalogEntry } from './rou
 import previewNav from './routes/nav.js';
 import previewStatus from './routes/preview-status.js';
 import warmHandler from './routes/warm.js';
+import { startWarmCron } from './lib/warm-cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -117,4 +118,5 @@ if (process.env.NODE_ENV === 'production') {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  startWarmCron(); // no-op unless RUN_CRONS=1 and warming is configured
 });
