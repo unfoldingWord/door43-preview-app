@@ -193,7 +193,10 @@ export async function pdfJobStatus(req, res) {
   res.json(status);
 }
 
-// GET /api/preview/pdf?<descriptor> — synchronous render/serve (cache HIT after a job).
+// GET /api/preview/pdf?<descriptor> — serve the cached PDF. On a miss it does NOT
+// block rendering: it enqueues the render (interactive priority) and returns 503 +
+// Retry-After, so the caller (e.g. release tooling collecting warmed URLs) retries
+// and gets it once ready. These are normally warmed tags, so a HIT is the common case.
 export async function renderPdfSync(req, res) {
   const d = descriptorFrom(req);
   if (!d.owner || !d.repo) {
@@ -201,19 +204,25 @@ export async function renderPdfSync(req, res) {
   }
   try {
     const key = await keyFor(d);
-    let pdf = await getCached(key, { ext: 'pdf', binary: true });
-    let cache = 'HIT';
-    if (!pdf) {
-      pdf = await renderAndCache(d, key);
-      cache = 'MISS';
+    const pdf = await getCached(key, { ext: 'pdf', binary: true });
+    if (pdf) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${d.repo}.pdf"`);
+      res.setHeader('X-Cache', 'HIT');
+      return res.send(pdf);
     }
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${d.repo}.pdf"`);
-    res.setHeader('X-Cache', cache);
-    res.send(pdf);
+    // Miss -> enqueue (jump the warm backlog) and tell the caller to retry.
+    const status = await pdfQueue.enqueue(key, { descriptor: d, key }, { priority: PRIORITY.INTERACTIVE });
+    res.setHeader('Retry-After', '15');
+    res.status(503).json({
+      state: status.state || 'queued',
+      jobId: key,
+      message: 'PDF not ready; it is being generated — retry shortly.',
+      ...(status.etaSeconds ? { etaSeconds: status.etaSeconds } : {}),
+    });
   } catch (e) {
     res
       .status(502)
-      .json({ error: `PDF render failed for ${d.owner}/${d.repo}@${d.ref}: ${e.message}` });
+      .json({ error: `PDF request failed for ${d.owner}/${d.repo}@${d.ref}: ${e.message}` });
   }
 }
