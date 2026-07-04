@@ -2,9 +2,8 @@
 
 How the preview service is put together, how to run it locally, and how it is
 deployed to **QA** and **production**. This is the authoritative operational
-reference for the rebuilt (Express + Docker) app; the older `docs/DEPLOYMENT.md`
-(Netlify) and `ARCHITECHTURE.md` describe the pre-rebuild client and are superseded
-for deployment purposes.
+reference for the rebuilt (Express + Docker) app. (The former Netlify / pre-rebuild
+architecture docs have been removed; see `CLAUDE.md` for the code-level map.)
 
 ---
 

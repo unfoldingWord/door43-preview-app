@@ -4,9 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A React 18 + Vite SPA that fetches unfoldingWord Bible-translation resources from the **Door43 Content Service (DCS)** and renders them two ways: an interactive **web preview** and a paginated **print preview** (PagedJS → browser print/PDF). An Express server serves the built app and provides a filesystem cache API. Live at https://preview.door43.org.
+A **server-rendered** preview service for unfoldingWord Bible-translation resources from
+the **Door43 Content Service (DCS)**. An Express server renders resources to HTML using
+the shared **`@unfoldingword/door43-preview-renderers`** library and delegates HTML→PDF
+to a small **WeasyPrint** sidecar. The React client (`src/rebuild/PreviewApp.jsx`) is
+**thin** — it drives an `<iframe>` pointed at the server's `/api/preview/*` routes and
+renders no resource content itself. Rendered output is cached (disk or S3). Live at
+https://preview.door43.org.
 
-For deep domain knowledge of the resources themselves (book packages, DCS catalog, TSV/USFM formats, GL quotes, resource subjects), invoke the **`uw-book-packages`** skill before working on any renderer or DCS-fetching code.
+For deep domain knowledge of the resources themselves (book packages, DCS catalog,
+TSV/USFM formats, GL quotes, resource subjects), invoke the **`uw-book-packages`** skill
+before working on any renderer or DCS-fetching code. For the full operational picture
+(env vars, deployment, queue/priority, warming), see **`docs/OPERATIONS.md`**.
 
 ## Commands
 
@@ -15,52 +24,80 @@ Requires **Node >= 22** and **pnpm >= 10** (`.nvmrc` pins 22; `corepack enable` 
 ```bash
 pnpm install
 pnpm dev          # Vite dev server on :5173 (proxies /api → :3000)
-pnpm dev:server   # Express server on :3000 — run alongside `pnpm dev` to test caching
-pnpm build        # production build → dist/
+pnpm dev:server   # Express server on :3000 — run alongside `pnpm dev` (add DEBUG_MODE=1 for verbose logs)
+pnpm build        # production build → dist/ (the thin client)
 pnpm preview      # serve built dist/ on :4173
 pnpm start        # NODE_ENV=production Express on :3000 (serves dist/ + API)
 pnpm lint         # ESLint (.jsx/.js); fails on errors, allows warnings
+pnpm cache:clean  # clear the disk cache
 ```
 
-There is **no test runner**. Validate changes by running `pnpm dev` and exercising the affected flow, or `pnpm build && pnpm preview`. Docker: `pnpm docker:compose` (see `DOCKER_DEPLOYMENT.md`).
+PDFs need the WeasyPrint sidecar: `docker compose up -d weasyprint`, or point
+`WEASYPRINT_SERVICE_URL` at one. There is **no test runner** — validate by exercising the
+flow (`pnpm dev` + `pnpm dev:server`) or `pnpm build && pnpm preview`. Full stack:
+`docker compose up --build` (see `docs/OPERATIONS.md`).
 
 ## Architecture
 
-The app is **URL-driven**. A URL like `/u/{owner}/{repo}/{ref}?book=...&server=...#hash` fully determines what renders.
+**The Express server is the core; the client is a thin shell.** A request names a
+resource (`owner`, `repo`, `ref`, `books`, `pageSize`, …); the server resolves it,
+renders via the library, caches, and returns HTML or a PDF. The client points an iframe
+at those routes.
 
-**`src/components/App.context.jsx` is the brain.** It is a single large context provider that:
-1. Parses the URL (owner/repo/ref/hash, plus query params), picks the DCS server, and fetches the runtime config from `/api/config`.
-2. Fetches the DCS owner → repo → **catalog entry** via `@helpers/dcsApi`.
-3. **Selects a `ResourceComponent`** by switching on the catalog entry's `metadata_type` (`rc` | `sb` | `ts` | `tc`) and `subject`/`flavor`. E.g. `Bible`, `OpenBibleStories`, `TsBible`, and the `Rc*` family (`RcTranslationNotes`, `RcTranslationWords`, `RcTranslationAcademy`, `RcStudyQuestions`, `RcObs*`, etc.).
-4. Holds shared state including `htmlSections`, `builtWith`, `books`/`expandedBooks`, print options, and cache bookkeeping.
+**Routes** (`server/routes/`): `render-html` (web), `render-pdf` (POST enqueue / GET
+`:jobId` status / GET descriptor serve), `nav` (chapter/verse tree), `preview-status`
+(freshness → "updating…" banner), `warm` (cache warming), `catalog` (search/tags/
+branches/entry), `weasyprint` (HTML→PDF proxy to the sidecar), `config`.
 
-**Render flow** (`AGENTS.md` and `ARCHITECHTURE.md` have diagrams, but see the drift note below):
+**Server libs** (`server/lib/`) — the interesting logic lives here:
+- `render-identity.js` — the **composite identity**: a hash over every resource + book
+  file a render actually uses (ULT/UST/UGNT/UHB, TW, TA, …), TTL-cached. This is the
+  cache/staleness key, so a book only re-renders when content it uses changes.
+- `html-data.js` — cached access to `renderHtmlData()` output; **serve-stale-while-
+  revalidate** for moved branches.
+- `preview-cache.js` + `cache-disk.js` / `cache-s3.js` — pluggable cache backend
+  (disk for dev, S3 for prod), namespaced by DCS host.
+- `job-queue.js` + `job-queue-memory.js` / `job-queue-bullmq.js` — async PDF queue,
+  in-process or BullMQ/Redis, with **priority**: interactive requests (1) jump ahead of
+  warm/cron (10); re-requesting a warm-queued PDF bumps it.
+- `warm.js` + `warm-cron.js` — cache warming (endpoint + `RUN_CRONS`-gated cron).
+- `dcs-host.js` — DCS selection: `?server=` > `DCS_HOST` > hostname > default **QA**
+  (PROD on `preview.door43.org`). PROD=git.door43.org, QA=qa.door43.org, DEV=develop.door43.org.
+- `log.js` — leveled logging gated by `DEBUG_MODE`/`VERBOSE_MODE` (see below).
 
+**Render flow:**
 ```
-URL → App.context (parse + fetch catalog entry + pick ResourceComponent)
-   → ResourceComponent fetches its content via @hooks/* and @helpers/*
-   → content pipeline (Proskomma + sofria2html for USFM; markdown-it for OBS; papaparse for TSV)
-   → produces htmlSections = { css: { web, print }, cover, copyright, toc, body }
-   → AppWorkspace renders htmlSections via:
-        WebPreviewComponent   (interactive)
-        PrintPreviewComponent (PagedJS pagination → browser print/PDF)
+request → resolveRenderIdentity (composite key) → getHtmlData (cache HIT, or render via
+  the library) → renderHTML (web) or renderPdf → WeasyPrint sidecar (PDF) → cache + return
 ```
 
-Every `ResourceComponent` follows the same contract: fetch + transform its resource, then call `setHtmlSections(...)` and `setBuiltWith(...)`. `htmlSections.body` plus the web/print CSS is what actually gets displayed. Scripture goes through **Proskomma** (`proskomma-core` → `SofriaRenderFromProskomma` → `@renderer/sofria2html`); OBS through markdown; TN/TQ/SQ through TSV helpers (`@helpers/tsv`, `@helpers/quotes`, GL-quote hooks).
+**Client** (`src/rebuild/PreviewApp.jsx`, mounted by `src/main.jsx`): search catalog →
+pick resource/version/book → set the iframe to `/api/preview/html` or drive the PDF job.
+It never renders resource content. Client debug logging lives in `src/utils/debug.js`.
 
-**Caching.** Rendered `htmlSections` are cached as gzipped JSON keyed by `owner/repo/ref/book`. The Express server (`server/routes/`) reads/writes them under `CACHE_DIR`. `App.context` decides whether a cached copy is stale by comparing the catalog entry's `commit_sha`, the `APP_VERSION`, and every dependency in `builtWith` (each resource + its commit SHA). Cache uploads (`uploadCachedBook` in `@helpers/books`) must include `PREVIEW_VERIFICATION_KEY` or the server rejects them.
+**Legacy (do not treat as live):** the old client-side architecture — `src/components/
+App.context.jsx`, the `Rc*`/`Bible`/`OpenBibleStories` `ResourceComponent` tree, and the
+Proskomma + PagedJS "browser-print" pipeline — **remains in the repo for salvage but is
+no longer mounted** (`main.jsx` mounts `PreviewApp`). Don't extend it; add behavior in the
+server + `PreviewApp`.
 
-**Configuration is runtime, not build-time.** The client receives `dcsReadOnlyToken` and `previewVerificationKey` from `GET /api/config` (served by `server/routes/config.js` from env vars). Do **not** introduce `VITE_*`/`import.meta.env` config for these — there is intentionally none in active source. Env vars: `PORT`, `CACHE_DIR`, `DCS_READ_ONLY_TOKEN`, `PREVIEW_VERIFICATION_KEY` (see `.env.example`).
+## Configuration & logging
+
+- **Runtime, not build-time.** No `VITE_*`/`import.meta.env` config for server settings.
+  `.env.example` documents every variable; `docs/OPERATIONS.md §9` is the full reference.
+  Key ones: `DCS_HOST`, `PREVIEW_CACHE_BACKEND`/`AWS_S3_BUCKET`, `WEASYPRINT_SERVICE_URL`,
+  `REDIS_URL`, `PREVIEW_WORKER`, `RUN_CRONS`+`WARM_*`, `PREVIEW_VERIFICATION_KEY`.
+- **Logging:** `DEBUG_MODE=1` (server) → verbose (access log, cache timings, downloads);
+  off → lifecycle + warnings/errors only. Client: `?debug=1`. Route new logs through
+  `server/lib/log.js` (`log.debug/info/warn/error`), not raw `console`.
 
 ## Conventions
 
-- **Path aliases** (defined in `vite.config.js` + `jsconfig.json`): `@common`, `@components`, `@hooks`, `@helpers`, `@renderer`, `@utils` → `src/<name>`. Prefer these over relative imports.
-- Function components only; 2-space indent, single quotes. Components are `PascalCase.jsx` in `src/components`; hooks are `useXxx.jsx` in `src/hooks`; pure utilities live in `src/helpers`.
-- **Two entry points:** `src/main.jsx` → `App` is the live preview app (the only one `index.html` loads). `src/catalog-main.jsx` → `CatalogApp` is a separate catalog-browsing entry.
-- ESLint **ignores** `dist`, `netlify`, `server/`, and `src/utils/translationNotesRenderer.js` (see `.eslintrc.cjs`) — lint won't catch issues in those.
-- DCS servers (`src/common/constants.js`): `prod`=git.door43.org, `qa`=qa.door43.org, `dev`=develop.door43.org. Chosen by `?server=` then hostname, defaulting to **QA** in local dev.
-- URL query params handled in `App.context`: `book` (accepts ranges/lists like `ot`, `nt`, `all`, `gen,exo`), `chapters`, `server`, `token`, `editor`/`edit` (forces no-cache), `nocache`/`no-cache`, `rerender`/`force-render`. Hash anchors (e.g. `#gen-1-1`, `#obs-1`) drive in-document navigation; `App.context` also rewrites legacy `*.html` door43.org links.
-
-## Documentation drift (important)
-
-`AGENTS.md` and `ARCHITECHTURE.md` (Sept 2025) describe a **superseded** Netlify + S3 deployment with `VITE_*` build-time env vars and Netlify Functions. That stack has been replaced by the **Express server + `/api/config` runtime config + filesystem cache** described above. The **`README.md`** (Dec 2025) and `DOCKER_DEPLOYMENT.md` are current; trust them over `AGENTS.md`/`ARCHITECHTURE.md` for build, deploy, env, and caching details. The coding-style and PR guidance in `AGENTS.md` is still valid.
+- Function components only; 2-space indent, single quotes. Server is ESM (`server/`),
+  routes in `server/routes/`, shared logic in `server/lib/`.
+- Path aliases (`@components`, `@hooks`, `@helpers`, `@renderer`, `@utils`, `@common` →
+  `src/*`, in `vite.config.js`/`jsconfig.json`) exist mainly for the legacy client; the
+  rebuild client is small and uses relative imports + MUI.
+- Cache correctness hinges on the **composite identity** — if you change what a render
+  consumes, make sure `render-identity.js` accounts for it, or the cache goes stale-wrong.
+- Commit style: concise, imperative subject lines; note any `.env`/config changes.
