@@ -9,6 +9,7 @@
 // No <ref> in the path -> latest release.
 import { useState, useRef, useEffect } from 'react';
 import { dbg } from '../utils/debug.js';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   AppBar,
   Toolbar,
@@ -29,6 +30,10 @@ import {
   Chip,
   LinearProgress,
   CircularProgress,
+  Collapse,
+  IconButton,
+  Card,
+  CardContent,
   Alert,
   Stack,
   ThemeProvider,
@@ -236,6 +241,9 @@ export default function PreviewApp() {
   const [error, setError] = useState(null);
   const [pendingScroll, setPendingScroll] = useState(null); // {chapter, verse} to scroll after load
   const [stale, setStale] = useState(false); // branch moved -> showing last render while revalidating
+  const [changed, setChanged] = useState([]); // which resources/books changed (from /status)
+  const [builtWith, setBuiltWith] = useState([]); // manifest of the shown render ("Built with")
+  const [builtWithOpen, setBuiltWithOpen] = useState(false); // Built-with panel toggle
 
   const iframeRef = useRef(null);
   const pollRef = useRef(null); // PDF job poll
@@ -331,6 +339,7 @@ export default function PreviewApp() {
     stopPoll();
     stopStatusPoll();
     setStale(false);
+    setChanged([]);
     setPdfJob(null);
     setError(null);
     setLoading(true);
@@ -376,7 +385,9 @@ export default function PreviewApp() {
       if (!r.ok) return;
       const s = await r.json();
       dbg('freshness:', s.cache, `${owner}/${repo}@${ver || 'latest'}`, b || '');
+      setBuiltWith(s.builtWith || []); // "Built with" panel, whatever the freshness
       if (s.cache === 'STALE') {
+        setChanged(s.changed || []);
         setStale(true);
         pollFreshness(owner, repo, ver, b);
       }
@@ -392,6 +403,8 @@ export default function PreviewApp() {
         const s = await r.json();
         if (r.ok && s.cache === 'FRESH') {
           setStale(false);
+          setChanged([]);
+          setBuiltWith(s.builtWith || []);
           statusPollRef.current = null;
           reloadPreview();
           return;
@@ -402,6 +415,34 @@ export default function PreviewApp() {
       statusPollRef.current = setTimeout(tick, 3000);
     };
     statusPollRef.current = setTimeout(tick, 3000);
+  };
+
+  // Banner text naming what changed on DCS (from /api/preview/status `changed`).
+  const staleMsg = () => {
+    if (!changed.length) {
+      return 'Source changed — showing the last render while updating to the latest commit…';
+    }
+    const named = changed.slice(0, 3).map((c) => {
+      const name = c.title || c.subject || c.repo;
+      return c.books && c.books.length ? `${name} — ${c.books.join(', ')}` : name;
+    });
+    const extra = changed.length > 3 ? ` and ${changed.length - 3} more` : '';
+    const verb = changed.length === 1 && !(changed[0].books && changed[0].books.length > 1) ? 'has' : 'have';
+    return `${named.join('; ')}${extra} ${verb} changed content — updating the document to apply the changes…`;
+  };
+
+  // "8 hours ago" / "3 years ago" from an ISO timestamp (for the Built-with cards).
+  const relativeTime = (iso) => {
+    if (!iso) return '';
+    const then = new Date(iso).getTime();
+    if (!then) return '';
+    const secs = Math.max(1, Math.round((Date.now() - then) / 1000));
+    const units = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
+    for (const [name, s] of units) {
+      const n = Math.floor(secs / s);
+      if (n >= 1) return `${n} ${name}${n > 1 ? 's' : ''} ago`;
+    }
+    return 'just now';
   };
 
   const scrollToAnchor = (anchor) => {
@@ -737,6 +778,73 @@ export default function PreviewApp() {
           </Stack>
         </Box>
 
+        {/* "Built with" — chevron sits on the header's bottom edge; panel slides down. */}
+        <Box sx={{ position: 'relative', height: 0, zIndex: 2 }}>
+          <IconButton
+            size="small"
+            onClick={() => setBuiltWithOpen((o) => !o)}
+            disabled={!builtWith.length}
+            aria-label={builtWithOpen ? 'Hide what this was built with' : 'Show what this was built with'}
+            title={builtWith.length ? 'Built with' : ''}
+            sx={{
+              position: 'absolute',
+              top: -14,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 30,
+              height: 30,
+              bgcolor: '#ffffff',
+              border: '1px solid #d0d7de',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              '&:hover': { bgcolor: '#f2f6f9' },
+            }}
+          >
+            <ExpandMoreIcon
+              sx={{
+                fontSize: 20,
+                color: '#014263',
+                transition: 'transform .2s',
+                transform: builtWithOpen ? 'rotate(180deg)' : 'none',
+              }}
+            />
+          </IconButton>
+        </Box>
+
+        <Collapse in={builtWithOpen} unmountOnExit>
+          <Box sx={{ px: 2, pt: 2, pb: 1.5, bgcolor: '#f4f8fb', borderBottom: '1px solid #d0e0ec' }}>
+            <Typography variant="overline" sx={{ color: '#014263', fontWeight: 700, letterSpacing: 0.5 }}>
+              Built with
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 0.5 }}>
+              {builtWith.map((m) => (
+                <Card key={m.key || m.repo} variant="outlined" sx={{ width: 250, borderColor: '#d0e0ec' }}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#231F20', lineHeight: 1.3 }}>
+                      {m.title}{' '}
+                      <Box component="span" sx={{ color: '#6b7a86', fontWeight: 400 }}>
+                        ({m.abbreviation})
+                      </Box>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#014263', mt: 0.25 }}>
+                      {m.ref}
+                      {m.refType !== 'tag' && m.commit ? ` (${m.commit.slice(0, 8)})` : ''}
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: '#5b6b76' }}>
+                      {m.languageTitle} ({m.language})
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: '#5b6b76' }}>
+                      {m.owner} · {m.subject}
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: '#8a97a1' }}>
+                      {m.refType === 'tag' ? 'Released' : 'Updated'} {relativeTime(m.released)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </Box>
+        </Collapse>
+
         {error && (
           <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 0 }}>
             {error}
@@ -759,7 +867,7 @@ export default function PreviewApp() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <CircularProgress size={16} sx={{ color: '#E59D33' }} />
               <Typography variant="body2" sx={{ color: '#8a5a00' }}>
-                Source changed — showing the last render while updating to the latest commit…
+                {staleMsg()}
               </Typography>
             </Stack>
           </Box>
