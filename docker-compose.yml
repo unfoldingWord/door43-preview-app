@@ -1,3 +1,20 @@
+# door43-preview-app — container topology.
+#
+#   ┌─────────┐   HTTP     ┌───────────────┐  POST text/html  ┌──────────────┐
+#   │ browser │ ─────────▶ │ app (Express) │ ───────────────▶ │  weasyprint  │
+#   └─────────┘            │  + built SPA  │ ◀──────── PDF ─── │  (sidecar)   │
+#                          └──────┬────────┘                  └──────────────┘
+#                                 │ PDF render jobs
+#                                 ▼
+#                          ┌───────────────┐
+#                          │ redis (opt.)  │  BullMQ queue — only if REDIS_URL set;
+#                          └───────────────┘  otherwise the queue is in-process.
+#
+# The app renders HTML itself (shared @unfoldingword/door43-preview-renderers lib)
+# and delegates HTML->PDF to the weasyprint sidecar. Rendered HTML + PDFs are cached
+# (disk volume by default, or S3 if AWS_S3_BUCKET is set). PDF renders run on an
+# async queue: in-process by default, or BullMQ/Redis for persistence + a dedicated
+# worker container. See docs/OPERATIONS.md for env vars and per-environment setup.
 services:
   app:
     build:
@@ -8,15 +25,28 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Cache: disk by default (the volume below). For S3, set AWS_S3_BUCKET (+ creds)
+      # in .env — preview-cache switches backend automatically.
       - CACHE_DIR=/app/cached-files
+      # HTML->PDF sidecar, on the internal compose network (not published publicly;
+      # the public surface is the app's /api/weasyprint route).
+      - WEASYPRINT_SERVICE_URL=http://weasyprint:8080
       - DCS_READ_ONLY_TOKEN=${DCS_READ_ONLY_TOKEN}
       - PREVIEW_VERIFICATION_KEY=${PREVIEW_VERIFICATION_KEY}
-      # Internal weasyprint-service (HTML -> PDF), reachable on the compose network.
-      - WEASYPRINT_SERVICE_URL=http://weasyprint:8080
-    volumes:
-      - ./cached-files:/app/cached-files
+      # Everything else is read from .env below, notably:
+      #   DCS_HOST                which DCS to read (QA=qa.door43.org [default] |
+      #                           PROD=git.door43.org | DEV | full URL)
+      #   DEBUG_MODE=1            verbose server logs (downloads/renders/timings);
+      #                           off = lifecycle + warnings/errors only
+      #   RUN_CRONS=1             master switch for scheduled jobs (warming); off by default
+      #   WARM_TOKEN, WARM_*      cache-warming (see docs/OPERATIONS.md)
+      #   REDIS_URL               enable BullMQ queue (else in-process)
+      #   PREVIEW_WORKER=off      don't process jobs in this container (dedicated worker does)
+      #   PREVIEW_JOB_CONCURRENCY number of concurrent PDF renders (default 2)
     env_file:
       - .env
+    volumes:
+      - ./cached-files:/app/cached-files
     restart: unless-stopped
     depends_on:
       - weasyprint
@@ -28,16 +58,22 @@ services:
       start_period: 40s
 
   # HTML -> PDF engine (WeasyPrint). Internal only — `expose`, not `ports` — so it
-  # is reachable by the app on the compose network but not published publicly; the
-  # public surface is the app's /api/weasyprint route (with its CORS).
+  # is reachable by the app on the compose network but not published publicly.
+  # OBS story images are baked into the image (see weasyprint-service/Dockerfile) so
+  # renders don't fetch ~600 images per document; swap resolution via OBS_IMAGES_URL.
   weasyprint:
     build:
       context: ./weasyprint-service
       dockerfile: Dockerfile
+      args:
+        # Default 720p (~206MB). Override in .env, e.g. the 360px or 2160px set:
+        #   OBS_IMAGES_URL=https://cdn.door43.org/obs/jpg/obs-images-360px.zip
+        OBS_IMAGES_URL: ${OBS_IMAGES_URL:-https://cdn.door43.org/obs/jpg/obs-images-720px.zip}
     expose:
       - "8080"
     environment:
       - PORT=8080
+      - OBS_IMAGES_DIR=/opt/obs-images
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').status==200 else 1)"]
@@ -45,3 +81,15 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  # Optional: Redis switches the PDF queue from in-process to BullMQ — persistent
+  # across restarts and shareable with a dedicated worker container. To enable:
+  # uncomment, set REDIS_URL=redis://redis:6379 in .env, and (optionally) run a
+  # second app container with PREVIEW_WORKER=on while the web app sets it off.
+  # redis:
+  #   image: redis:7-alpine
+  #   expose:
+  #     - "6379"
+  #   volumes:
+  #     - ./redis-data:/data
+  #   restart: unless-stopped
