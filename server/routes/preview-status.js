@@ -16,7 +16,8 @@
 import { resolveRenderIdentity } from '../lib/render-identity.js';
 import { htmlDataKey } from '../lib/html-data.js';
 import { getCached } from '../lib/preview-cache.js';
-import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
+import { dcsApiUrlFromReq, dcsOrigin, dcsHostKeyword } from '../lib/dcs-host.js';
+import pkg from '../../package.json' with { type: 'json' };
 
 function parseBooks(book) {
   const b = (book || '').trim().toLowerCase();
@@ -93,7 +94,8 @@ export default async function previewStatus(req, res) {
     const builtWith = cachedManifest || current;
     const changed = cache === 'STALE' ? diffManifests(cachedManifest, current) : [];
 
-    res.json({ owner, repo, version, sha, cachedSha, cache, builtWith, changed });
+    const server = { apiUrl: api, host: dcsOrigin(api), label: dcsHostKeyword(api) };
+    res.json({ owner, repo, version, sha, cachedSha, cache, builtWith, changed, server, appVersion: pkg.version });
   } catch (e) {
     res.status(502).json({ error: `status failed for ${owner}/${repo}@${ref}: ${e.message}` });
   }

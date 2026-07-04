@@ -34,6 +34,7 @@ import {
   IconButton,
   Card,
   CardContent,
+  Link,
   Alert,
   Stack,
   ThemeProvider,
@@ -244,6 +245,8 @@ export default function PreviewApp() {
   const [changed, setChanged] = useState([]); // which resources/books changed (from /status)
   const [builtWith, setBuiltWith] = useState([]); // manifest of the shown render ("Built with")
   const [builtWithOpen, setBuiltWithOpen] = useState(false); // Built-with panel toggle
+  const [serverInfo, setServerInfo] = useState(null); // { host, apiUrl, label } from /status
+  const [appVersion, setAppVersion] = useState(''); // app version from /status
 
   const iframeRef = useRef(null);
   const pollRef = useRef(null); // PDF job poll
@@ -386,6 +389,8 @@ export default function PreviewApp() {
       const s = await r.json();
       dbg('freshness:', s.cache, `${owner}/${repo}@${ver || 'latest'}`, b || '');
       setBuiltWith(s.builtWith || []); // "Built with" panel, whatever the freshness
+      setServerInfo(s.server || null);
+      setAppVersion(s.appVersion || '');
       if (s.cache === 'STALE') {
         setChanged(s.changed || []);
         setStale(true);
@@ -405,6 +410,8 @@ export default function PreviewApp() {
           setStale(false);
           setChanged([]);
           setBuiltWith(s.builtWith || []);
+          setServerInfo(s.server || null);
+          setAppVersion(s.appVersion || '');
           statusPollRef.current = null;
           reloadPreview();
           return;
@@ -842,6 +849,68 @@ export default function PreviewApp() {
                 </Card>
               ))}
             </Box>
+
+            {serverInfo && builtWith[0] && (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  pt: 1.25,
+                  borderTop: '1px solid #d0e0ec',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  fontSize: 13,
+                  color: '#5b6b76',
+                }}
+              >
+                <Box>
+                  Server:{' '}
+                  <Link
+                    href={`${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/src/${builtWith[0].refType === 'tag' ? 'tag' : 'branch'}/${builtWith[0].ref}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {serverInfo.host}
+                  </Link>{' '}
+                  ({serverInfo.label})
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Link
+                    href={`${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/raw/commit/${builtWith[0].commit}/manifest.yaml`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    See resource&apos;s metadata
+                  </Link>
+                  {' · '}
+                  <Link
+                    href={`${serverInfo.apiUrl}/catalog/bp/${builtWith[0].owner}/${builtWith[0].repo}/${builtWith[0].ref}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Book Package JSON
+                  </Link>
+                </Box>
+                <Box>
+                  <Link href="https://github.com/unfoldingWord-box3/door43-preview-app" target="_blank" rel="noopener noreferrer">
+                    Repository
+                  </Link>
+                </Box>
+                {appVersion && (
+                  <Box>
+                    <Link
+                      href="https://github.com/unfoldingWord-box3/door43-preview-app/releases/latest"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      App Version: v{appVersion}
+                    </Link>
+                  </Box>
+                )}
+              </Box>
+            )}
           </Box>
         </Collapse>
 

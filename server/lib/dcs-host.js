@@ -57,6 +57,21 @@ export function dcsHostLabel(apiOrHost) {
   }
 }
 
+// Bare origin (no /api/v1) from a host or api URL — e.g. "https://git.door43.org".
+export function dcsOrigin(apiOrHost) {
+  return stripTrailingSlash(String(apiOrHost || '')).replace(/\/api\/v1$/i, '');
+}
+
+// Display label: the PROD | QA | DEV keyword for a known DCS, else the hostname.
+// (DEVELOP is an alias of DEV.)
+export function dcsHostKeyword(apiOrHost) {
+  const origin = dcsOrigin(apiOrHost);
+  for (const [kw, url] of Object.entries(KEYWORD_HOSTS)) {
+    if (kw !== 'DEVELOP' && url === origin) return kw;
+  }
+  return dcsHostLabel(apiOrHost);
+}
+
 // Resolve straight from an Express request (query ?server= or a POST body.server,
 // plus the Host header for the preview.door43.org rule). Returns the …/api/v1 URL.
 export function dcsApiUrlFromReq(req) {
