@@ -13,7 +13,7 @@ import getCachedHtmlHandler from './routes/get-cached-html.js';
 import serveCachedPage from './routes/serve-cached-page.js';
 import configRoute from './routes/config.js';
 import weasyprintHandler from './routes/weasyprint.js';
-import renderHtmlHandler from './routes/render-html.js';
+import renderHtmlHandler, { renderHtmlJson } from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
 import catalogSearch, { catalogTags, catalogBranches, catalogEntry } from './routes/catalog.js';
 import previewNav from './routes/nav.js';
@@ -57,6 +57,11 @@ app.get('/api/catalog/entry', catalogEntry);
 // The rebuild's core seam — descriptor in, HTML out.
 app.get('/api/preview/html', renderHtmlHandler);
 app.post('/api/preview/html', renderHtmlHandler);
+
+// The htmlData JSON (renderHtmlData output) the HTML is built from — for clients
+// that want to render it themselves or inspect it. Not separately cached.
+app.get('/api/preview/html-json', renderHtmlJson);
+app.post('/api/preview/html-json', renderHtmlJson);
 
 // Chapter/verse structure for a book (derived from the rendered content).
 app.get('/api/preview/nav', previewNav);

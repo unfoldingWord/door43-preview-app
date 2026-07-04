@@ -168,6 +168,7 @@ Core (rebuild):
 | Method / path | Purpose |
 |---|---|
 | `GET /api/preview/html?<descriptor>` | Render/serve a resource's web HTML (cached, serve-stale). |
+| `GET /api/preview/html-json?<descriptor>` | The cached htmlData JSON the HTML is built from (render it yourself, or inspect). |
 | `GET /api/preview/nav?owner&repo&ref&book` | Chapter/verse tree for a book. |
 | `GET /api/preview/status?<descriptor>` | Is the cached web view current? (drives the "updating…" banner) |
 | `POST /api/preview/pdf` | Enqueue a PDF render → `{ jobId, state }`. |

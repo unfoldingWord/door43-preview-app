@@ -1,13 +1,15 @@
-// GET|POST /api/preview/html — render a resource to HTML.
+// /api/preview/html      (GET|POST) — render a resource to final HTML.
+// /api/preview/html-json (GET|POST) — the cached htmlData JSON it's built from.
 //
 // Two-stage: getHtmlData() returns the cached renderHtmlData() JSON (data fetch +
-// parse, the expensive part, cached under a readable version path); renderHTML()
-// composes the final HTML per request with the requested options — so media,
-// columns, hide cover/toc, etc. change without re-fetching or re-parsing.
+// parse, the expensive part, cached under a readable version path). The HTML itself
+// is NOT cached — renderHTML() composes it per request from that htmlData with the
+// requested options (media, columns, …), which is cheap. html-json hands back the
+// same htmlData so a caller can render it themselves (renderHTML) or inspect it.
 //
 // Descriptor (query for GET, JSON body for POST):
-//   owner (req), repo (req), ref (default master), media ("web"|"print"),
-//   books (comma list / array; empty = whole resource), columns (optional).
+//   owner (req), repo (req), ref (default = latest release), books (comma list /
+//   array; empty = whole resource). /html also takes media ("web"|"print") + columns.
 import { renderHTML } from '@unfoldingword/door43-preview-renderers';
 import { getHtmlData } from '../lib/html-data.js';
 import { dcsApiUrlFromReq } from '../lib/dcs-host.js';
@@ -18,6 +20,12 @@ function parseBooks(books) {
     return books.split(',').map((b) => b.trim()).filter(Boolean);
   }
   return [];
+}
+
+// Shared descriptor from the request (GET query or POST body).
+function descriptorFrom(req) {
+  const src = req.method === 'POST' ? req.body || {} : req.query || {};
+  return { owner: src.owner, repo: src.repo, ref: src.ref || '', books: parseBooks(src.books), src };
 }
 
 // Build renderHTML() options from the request (applied to cached htmlData).
@@ -44,13 +52,9 @@ function errorPage(res, message) {
   );
 }
 
+// GET|POST /api/preview/html — final HTML, built per request from cached htmlData.
 export default async function renderHtml(req, res) {
-  const src = req.method === 'POST' ? req.body || {} : req.query || {};
-  const owner = src.owner;
-  const repo = src.repo;
-  const ref = src.ref || ''; // empty -> resolveVersion picks the latest release
-  const books = parseBooks(src.books);
-
+  const { owner, repo, ref, books, src } = descriptorFrom(req);
   if (!owner || !repo) {
     return res.status(400).json({
       error:
@@ -75,5 +79,34 @@ export default async function renderHtml(req, res) {
     res.send(html);
   } catch (e) {
     errorPage(res, `Couldn't render ${owner}/${repo}${ref ? `@${ref}` : ''}: ${e.message}`);
+  }
+}
+
+// GET|POST /api/preview/html-json — the cached htmlData JSON (renderHtmlData output).
+// Media/columns are render-time options, so they don't apply here — the caller passes
+// them to renderHTML(htmlData, opts) themselves. Metadata is returned in headers.
+export async function renderHtmlJson(req, res) {
+  const { owner, repo, ref, books } = descriptorFrom(req);
+  if (!owner || !repo) {
+    return res.status(400).json({ error: 'owner and repo are required.' });
+  }
+
+  try {
+    const { htmlData, sha, version, cache } = await getHtmlData({
+      owner,
+      repo,
+      ref,
+      books,
+      allowStale: true,
+      dcsApiUrl: dcsApiUrlFromReq(req),
+    });
+    res.setHeader('X-Cache', cache);
+    res.setHeader('X-Version', version);
+    res.setHeader('X-Sha', sha);
+    res.json(htmlData);
+  } catch (e) {
+    res
+      .status(502)
+      .json({ error: `Couldn't build htmlData for ${owner}/${repo}${ref ? `@${ref}` : ''}: ${e.message}` });
   }
 }

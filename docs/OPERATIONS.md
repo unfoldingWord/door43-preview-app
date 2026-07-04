@@ -64,7 +64,11 @@ key), `html-data.js` (cached htmlData + serve-stale), `preview-cache.js` +
 a **composite identity** (a hash over every resource + book-file the render uses) →
 serve cached htmlData on a match; on a moved branch serve the last render immediately
 and revalidate in the background (the client shows an "updating…" banner and reloads).
-`GET /api/preview/nav` returns the cached chapter/verse tree.
+`GET /api/preview/nav` returns the cached chapter/verse tree. `GET /api/preview/html`
+and `/api/preview/html-json` are synchronous (no queue): both read the cached htmlData
+via `getHtmlData()` (in-flight renders are coalesced), then `/html` composes the final
+HTML per request with `renderHTML()` while `/html-json` returns the htmlData JSON as-is.
+Only PDF rendering is queued.
 
 **PDF** — `POST /api/preview/pdf` enqueues a render (deduped by cache key) and returns
 a `jobId`; the client polls `GET /api/preview/pdf/:jobId`; when complete it points the
