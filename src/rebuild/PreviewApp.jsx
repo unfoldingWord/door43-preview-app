@@ -8,6 +8,7 @@
 //   /u/<owner>/<repo>/<ref>?book=<book>&ref=<ch>:<vs>   (also chapter=&verse=)
 // No <ref> in the path -> latest release.
 import { useState, useRef, useEffect } from 'react';
+import { dbg } from '../utils/debug.js';
 import {
   AppBar,
   Toolbar,
@@ -303,9 +304,13 @@ export default function PreviewApp() {
     setNavLoading(true);
     try {
       const qs = apiQuery({ owner, repo, ref: ver || '', book: b });
+      dbg('nav: fetching', `${owner}/${repo}@${ver || 'latest'}`, b);
       const r = await fetch(`/api/preview/nav?${qs.toString()}`);
       const data = await r.json();
-      if (r.ok) setNav(data);
+      if (r.ok) {
+        setNav(data);
+        dbg('nav: loaded', data && data.chapters ? `${data.chapters.length} chapters` : '(none)');
+      }
     } catch {
       /* nav best-effort */
     } finally {
@@ -329,7 +334,9 @@ export default function PreviewApp() {
     setPdfJob(null);
     setError(null);
     setLoading(true);
-    setPreviewUrl(htmlUrl(e.owner, e.repo, ver, b));
+    const url = htmlUrl(e.owner, e.repo, ver, b);
+    dbg('web view: rendering', url);
+    setPreviewUrl(url);
     if (b) fetchNav(e.owner, e.repo, ver, b);
     else {
       setNav(null);
@@ -368,6 +375,7 @@ export default function PreviewApp() {
       const r = await fetch(statusUrl(owner, repo, ver, b));
       if (!r.ok) return;
       const s = await r.json();
+      dbg('freshness:', s.cache, `${owner}/${repo}@${ver || 'latest'}`, b || '');
       if (s.cache === 'STALE') {
         setStale(true);
         pollFreshness(owner, repo, ver, b);
@@ -543,10 +551,12 @@ export default function PreviewApp() {
     const showPdf = () => {
       setPdfJob(null);
       setLoading(true);
+      dbg('pdf: ready ->', serveUrl);
       setPreviewUrl(serveUrl);
     };
     setPdfJob({ state: 'starting' });
     try {
+      dbg('pdf: enqueue', descriptor);
       const r = await fetch('/api/preview/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -556,12 +566,14 @@ export default function PreviewApp() {
       if (!r.ok) throw new Error(data.error || `enqueue failed (${r.status})`);
       if (data.state === 'completed') return showPdf();
       const jobId = data.jobId;
+      dbg('pdf: queued', jobId);
       setPdfJob(data);
       const poll = async () => {
         try {
           const sr = await fetch(`/api/preview/pdf/${jobId}`);
           if (sr.status === 404) return showPdf();
           const s = await sr.json();
+          dbg('pdf: job', s.state, s.queuePosition ? `pos ${s.queuePosition}` : '', s.etaSeconds ? `~${s.etaSeconds}s` : '');
           if (s.state === 'completed') return showPdf();
           if (s.state === 'failed') {
             setPdfJob(null);
