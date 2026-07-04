@@ -137,24 +137,55 @@ async function blobShaFor(owner, repo, commitSha, path, api) {
 // repos, else the repo commit sha). Falls back to commit sha when a book file can't
 // be resolved — safe (worst case: re-render when the repo commits).
 async function contributionFor(entry, books, api) {
-  const kind = `${entry.owner}/${entry.name}`;
-  const commit = `${kind}#commit:${entry.commit_sha}`;
-  if (!books.length || !BOOK_FILE_SUBJECTS.has(entry.subject)) return commit;
+  const key = `${entry.owner}/${entry.name}`;
+  const commitOnly = { key, token: `${key}#commit:${entry.commit_sha}`, bookBlobs: null };
+  if (!books.length || !BOOK_FILE_SUBJECTS.has(entry.subject)) return commitOnly;
 
+  const bookBlobs = {};
   const parts = [];
   for (const book of books) {
     const ing = (entry.ingredients || []).find((i) => i.identifier === book && !i.is_dir);
-    if (!ing) return commit; // book not in this repo (e.g. UHB for a NT book) -> whole-repo
+    if (!ing) return commitOnly; // book not in this repo (e.g. UHB for a NT book) -> whole-repo
     const blob = await blobShaFor(entry.owner, entry.name, entry.commit_sha, normPath(ing.path), api);
-    if (!blob) return commit; // couldn't resolve the blob -> safe fallback
+    if (!blob) return commitOnly; // couldn't resolve the blob -> safe fallback
+    bookBlobs[book] = blob;
     parts.push(`${book}=${blob}`);
   }
-  return `${kind}#file:${parts.sort().join(',')}`;
+  return { key, token: `${key}#file:${parts.sort().join(',')}`, bookBlobs };
 }
 
-async function computeComposite(entries, books, api) {
+// The manifest entry for one rendered resource: everything a "Built with" view needs,
+// plus the contribution token + per-book blobs used for change detection.
+function manifestEntry(entry, contribution) {
+  return {
+    key: contribution.key,
+    owner: entry.owner,
+    repo: entry.name,
+    title: entry.title,
+    abbreviation: entry.abbreviation,
+    subject: entry.subject,
+    language: entry.language,
+    languageTitle: entry.language_title,
+    languageDirection: entry.language_direction,
+    ref: entry.branch_or_tag_name,
+    refType: entry.ref_type, // 'branch' | 'tag'
+    commit: entry.commit_sha,
+    released: entry.released,
+    contribution: contribution.token, // compared to detect a change
+    books: contribution.bookBlobs, // per-book blobs when book-organized, else null
+  };
+}
+
+// composite (sha256 of the sorted contribution tokens — unchanged) + the manifest of
+// the exact rendered set, in one pass.
+async function computeIdentity(entries, books, api) {
   const contributions = await Promise.all(entries.map((e) => contributionFor(e, books, api)));
-  return createHash('sha256').update(contributions.sort().join('\n')).digest('hex').slice(0, 40);
+  const composite = createHash('sha256')
+    .update(contributions.map((c) => c.token).sort().join('\n'))
+    .digest('hex')
+    .slice(0, 40);
+  const manifest = entries.map((e, i) => manifestEntry(e, contributions[i]));
+  return { composite, manifest };
 }
 
 // --- identity cache (TTL, like ref->sha) ---
@@ -168,10 +199,12 @@ function prune() {
 
 /**
  * Resolve the composite render identity for a (resource, ref, books) render.
- * @returns {Promise<{version: string, composite: string, entries: Array|null}>}
+ * @returns {Promise<{version: string, composite: string, manifest: Array}>}
  *   version   the concrete ref used (empty -> latest release tag)
  *   composite the staleness identity (sha256 of per-resource contributions)
- *   entries   the filtered rendered set when freshly fetched (null on a cache hit)
+ *   manifest  the exact rendered set — per-resource metadata (title, subject,
+ *             language, ref, commit, released, …) + contribution token + per-book
+ *             blobs; drives the "Built with" view and per-resource/per-book diffs.
  */
 export async function resolveRenderIdentity({ owner, repo, ref = '', books = [], api = DEFAULT_API }) {
   const requested = (ref || '').trim();
@@ -179,7 +212,7 @@ export async function resolveRenderIdentity({ owner, repo, ref = '', books = [],
   const booksKey = bookList.slice().sort().join('+') || '_whole';
   const ck = `${api}|${owner}|${repo}|${requested}|${booksKey}`;
   const hit = identityCache.get(ck);
-  if (hit && hit.exp > Date.now()) return { ...hit.value, entries: null };
+  if (hit && hit.exp > Date.now()) return { ...hit.value };
 
   // Concrete ref for the /bp/ call (empty -> latest release tag; resolveVersion is cached).
   let version = requested;
@@ -187,10 +220,10 @@ export async function resolveRenderIdentity({ owner, repo, ref = '', books = [],
 
   const allEntries = await fetchBlueprint(owner, repo, version, bookList, api);
   const entries = selectEntries(allEntries);
-  const composite = await computeComposite(entries, bookList, api);
+  const { composite, manifest } = await computeIdentity(entries, bookList, api);
 
-  const value = { version, composite };
+  const value = { version, composite, manifest };
   identityCache.set(ck, { value, exp: Date.now() + ttlFor(requested) });
   prune();
-  return { version, composite, entries };
+  return { version, composite, manifest };
 }

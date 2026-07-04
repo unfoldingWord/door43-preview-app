@@ -39,7 +39,7 @@ const inflightRenders = new Map();
 // Fetch + parse + render the current sha for `key`, cache it, and return the
 // htmlData. Concurrent callers for the same key share one run (dedup), so a cold
 // miss fetches the source once even when the web view, nav, and PDF all ask at once.
-function renderFor({ owner, repo, version, sha, books, key, api }) {
+function renderFor({ owner, repo, version, sha, manifest, books, key, api }) {
   if (inflightRenders.has(key)) return inflightRenders.get(key);
   const p = (async () => {
     const resourceData = await getResourceData(
@@ -47,9 +47,11 @@ function renderFor({ owner, repo, version, sha, books, key, api }) {
       { dcs_api_url: api, quiet: true }
     );
     const htmlData = renderHtmlData(resourceData, { books });
+    // Store the manifest alongside the render so a later request can show what this
+    // cached HTML was "built with" and diff it against the current identity.
     await setCached(
       key,
-      JSON.stringify({ sha, renderedAt: new Date().toISOString(), htmlData }),
+      JSON.stringify({ sha, renderedAt: new Date().toISOString(), manifest, htmlData }),
       { ext: 'json' }
     );
     return htmlData;
@@ -78,13 +80,14 @@ export async function getHtmlData({
   // `sha` here is the COMPOSITE identity across every resource the render uses
   // (per-book blob shas for book-organized repos, commit shas for Markdown), so a
   // book only goes stale when content it actually uses changed. Empty ref -> latest.
-  const { version, composite: sha } = await resolveRenderIdentity({ owner, repo, ref, books, api });
+  const { version, composite: sha, manifest } = await resolveRenderIdentity({ owner, repo, ref, books, api });
   const tResolve = Date.now();
   const key = htmlDataKey({ owner, repo, version, books, dcsApiUrl: api });
 
   const cachedStr = await getCached(key, { ext: 'json' });
   const tCache = Date.now();
   let staleHtmlData = null;
+  let staleManifest = null;
   if (cachedStr) {
     try {
       const obj = JSON.parse(cachedStr);
@@ -93,9 +96,10 @@ export async function getHtmlData({
           log.debug(
             `[html-data] ${label}@${version}: HIT  resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms`
           );
-          return { htmlData: obj.htmlData, sha, version, key, cache: 'HIT' };
+          return { htmlData: obj.htmlData, sha, version, key, cache: 'HIT', manifest: obj.manifest || manifest };
         }
         staleHtmlData = obj.htmlData; // sha mismatch -> branch moved since we cached
+        staleManifest = obj.manifest || null; // what the stale render was built with
       }
     } catch {
       /* corrupt entry -> re-render */
@@ -103,7 +107,7 @@ export async function getHtmlData({
   }
 
   const alreadyRendering = inflightRenders.has(key);
-  const render = renderFor({ owner, repo, version, sha, books, key, api });
+  const render = renderFor({ owner, repo, version, sha, manifest, books, key, api });
 
   // Serve-stale-while-revalidate: hand back the previous render now; `render` above
   // refreshes the cache to `sha` in the background so the next request is a HIT.
@@ -116,7 +120,7 @@ export async function getHtmlData({
         .then(() => log.debug(`[html-data] ${label}@${version}: revalidated -> ${sha8} (now FRESH)`))
         .catch((e) => log.warn(`[html-data] ${label}@${version}: revalidation FAILED (${sha8}): ${e.message}`));
     }
-    return { htmlData: staleHtmlData, sha, version, key, cache: 'STALE' };
+    return { htmlData: staleHtmlData, sha, version, key, cache: 'STALE', manifest: staleManifest || manifest };
   }
 
   const htmlData = await render;
@@ -125,5 +129,5 @@ export async function getHtmlData({
     `[html-data] ${label}@${version}: ${status}  ` +
       `resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms fetch+render=${Date.now() - tCache}ms`
   );
-  return { htmlData, sha, version, key, cache: status };
+  return { htmlData, sha, version, key, cache: status, manifest };
 }
