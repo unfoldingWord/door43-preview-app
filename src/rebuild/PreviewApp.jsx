@@ -882,7 +882,7 @@ export default function PreviewApp() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    See resource&apos;s metadata
+                    See Resource&apos;s Metadata
                   </Link>
                   {' · '}
                   <Link

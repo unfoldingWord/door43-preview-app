@@ -489,7 +489,7 @@ export default function Header({ serverInfo, urlInfo, repo, owner, catalogEntry,
                 <div style={{ textAlign: 'center' }}>
                   <Tooltip title="View resource metadata on DCS" arrow>
                     <a href={catalogEntry.metadata_url} target="_blank" rel="noopener noreferrer">
-                      {"See Resource's Metadata"}
+                      {"See resource's metadata"}
                     </a>
                   </Tooltip>
                 </div>
