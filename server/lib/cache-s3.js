@@ -14,6 +14,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
+import { log } from './log.js';
 
 const REGION = process.env.AWS_REGION || 'us-west-2';
 const BUCKET = process.env.AWS_S3_BUCKET;
@@ -51,7 +52,7 @@ export async function getCached(key, { ext = 'html', binary = false } = {}) {
     return await out.Body.transformToString('utf-8');
   } catch (e) {
     if (isNotFound(e)) return null;
-    console.error('[cache-s3] get failed for', objectKey(key, ext), '-', e.message);
+    log.error('[cache-s3] get failed for', objectKey(key, ext), '-', e.message);
     return null; // fail soft -> treated as a miss
   }
 }
@@ -67,7 +68,7 @@ export async function setCached(key, data, { ext = 'html' } = {}) {
       })
     );
   } catch (e) {
-    console.error('[cache-s3] set failed for', objectKey(key, ext), '-', e.message);
+    log.error('[cache-s3] set failed for', objectKey(key, ext), '-', e.message);
     // fail soft -> not caching shouldn't break the request
   }
 }
@@ -77,7 +78,7 @@ export async function delCached(key, { ext = 'html' } = {}) {
     // DeleteObject is idempotent — a missing key is not an error.
     await client().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: objectKey(key, ext) }));
   } catch (e) {
-    console.error('[cache-s3] delete failed for', objectKey(key, ext), '-', e.message);
+    log.error('[cache-s3] delete failed for', objectKey(key, ext), '-', e.message);
     // fail soft -> a failed cleanup shouldn't break the request
   }
 }

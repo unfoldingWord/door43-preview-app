@@ -10,6 +10,7 @@
 import { createHash } from 'crypto';
 import * as disk from './cache-disk.js';
 import * as s3 from './cache-s3.js';
+import { log } from './log.js';
 
 // Bump on renderer-output changes. r2: door43-preview-renderers 1.5.2 anchors
 // Psalm superscriptions (-front).
@@ -21,7 +22,7 @@ export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r2';
 const forced = process.env.PREVIEW_CACHE_BACKEND;
 const useS3 = forced ? forced === 's3' : !!process.env.AWS_S3_BUCKET;
 const backend = useS3 ? s3 : disk;
-console.log(
+log.info(
   `[preview-cache] backend: ${
     useS3
       ? `S3 (${process.env.AWS_S3_BUCKET} @ ${process.env.AWS_REGION || 'us-west-2'})`

@@ -20,6 +20,7 @@ import { cacheKey, getCached, setCached, delCached } from '../lib/preview-cache.
 import { getHtmlData } from '../lib/html-data.js';
 import { createJobQueue } from '../lib/job-queue.js';
 import { dcsApiUrlFromReq, dcsHostLabel } from '../lib/dcs-host.js';
+import { log } from '../lib/log.js';
 
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
@@ -106,7 +107,7 @@ async function reapSupersededPdf(d, newSha, newKey) {
     });
     if (oldKey !== newKey) {
       await delCached(oldKey, { ext: 'pdf' });
-      console.log(
+      log.debug(
         `[pdf] reaped superseded PDF ${d.owner}/${d.repo}@${d.ref || '_latest'} ` +
           `${String(prevSha).slice(0, 8)} -> ${String(newSha).slice(0, 8)}`
       );
@@ -118,6 +119,10 @@ async function reapSupersededPdf(d, newSha, newKey) {
 // The actual render: reuse the cached htmlData, then library assembles print HTML
 // -> WeasyPrint sidecar -> PDF, then cache the PDF bytes.
 async function renderAndCache(d, key) {
+  // Concise lifecycle line (always): a PDF render is an expensive, user-visible unit.
+  const label = `${d.owner}/${d.repo}@${d.ref || '_latest'} ${d.books.join('+') || '_whole'} ${d.pageSize}`;
+  const t0 = Date.now();
+  log.info(`[pdf] rendering ${label}`);
   const { htmlData, sha } = await getHtmlData({
     owner: d.owner,
     repo: d.repo,
@@ -131,9 +136,10 @@ async function renderAndCache(d, key) {
     columns: d.columns,
   });
   await setCached(key, pdf, { ext: 'pdf' });
+  log.info(`[pdf] rendered ${label} in ${Date.now() - t0}ms (${Math.round(pdf.length / 1024)}KB)`);
   // New PDF is now cached -> retire the old sha's PDF (best-effort, never fatal).
   await reapSupersededPdf(d, sha, key).catch((e) =>
-    console.error('[pdf] cleanup failed (ignored):', e.message)
+    log.warn('[pdf] cleanup failed (ignored):', e.message)
   );
   return pdf;
 }

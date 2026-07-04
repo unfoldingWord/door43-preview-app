@@ -15,6 +15,7 @@ import { getResourceData, renderHtmlData } from '@unfoldingword/door43-preview-r
 import { resolveRenderIdentity } from './render-identity.js';
 import { getCached, setCached, CACHE_VERSION } from './preview-cache.js';
 import { resolveDcsHost, dcsApiUrl, dcsHostLabel } from './dcs-host.js';
+import { log } from './log.js';
 
 // Default DCS host when no per-request host is threaded in (env / QA default).
 const DEFAULT_API = dcsApiUrl(resolveDcsHost({}));
@@ -89,7 +90,7 @@ export async function getHtmlData({
       const obj = JSON.parse(cachedStr);
       if (obj && obj.htmlData) {
         if (obj.sha === sha) {
-          console.log(
+          log.debug(
             `[html-data] ${label}@${version}: HIT  resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms`
           );
           return { htmlData: obj.htmlData, sha, version, key, cache: 'HIT' };
@@ -108,19 +109,19 @@ export async function getHtmlData({
   // refreshes the cache to `sha` in the background so the next request is a HIT.
   if (staleHtmlData && allowStale) {
     const sha8 = String(sha).slice(0, 8);
-    console.log(`[html-data] ${label}@${version}: STALE (serving cached, revalidating -> ${sha8})`);
+    log.debug(`[html-data] ${label}@${version}: STALE (serving cached, revalidating -> ${sha8})`);
     // Log the background result once (only the caller that started the render).
     if (!alreadyRendering) {
       render
-        .then(() => console.log(`[html-data] ${label}@${version}: revalidated -> ${sha8} (now FRESH)`))
-        .catch((e) => console.log(`[html-data] ${label}@${version}: revalidation FAILED (${sha8}): ${e.message}`));
+        .then(() => log.debug(`[html-data] ${label}@${version}: revalidated -> ${sha8} (now FRESH)`))
+        .catch((e) => log.warn(`[html-data] ${label}@${version}: revalidation FAILED (${sha8}): ${e.message}`));
     }
     return { htmlData: staleHtmlData, sha, version, key, cache: 'STALE' };
   }
 
   const htmlData = await render;
   const status = staleHtmlData ? 'REPLACED' : alreadyRendering ? 'COALESCED' : 'MISS';
-  console.log(
+  log.debug(
     `[html-data] ${label}@${version}: ${status}  ` +
       `resolve=${tResolve - t0}ms cacheGet=${tCache - tResolve}ms fetch+render=${Date.now() - tCache}ms`
   );

@@ -20,6 +20,7 @@ import previewNav from './routes/nav.js';
 import previewStatus from './routes/preview-status.js';
 import warmHandler from './routes/warm.js';
 import { startWarmCron } from './lib/warm-cron.js';
+import { log } from './lib/log.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,9 +33,9 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.raw({ type: 'application/octet-stream', limit: '50mb' }));
 
-// Request logging middleware
+// Request logging middleware — per-request access log is verbose (DEBUG_MODE only).
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  log.debug(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
 
@@ -116,7 +117,11 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  log.info(`Server running on port ${PORT}`);
+  log.info(
+    `Environment: ${process.env.NODE_ENV || 'development'} | ` +
+      `DCS: ${process.env.DCS_HOST || 'QA (default)'} | ` +
+      `logs: ${log.debugEnabled ? 'DEBUG (verbose)' : 'normal'}`
+  );
   startWarmCron(); // no-op unless RUN_CRONS=1 and warming is configured
 });

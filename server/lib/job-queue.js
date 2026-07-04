@@ -14,10 +14,11 @@
 // a separate BullMQ worker process/container.
 import { createMemoryQueue } from './job-queue-memory.js';
 import { createRedisQueue } from './job-queue-bullmq.js';
+import { log } from './log.js';
 
 export function createJobQueue(opts) {
   const useRedis = !!(process.env.REDIS_URL || process.env.REDIS_HOST);
-  console.log(
+  log.info(
     `[job-queue] ${opts.name}: ${useRedis ? 'BullMQ/Redis' : 'in-process'} backend`
   );
   return useRedis ? createRedisQueue(opts) : createMemoryQueue(opts);

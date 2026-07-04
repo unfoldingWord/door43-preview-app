@@ -7,6 +7,7 @@
 // as DCS). The in-process worker runs here unless PREVIEW_WORKER=off, so a
 // dedicated worker container can own processing instead.
 import { Queue, Worker } from 'bullmq';
+import { log } from './log.js';
 
 function connectionOptions() {
   // maxRetriesPerRequest must be null for BullMQ's blocking operations.
@@ -47,9 +48,9 @@ export function createRedisQueue({ name, processor, concurrency = 2 }) {
       connection: connectionOptions(),
       concurrency,
     });
-    worker.on('error', (e) => console.error('[preview-pdf worker] error:', e.message));
+    worker.on('error', (e) => log.error('[preview-pdf worker] error:', e.message));
     worker.on('failed', (job, e) =>
-      console.error(`[preview-pdf worker] job ${job && job.id} failed:`, e && e.message)
+      log.warn(`[preview-pdf worker] job ${job && job.id} failed:`, e && e.message)
     );
   }
 
