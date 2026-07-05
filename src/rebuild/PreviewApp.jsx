@@ -336,6 +336,19 @@ export default function PreviewApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDevVersions]);
 
+  // App + DCS info for the "Built with" tray footer, available before any resource
+  // is loaded (a resource's /status later refines it).
+  useEffect(() => {
+    fetch(`/api/config?${apiQuery({}).toString()}`)
+      .then((r) => r.json())
+      .then((c) => {
+        if (c.server) setServerInfo(c.server);
+        if (c.appVersion) setAppVersion(c.appVersion);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const search = async (l = lang, s = subject, o = '') => {
     stopPoll();
     setSearching(true);
@@ -736,7 +749,7 @@ export default function PreviewApp() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <AppBar position="static" elevation={0} sx={{ bgcolor: '#31ADE3', color: '#ffffff' }}>
           <Toolbar variant="dense">
             <Typography variant="h6" sx={{ fontWeight: 700, mr: 2, color: '#ffffff' }}>
@@ -910,9 +923,9 @@ export default function PreviewApp() {
           <IconButton
             size="small"
             onClick={() => setBuiltWithOpen((o) => !o)}
-            disabled={!builtWith.length}
-            aria-label={builtWithOpen ? 'Hide what this was built with' : 'Show what this was built with'}
-            title={builtWith.length ? 'Built with' : ''}
+            disabled={!builtWith.length && !serverInfo}
+            aria-label={builtWithOpen ? 'Hide details' : 'Show details'}
+            title="Details"
             sx={{
               position: 'absolute',
               top: -14,
@@ -939,10 +952,12 @@ export default function PreviewApp() {
 
         <Collapse in={builtWithOpen} unmountOnExit>
           <Box sx={{ px: 2, pt: 2, pb: 1.5, bgcolor: '#f4f8fb', borderBottom: '1px solid #d0e0ec' }}>
-            <Typography variant="overline" sx={{ color: '#014263', fontWeight: 700, letterSpacing: 0.5 }}>
-              Built with
-            </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 0.5 }}>
+            {builtWith.length > 0 && (
+              <>
+                <Typography variant="overline" sx={{ color: '#014263', fontWeight: 700, letterSpacing: 0.5 }}>
+                  Built with
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 0.5 }}>
               {builtWith.map((m) => (
                 <Card
                   key={m.key || m.repo}
@@ -1006,14 +1021,16 @@ export default function PreviewApp() {
                   </Box>
                 </Card>
               ))}
-            </Box>
+                </Box>
+              </>
+            )}
 
-            {serverInfo && builtWith[0] && (
+            {serverInfo && (
               <Box
                 sx={{
-                  mt: 1.5,
-                  pt: 1.25,
-                  borderTop: '1px solid #d0e0ec',
+                  mt: builtWith.length ? 1.5 : 0,
+                  pt: builtWith.length ? 1.25 : 0,
+                  borderTop: builtWith.length ? '1px solid #d0e0ec' : 'none',
                   display: 'flex',
                   flexWrap: 'wrap',
                   justifyContent: 'space-between',
@@ -1026,7 +1043,11 @@ export default function PreviewApp() {
                 <Box>
                   Server:{' '}
                   <Link
-                    href={`${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/src/${builtWith[0].refType === 'tag' ? 'tag' : 'branch'}/${builtWith[0].ref}`}
+                    href={
+                      builtWith[0]
+                        ? `${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/src/${builtWith[0].refType === 'tag' ? 'tag' : 'branch'}/${builtWith[0].ref}`
+                        : serverInfo.host
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -1034,23 +1055,25 @@ export default function PreviewApp() {
                   </Link>{' '}
                   ({serverInfo.label})
                 </Box>
-                <Box sx={{ textAlign: 'center' }}>
-                  <Link
-                    href={`${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/raw/commit/${builtWith[0].commit}/manifest.yaml`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    See Resource&apos;s Metadata
-                  </Link>
-                  {' · '}
-                  <Link
-                    href={`${serverInfo.apiUrl}/catalog/bp/${builtWith[0].owner}/${builtWith[0].repo}/${builtWith[0].ref}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Book Package JSON
-                  </Link>
-                </Box>
+                {builtWith[0] && (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Link
+                      href={`${serverInfo.host}/${builtWith[0].owner}/${builtWith[0].repo}/raw/commit/${builtWith[0].commit}/manifest.yaml`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      See Resource&apos;s Metadata
+                    </Link>
+                    {' · '}
+                    <Link
+                      href={`${serverInfo.apiUrl}/catalog/bp/${builtWith[0].owner}/${builtWith[0].repo}/${builtWith[0].ref}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Book Package JSON
+                    </Link>
+                  </Box>
+                )}
                 <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                   <Link
                     href="https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/docs/USAGE.md"
@@ -1110,7 +1133,7 @@ export default function PreviewApp() {
 
         {loading && <LinearProgress />}
 
-        <Box sx={{ flexGrow: 1, position: 'relative', bgcolor: '#fafafa' }}>
+        <Box sx={{ flexGrow: 1, minHeight: '60vh', position: 'relative', bgcolor: '#fafafa' }}>
           {previewUrl ? (
             <iframe
               ref={iframeRef}
