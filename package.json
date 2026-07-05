@@ -20,15 +20,6 @@
     "docker:compose": "docker-compose up -d --build",
     "docker:compose:down": "docker-compose down"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "core-js",
-      "core-js-pure",
-      "es5-ext",
-      "esbuild"
-    ]
-  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1076.0",
     "@emotion/react": "^11.14.0",
