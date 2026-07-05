@@ -604,6 +604,9 @@ export default function PreviewApp() {
       setNoResults(false);
       setVersion(e.ref);
       setLatestRelease(e.latestRelease || '');
+      // Loaded a branch or an older tag -> we're working with dev versions; reveal
+      // the version picker + branch-only languages by checking the toggle.
+      if (e.ref && e.latestRelease && e.ref !== e.latestRelease) setShowDevVersions(true);
       const b = route.book || defaultBook(e);
       setBook(b);
       setPendingScroll(route.chapter ? { chapter: route.chapter, verse: route.verse } : null);
@@ -782,11 +785,6 @@ export default function PreviewApp() {
                   />
                 )}
               />
-              <FormControlLabel
-                sx={{ ml: 0 }}
-                control={<Checkbox size="small" checked={showDevVersions} onChange={(e) => setShowDevVersions(e.target.checked)} />}
-                label="Branches & older versions"
-              />
               <FormControl size="small" sx={{ minWidth: 190 }}>
                 <InputLabel>Subject</InputLabel>
                 <Select label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
@@ -819,6 +817,22 @@ export default function PreviewApp() {
                     renderInput={(params) => (
                       <TextField {...params} label={`Resource (${entries.length})`} placeholder="Select a resource…" />
                     )}
+                  />
+                  <FormControlLabel
+                    sx={{ ml: 0, mr: 0 }}
+                    control={
+                      <Checkbox
+                        size="small"
+                        sx={{ py: 0, px: 0.5 }}
+                        checked={showDevVersions}
+                        onChange={(e) => setShowDevVersions(e.target.checked)}
+                      />
+                    }
+                    label={
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        Branches &amp; older versions
+                      </Typography>
+                    }
                   />
                 </>
               )}
