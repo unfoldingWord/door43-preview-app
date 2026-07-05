@@ -10,6 +10,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { dbg } from '../utils/debug.js';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LaunchIcon from '@mui/icons-material/Launch';
 import {
   AppBar,
   Toolbar,
@@ -33,7 +34,6 @@ import {
   Collapse,
   IconButton,
   Card,
-  CardContent,
   Link,
   Alert,
   Stack,
@@ -82,25 +82,38 @@ function apiQuery(obj) {
 
 // --- URL helpers (hot-link routing) ---
 function parseRoute() {
-  const m = window.location.pathname.match(/^\/u\/([^/]+)\/([^/]+)(?:\/([^/]+))?\/?$/);
-  if (!m) return null;
   const q = new URLSearchParams(window.location.search);
-  let chapter = q.get('chapter') || '';
-  let verse = q.get('verse') || '';
-  const scriptureRef = q.get('ref'); // e.g. "4:2" (query ref = scripture, path = version)
-  if (scriptureRef && !chapter) {
-    const [c, v] = scriptureRef.split(':');
-    chapter = c || '';
-    verse = v || '';
+  const subject = q.get('subject') || '';
+  const segs = window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+
+  // Resource preview: /u/<owner>/<repo>(/<ref>)
+  if (segs[0] === 'u' && segs.length >= 3) {
+    let chapter = q.get('chapter') || '';
+    let verse = q.get('verse') || '';
+    const scriptureRef = q.get('ref'); // e.g. "4:2" (query ref = scripture, path = version)
+    if (scriptureRef && !chapter) {
+      const [c, v] = scriptureRef.split(':');
+      chapter = c || '';
+      verse = v || '';
+    }
+    return { type: 'resource', owner: segs[1], repo: segs[2], version: segs[3] || '', book: q.get('book') || '', chapter, verse };
   }
-  return {
-    owner: decodeURIComponent(m[1]),
-    repo: decodeURIComponent(m[2]),
-    version: m[3] ? decodeURIComponent(m[3]) : '',
-    book: q.get('book') || '',
-    chapter,
-    verse,
-  };
+
+  // Filter routes -> populate the search rather than load a resource:
+  //   /u/<owner>        -> owner=<owner>
+  //   /<lang>           -> lang=<lang>
+  //   /<lang>/<owner>   -> lang=<lang> & owner=<owner>
+  //   ?subject=… (at 0/1/2 levels) -> + subject=<subject>
+  let lang = '';
+  let owner = '';
+  if (segs[0] === 'u' && segs.length === 2) owner = segs[1];
+  else if (segs[0] !== 'u' && segs.length === 1) lang = segs[0];
+  else if (segs[0] !== 'u' && segs.length === 2) {
+    lang = segs[0];
+    owner = segs[1];
+  }
+  if (lang || owner || subject) return { type: 'filter', lang, owner, subject };
+  return null;
 }
 
 function urlFor({ owner, repo, version, book, chapter, verse }) {
@@ -283,7 +296,7 @@ export default function PreviewApp() {
   };
 
   // ---- data fetches ----
-  const search = async (l = lang, s = subject) => {
+  const search = async (l = lang, s = subject, o = '') => {
     stopPoll();
     setSearching(true);
     setError(null);
@@ -294,7 +307,13 @@ export default function PreviewApp() {
     setPreviewUrl('');
     setPdfJob(null);
     try {
-      const qs = apiQuery({ lang: (l || 'en').trim(), subject: s });
+      // Send only the filters we have — an owner-only route (/u/<owner>) searches all
+      // languages for that owner, so lang is omitted when empty.
+      const params = {};
+      if (l && l.trim()) params.lang = l.trim();
+      if (s) params.subject = s;
+      if (o) params.owner = o;
+      const qs = apiQuery(params);
       const r = await fetch(`/api/catalog/search?${qs.toString()}`, { signal: AbortSignal.timeout(30000) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || `catalog search failed (${r.status})`);
@@ -550,8 +569,12 @@ export default function PreviewApp() {
   useEffect(() => {
     const load = () => {
       const route = parseRoute();
-      if (route) directLoad(route);
-      else search('en', 'Aligned Bible');
+      if (route && route.type === 'resource') directLoad(route);
+      else if (route && route.type === 'filter') {
+        if (route.lang) setLang(route.lang);
+        if (route.subject) setSubject(route.subject);
+        search(route.lang, route.subject, route.owner);
+      } else search('en', 'Aligned Bible');
     };
     load();
     window.addEventListener('popstate', load);
@@ -824,28 +847,66 @@ export default function PreviewApp() {
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mt: 0.5 }}>
               {builtWith.map((m) => (
-                <Card key={m.key || m.repo} variant="outlined" sx={{ width: 250, borderColor: '#d0e0ec' }}>
-                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#231F20', lineHeight: 1.3 }}>
-                      {m.title}{' '}
-                      <Box component="span" sx={{ color: '#6b7a86', fontWeight: 400 }}>
-                        ({m.abbreviation})
-                      </Box>
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#014263', mt: 0.25 }}>
-                      {m.ref}
-                      {m.refType !== 'tag' && m.commit ? ` (${m.commit.slice(0, 8)})` : ''}
-                    </Typography>
-                    <Typography variant="caption" component="div" sx={{ color: '#5b6b76' }}>
-                      {m.languageTitle} ({m.language})
-                    </Typography>
-                    <Typography variant="caption" component="div" sx={{ color: '#5b6b76' }}>
-                      {m.owner} · {m.subject}
-                    </Typography>
-                    <Typography variant="caption" component="div" sx={{ color: '#8a97a1' }}>
+                <Card
+                  key={m.key || m.repo}
+                  variant="outlined"
+                  sx={{ width: 350, borderColor: '#d0e0ec', display: 'flex', flexDirection: 'column' }}
+                >
+                  {/* Top: title -> Preview, ref/commit -> DCS repo (+ launch icon) */}
+                  <Box sx={{ flex: 1, p: 1.5, textAlign: 'center' }}>
+                    <Link
+                      href={`/u/${m.owner}/${m.repo}/${m.ref}${book ? `?book=${encodeURIComponent(book)}` : ''}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{ fontSize: '0.9rem', fontWeight: 700, color: '#014263', textDecoration: 'none' }}
+                    >
+                      {m.title}
+                    </Link>{' '}
+                    <Box component="span" sx={{ color: '#6b7a86', fontSize: 13 }}>
+                      ({m.abbreviation})
+                    </Box>
+                    <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.25 }}>
+                      <Link
+                        href={`${serverInfo?.host || ''}/${m.owner}/${m.repo}/src/${m.refType === 'tag' ? 'tag' : 'branch'}/${m.ref}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ color: '#014263', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}
+                      >
+                        {m.ref}
+                        {m.refType !== 'tag' && m.commit ? ` (${m.commit.slice(0, 8)})` : ''}
+                      </Link>
+                      <Link
+                        href={`${serverInfo?.host || ''}/${m.owner}/${m.repo}/src/${m.refType === 'tag' ? 'tag' : 'branch'}/${m.ref}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="View on DCS"
+                        sx={{ display: 'inline-flex', color: '#5b6b76' }}
+                      >
+                        <LaunchIcon sx={{ fontSize: 14 }} />
+                      </Link>
+                    </Box>
+                  </Box>
+                  {/* Bottom: language / owner / subject filters, then updated/released */}
+                  <Box sx={{ flex: 1, px: 1.5, pb: 1.25, textAlign: 'center', fontSize: 12.5, color: '#5b6b76' }}>
+                    <Box>
+                      <Link href={`/${m.language}`} aria-label="Language" sx={{ color: 'inherit', fontWeight: 700, textDecoration: 'none' }}>
+                        {m.languageTitle} ({m.language})
+                      </Link>
+                    </Box>
+                    <Box>
+                      <Link href={`/u/${m.owner}`} aria-label="Owner" sx={{ color: 'inherit', fontWeight: 700, textDecoration: 'none' }}>
+                        {m.owner}
+                      </Link>
+                    </Box>
+                    <Box>
+                      <Link href={`/?subject=${encodeURIComponent(m.subject)}`} aria-label="Subject" sx={{ color: 'inherit', fontWeight: 700, textDecoration: 'none' }}>
+                        {m.subject}
+                      </Link>
+                    </Box>
+                    <Box sx={{ fontStyle: 'italic', mt: 0.25 }}>
                       {m.refType === 'tag' ? 'Released' : 'Updated'} {relativeTime(m.released)}
-                    </Typography>
-                  </CardContent>
+                    </Box>
+                  </Box>
                 </Card>
               ))}
             </Box>
@@ -893,7 +954,15 @@ export default function PreviewApp() {
                     Book Package JSON
                   </Link>
                 </Box>
-                <Box>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Link
+                    href="https://github.com/unfoldingWord-box3/door43-preview-app/blob/HEAD/docs/USAGE.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    User Guide
+                  </Link>
+                  <span>·</span>
                   <Link href="https://github.com/unfoldingWord-box3/door43-preview-app" target="_blank" rel="noopener noreferrer">
                     Repository
                   </Link>
