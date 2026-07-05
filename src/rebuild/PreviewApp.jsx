@@ -1140,7 +1140,7 @@ export default function PreviewApp() {
               title="preview"
               src={previewUrl}
               onLoad={() => setLoading(false)}
-              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: 'block' }}
             />
           ) : (
             <Box sx={{ p: 4, color: 'text.secondary' }}>
