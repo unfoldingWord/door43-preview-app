@@ -231,8 +231,27 @@ function VersionPicker({ owner, repo, value, latestRelease, onChange }) {
   );
 }
 
+// A few common gateway languages, shown instantly so the Language field is never
+// empty while the full published list loads from /api/languages.
+const PRELIST_LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'es-419', name: 'Latin American Spanish' },
+  { code: 'fr', name: 'French' },
+  { code: 'pt-br', name: 'Brazilian Portuguese' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'id', name: 'Indonesian' },
+  { code: 'sw', name: 'Swahili' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'bn', name: 'Bengali' },
+  { code: 'am', name: 'Amharic' },
+];
+
 export default function PreviewApp() {
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState(''); // '' -> placeholder; set from URL/resource/pick
+  const [languages, setLanguages] = useState([]); // published language list (from /api/languages)
+  const [loadingLangs, setLoadingLangs] = useState(false);
   const [subject, setSubject] = useState('Aligned Bible');
   const [searching, setSearching] = useState(false);
   const [entries, setEntries] = useState([]);
@@ -296,6 +315,27 @@ export default function PreviewApp() {
   };
 
   // ---- data fetches ----
+  // Published languages for the picker; stage=branch adds branch-only languages.
+  const fetchLanguages = async (dev) => {
+    setLoadingLangs(true);
+    try {
+      const r = await fetch(`/api/languages?${apiQuery(dev ? { stage: 'branch' } : {}).toString()}`);
+      const j = await r.json();
+      if (r.ok && Array.isArray(j.languages) && j.languages.length) setLanguages(j.languages);
+    } catch {
+      /* keep the pre-list */
+    } finally {
+      setLoadingLangs(false);
+    }
+  };
+
+  // Load languages on mount, and reload (with branch-only languages) when the
+  // "branches & older versions" toggle changes.
+  useEffect(() => {
+    fetchLanguages(showDevVersions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDevVersions]);
+
   const search = async (l = lang, s = subject, o = '') => {
     stopPoll();
     setSearching(true);
@@ -471,6 +511,14 @@ export default function PreviewApp() {
     return 'just now';
   };
 
+  // Language picker options (pre-list until the full list loads; always include the
+  // current code even if it's not in the list yet — e.g. from the URL or a resource).
+  const languageOptions = () => {
+    const base = languages.length ? languages : PRELIST_LANGUAGES;
+    return lang && !base.some((l) => l.code === lang) ? [{ code: lang, name: '' }, ...base] : base;
+  };
+  const languageValue = () => languageOptions().find((l) => l.code === lang) || null;
+
   const scrollToAnchor = (anchor) => {
     if (!anchor) return;
     const win = iframeRef.current && iframeRef.current.contentWindow;
@@ -574,7 +622,9 @@ export default function PreviewApp() {
         if (route.lang) setLang(route.lang);
         if (route.subject) setSubject(route.subject);
         search(route.lang, route.subject, route.owner);
-      } else search('en', 'Aligned Bible');
+      }
+      // else: bare landing — no auto-search (no default language); the user picks a
+      // language + subject and clicks Find. Languages load on mount regardless.
     };
     load();
     window.addEventListener('popstate', load);
@@ -699,7 +749,44 @@ export default function PreviewApp() {
           <Stack spacing={1.5}>
             {/* Row 1: find resources */}
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
-              <TextField label="Language" size="small" value={lang} onChange={(e) => setLang(e.target.value)} sx={{ width: 110 }} />
+              <Autocomplete
+                sx={{ width: 200 }}
+                size="small"
+                options={languageOptions()}
+                value={languageValue()}
+                loading={loadingLangs}
+                loadingText="Loading languages…"
+                onChange={(e, v) => setLang(v ? v.code : '')}
+                getOptionLabel={(o) => (o && o.code) || ''}
+                isOptionEqualToValue={(a, b) => a.code === b.code}
+                renderOption={(props, o) => (
+                  <li {...props} key={o.code}>
+                    {o.name ? `${o.name} (${o.code})` : o.code}
+                  </li>
+                )}
+                filterOptions={(opts, { inputValue }) => {
+                  const q = inputValue.trim().toLowerCase();
+                  if (!q) return opts;
+                  return opts.filter(
+                    (o) =>
+                      o.code.toLowerCase().includes(q) ||
+                      (o.name || '').toLowerCase().includes(q) ||
+                      (o.native || '').toLowerCase().includes(q)
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Language"
+                    placeholder={loadingLangs ? 'Loading languages…' : 'Language'}
+                  />
+                )}
+              />
+              <FormControlLabel
+                sx={{ ml: 0 }}
+                control={<Checkbox size="small" checked={showDevVersions} onChange={(e) => setShowDevVersions(e.target.checked)} />}
+                label="Branches & older versions"
+              />
               <FormControl size="small" sx={{ minWidth: 190 }}>
                 <InputLabel>Subject</InputLabel>
                 <Select label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
@@ -732,10 +819,6 @@ export default function PreviewApp() {
                     renderInput={(params) => (
                       <TextField {...params} label={`Resource (${entries.length})`} placeholder="Select a resource…" />
                     )}
-                  />
-                  <FormControlLabel
-                    control={<Checkbox size="small" checked={showDevVersions} onChange={(e) => setShowDevVersions(e.target.checked)} />}
-                    label="Branches & older versions"
                   />
                 </>
               )}

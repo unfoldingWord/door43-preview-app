@@ -15,7 +15,7 @@ import configRoute from './routes/config.js';
 import weasyprintHandler from './routes/weasyprint.js';
 import renderHtmlHandler, { renderHtmlJson } from './routes/render-html.js';
 import { renderPdfSync, enqueuePdf, pdfJobStatus } from './routes/render-pdf.js';
-import catalogSearch, { catalogTags, catalogBranches, catalogEntry } from './routes/catalog.js';
+import catalogSearch, { catalogTags, catalogBranches, catalogEntry, catalogLanguages } from './routes/catalog.js';
 import previewNav from './routes/nav.js';
 import previewStatus from './routes/preview-status.js';
 import warmHandler from './routes/warm.js';
@@ -52,6 +52,7 @@ app.get('/api/catalog/search', catalogSearch);
 app.get('/api/catalog/tags', catalogTags);
 app.get('/api/catalog/branches', catalogBranches);
 app.get('/api/catalog/entry', catalogEntry);
+app.get('/api/languages', catalogLanguages);
 
 // Render a resource to HTML via the shared renderers library (server-side).
 // The rebuild's core seam — descriptor in, HTML out.

@@ -71,6 +71,35 @@ export async function catalogBranches(req, res) {
   }
 }
 
+// GET /api/languages — languages for the search picker. Published only by default;
+// pass ?stage=branch to include languages that only have branches ("branches & older
+// versions"). Maps DCS's language records to { code, name, native, gateway, direction }.
+export async function catalogLanguages(req, res) {
+  const api = dcsApiUrlFromReq(req);
+  const params = new URLSearchParams();
+  if (req.query.stage) params.set('stage', req.query.stage);
+  const qs = params.toString();
+  try {
+    const r = await fetch(`${api}/catalog/list/languages${qs ? `?${qs}` : ''}`, {
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!r.ok) return res.status(502).json({ error: `languages failed (${r.status})` });
+    const data = await r.json();
+    const languages = (data.data || data || [])
+      .map((l) => ({
+        code: l.lc,
+        name: l.ang || l.ln || l.lc,
+        native: l.ln || '',
+        gateway: !!l.gw,
+        direction: l.ld || 'ltr',
+      }))
+      .filter((l) => l.code);
+    res.json({ languages });
+  } catch (e) {
+    res.status(502).json({ error: `languages failed: ${e.message}` });
+  }
+}
+
 export default async function catalogSearch(req, res) {
   const q = req.query || {};
   const api = dcsApiUrlFromReq(req);
