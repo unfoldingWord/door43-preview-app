@@ -870,7 +870,7 @@ export default function PreviewApp() {
                         href={`${serverInfo?.host || ''}/${m.owner}/${m.repo}/src/${m.refType === 'tag' ? 'tag' : 'branch'}/${m.ref}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        sx={{ color: '#014263', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}
+                        sx={{ fontSize: '1rem', color: '#014263', textDecoration: 'none', fontVariantNumeric: 'tabular-nums' }}
                       >
                         {m.ref}
                         {m.refType !== 'tag' && m.commit ? ` (${m.commit.slice(0, 8)})` : ''}
