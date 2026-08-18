@@ -25,6 +25,14 @@ import { log } from '../lib/log.js';
 const WEASYPRINT_SERVICE_URL =
   process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
 
+// How long to let the sidecar work on one document. The library defaults to 5 minutes,
+// which is under what the heaviest real resources need — en_tn Psalms is a 20MB PDF and
+// the whole-resource en_tq is 16MB. When it trips, the client aborts mid-response and the
+// sidecar dies on a broken pipe, surfacing here as an opaque "socket hang up".
+// Keep PREVIEW_JOB_LOCK_MS comfortably ABOVE this, or a slow render outlives its queue
+// lock and gets re-rendered as a stall.
+const PDF_TIMEOUT_MS = Number(process.env.PREVIEW_PDF_TIMEOUT_MS) || 45 * 60 * 1000;
+
 // Job priority (lower = sooner): interactive PDF requests jump ahead of warm/cron
 // jobs, and re-requesting a warm-queued PDF bumps it to interactive.
 const PRIORITY = { INTERACTIVE: 1, WARM: 10 };
@@ -134,6 +142,7 @@ async function renderAndCache(d, key) {
     pdfServiceUrl: WEASYPRINT_SERVICE_URL,
     pageSize: d.pageSize,
     columns: d.columns,
+    timeoutMs: PDF_TIMEOUT_MS,
   });
   await setCached(key, pdf, { ext: 'pdf' });
   log.info(`[pdf] rendered ${label} in ${Date.now() - t0}ms (${Math.round(pdf.length / 1024)}KB)`);
@@ -150,7 +159,16 @@ async function renderAndCache(d, key) {
 const pdfQueue = createJobQueue({
   name: 'preview-pdf',
   concurrency: Number(process.env.PREVIEW_JOB_CONCURRENCY) || 2,
-  processor: (data) => renderAndCache(data.descriptor, data.key),
+  // Return only a small summary, never the PDF. A processor's return value is
+  // serialized into the job record (Redis, for BullMQ), so handing back the bytes
+  // stored a second full copy of every render — 16-23MB for the big Translation Notes
+  // books. That grew Redis to ~3.6GB of an 8GB VM and starved the WeasyPrint sidecar,
+  // which then got OOM-killed mid-render. The bytes are already in the cache under
+  // `key`; callers read them from there.
+  processor: async (data) => {
+    const pdf = await renderAndCache(data.descriptor, data.key);
+    return { bytes: pdf.length };
+  },
 });
 
 // Programmatic enqueue-if-missing (used by cache warming). Takes a plain descriptor
