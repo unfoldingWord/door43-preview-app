@@ -193,6 +193,7 @@ Implementation: `server/lib/log.js` (`log.debug/info/warn/error`) and
 | `AWS_S3_BUCKET` / `AWS_REGION` / `AWS_S3_PREFIX` | — / `us-west-2` / `preview-cache` | S3 cache. Creds via env/role. |
 | `REDIS_URL` (or `REDIS_HOST`/`PORT`/`DB`) | — | Set → BullMQ queue; unset → in-process. |
 | `PREVIEW_JOB_CONCURRENCY` | `2` | Concurrent PDF renders. |
+| `PREVIEW_JOB_LOCK_MS` | `900000` | BullMQ lock held per PDF job. Must exceed the slowest render (see §14). |
 | `PREVIEW_WORKER` | on | `off` → this container doesn't process jobs (a dedicated worker does). |
 | `DEBUG_MODE` / `VERBOSE_MODE` | off | Verbose server logs (§8). |
 | `RUN_CRONS` | off | **Master switch** for all crons. |
@@ -230,8 +231,15 @@ Open http://localhost:5173. Defaults: DCS = **QA**, cache = **disk**, queue =
 **in-process**, crons **off**. Turn on verbose logs with `DEBUG_MODE=1 pnpm dev:server`
 and `?debug=1` in the browser. `pnpm cache:clean` clears the disk cache.
 
+The API port comes from `PORT` (default 3000) and Vite's `/api` proxy reads the same
+value, so moving the API off 3000 needs no config change beyond `.env`.
+
 To run the whole stack in containers instead: `docker compose up --build` (app on
-:3000, sidecar internal).
+:3000, sidecar internal). To publish the app on a different host port, set
+`APP_HOST_PORT` — the container always listens on 3000.
+
+For a **production-like local stack** (dedicated worker + Redis + crons) and for
+running against a **DCS on your own machine**, see §15.
 
 ---
 
@@ -325,4 +333,151 @@ itself (interactive priority), so a retry shortly after succeeds.
   logs `[warm-cron] every …` when active.
 - **`node: Cannot find package` after a crash/disk-full** — the pnpm link tree was
   damaged; `pnpm install` relinks it from the store.
+- **PDF stuck on "Rendering PDF…" forever, but the PDF is in the cache** — the BullMQ
+  lock expired mid-render. Look for `STALLED` or `Missing lock for job …` /
+  `could not renew lock` in the worker log. The render finishes and caches, but
+  `moveToFinished` fails without the lock, so the job never reports `completed` and the
+  client polls indefinitely — and the job is re-queued, so it renders a second time for
+  nothing. Raise `PREVIEW_JOB_LOCK_MS` above the slowest render (default is now 15 min;
+  BullMQ's own default of 30 s is far too low — whole-resource TSV PDFs take minutes).
+  Only affects the BullMQ backend; the in-process queue has no locks, which is why this
+  never appears in single-container dev.
 - **Want detail** — `DEBUG_MODE=1` (server) and `?debug=1` (client).
+
+---
+
+## 15. Local production-like stack + a local DCS
+
+Two things §10 doesn't cover: running the **production topology** (dedicated worker,
+Redis-backed queue, crons) on one machine, and pointing it at a **DCS running on that
+same machine** instead of QA/PROD. `docker-compose.local.yml` does both.
+
+### 15.1 The port swap
+
+A DCS dev instance owns **3000** (Gitea's default, and its `ROOT_URL`/clone URLs are
+built from it), so the **preview app moves to 3001** — the app is the cheaper thing to
+move.
+
+| Port | Service |
+|---|---|
+| 3000 | local DCS (Gitea) |
+| 3001 | preview app — `pnpm dev:server`, and the published container port |
+| 5173 | Vite dev server (proxies `/api` → `PORT`) |
+| 8080 | WeasyPrint sidecar (published by the local overlay) |
+
+The container itself still listens on 3000; only the published port changes
+(`APP_HOST_PORT`).
+
+### 15.2 Name the DCS `dcs-local`, not `localhost`
+
+Set `DCS_HOST=http://dcs-local:3000` and make that one name resolve everywhere:
+
+```bash
+# host (once) — so the BROWSER resolves it
+echo "127.0.0.1  dcs-local" | sudo tee -a /etc/hosts
+# containers — docker-compose.local.yml already does this:
+#   extra_hosts: ["dcs-local:host-gateway"]
+```
+
+This matters because **rendered pages embed absolute DCS URLs** ("Built with" links,
+TA diagrams, metadata links). The browser has to resolve the same host the renderer
+did. `localhost` breaks inside containers; `host.docker.internal` resolves only inside
+containers and leaves dead links in the page. One shared name avoids both.
+
+Make sure DCS listens on all interfaces (Gitea's default — don't set `HTTP_ADDR` to
+`127.0.0.1`), or `host-gateway` traffic from the containers won't reach it.
+
+### 15.3 Running it
+
+```bash
+# 0. Once: config for this machine.
+cp .env.local-dcs.example .env       # or merge its keys into your .env
+pnpm install
+
+# 1. Start the local DCS (from your DCS checkout).
+./gitea web                          # serves :3000
+
+# 2a. Containers — production topology: app (web) + worker (PDFs + crons) + redis
+#     + weasyprint.
+pnpm docker:local                    # up -d --build
+pnpm docker:local:logs               # follow
+pnpm docker:local:down               # stop
+
+# 2b. …or host dev against the same sidecar (faster edit loop, in-process queue):
+pnpm dev:server                      # :3001, reads PORT from .env
+pnpm dev                             # :5173, proxies /api -> :3001
+```
+
+Containers: open **http://localhost:3001**. Host dev: **http://localhost:5173**.
+
+### 15.4 What the overlay changes
+
+| | Base compose | With `docker-compose.local.yml` |
+|---|---|---|
+| Queue | in-process | **BullMQ on Redis** (persisted to `./redis-data`) |
+| PDF rendering | in the web container | **dedicated `worker`** (`PREVIEW_WORKER=on`); web sets `off` |
+| Crons | off | **`RUN_CRONS=1` on the worker only** — warming scheduled exactly once |
+| DCS | QA | `http://dcs-local:3000` |
+| App port | 3000 | 3001 (`APP_HOST_PORT`) |
+| Sidecar 8080 | internal (`expose`) | published, so host dev can share it |
+| Cache | disk or S3 per `.env` | **forced disk** — a local warm cron must never write a shared bucket |
+
+Warm settings are kept small (`WARM_SEARCH_LIMIT=10`, `WARM_MAX_ENQUEUE_PER_CYCLE=6`,
+`WARM_PAGE_SIZES=A4_PORTRAIT`); override any of them in `.env`.
+
+**`WARM_MAX_ENQUEUE_PER_CYCLE` is not a hard cap.** It's checked *between* resources,
+after `warmResource()` has already enqueued **all** of one resource's missing PDFs
+(`warm-cron.js:63`). One 66-book Bible therefore enqueues ~67 jobs in a single step
+regardless of a cap of 6 — the first cycle will build a real backlog. Interactive
+requests still cut ahead of it (priority 1 vs 10, §5), waiting only on renders already
+in flight. To keep local warming genuinely small, narrow *which* resources are warmed
+rather than the cap — e.g. `WARM_SEARCH_QUERY=subject=Open Bible Stories` — or leave
+`RUN_CRONS` off unless you're specifically exercising the cron.
+
+### 15.5 Verifying
+
+```bash
+curl -s localhost:3001/health
+# Catalog reaches the local DCS (should list local prod-stage releases):
+curl -s "localhost:3001/api/catalog/search?lang=en&subject=Aligned%20Bible" | head -c 400
+# Startup logs should show the local host, the BullMQ backend, and the cron:
+pnpm docker:local:logs | grep -E "DCS:|job-queue|warm-cron|preview-cache"
+```
+
+Expect `[job-queue] … BullMQ/Redis backend` in both containers, `[warm-cron] every …`
+in the **worker only**, and `DCS: http://dcs-local:3000`.
+
+Warming on demand (needs `WARM_TOKEN` from `.env`):
+
+```bash
+curl "localhost:3001/api/warm?owner=unfoldingWord&repo=en_ult&ref=v89&token=local-dev-warm-token"
+```
+
+### 15.6 Gotchas
+
+- **The local DCS must run MySQL, not SQLite.** DCS builds the catalog `book=` filter
+  from MySQL-only SQL — `JSON_SEARCH(...) ... COLLATE utf8mb4_general_ci`
+  (`models/catalog_list.go`, `models/door43metadata/search.go`). SQLite has no
+  `JSON_SEARCH`, so on a SQLite instance every `catalog/bp?book=…` and
+  `catalog/search?book=…` returns **500 `no such function: JSON_SEARCH`**. Since
+  `render-identity.js` always appends `?book=` when books are given, **per-book
+  previews fail outright** while whole-resource previews still work. This is upstream,
+  not an app bug — don't debug it here. No SQLite build tag changes it (`sqlite_json`
+  enables JSON1, which still has no `JSON_SEARCH`). Run MySQL 8 to match QA/PROD.
+- **The local catalog must have prod-stage entries.** The picker defaults to
+  `stage=prod` and the warm cron only searches `stage=prod`. A DCS with repos but no
+  releases in the catalog shows an empty picker — that's the data, not the app.
+- **Book packages need their dependencies present locally.** Previewing `en_tn` pulls
+  `en_ult`/`en_ust`/`el-x-koine_ugnt`/`hbo_uhb`/`en_ta`/`en_tw`; if any is missing from
+  the local DCS the render fails on that resource. Mirror the whole set.
+- **Cache is namespaced by DCS host**, so local renders land under
+  `htmldata/dcs-local:3000/…` and never mix with QA/PROD entries. The `:` in that
+  directory name is fine on APFS/ext4 and as an S3 key.
+- **DCS's Preview/PDF buttons** link to `<DOOR43_PREVIEW_URL>/u/<owner>/<repo>/<ref>`
+  — set `DOOR43_PREVIEW_URL = http://localhost:3001` in your DCS `app.ini` `[dcs]`
+  section (note the exact key; `DCS_PREVIEW_URL` is silently ignored and falls back to
+  production). Restart DCS after changing it. Those templates only append `?server=`
+  for the qa/develop hostnames, so a local DCS sends none — which is why the local app
+  needs `DCS_HOST` pointed at it by default.
+- **Editing content and want the change to show fast?** Branch staleness lags by
+  `REF_SHA_TTL_MS` (15 s); set it to ~3000 locally.
