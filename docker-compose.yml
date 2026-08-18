@@ -21,7 +21,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      # Container always listens on 3000; only the published host port varies, so a
+      # host that already runs something on 3000 (e.g. a local DCS) can set
+      # APP_HOST_PORT. Default is unchanged: 3000.
+      - "${APP_HOST_PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000

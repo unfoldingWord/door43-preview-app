@@ -1,0 +1,141 @@
+# door43-preview-app — production-like LOCAL stack, reading a DCS on this machine.
+#
+# Layer it on the base compose (order matters — this file overrides):
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#   (or: pnpm docker:local / docker:local:logs / docker:local:down)
+#
+# Topology — mirrors the production layout in docs/OPERATIONS.md §12, which the base
+# compose alone does not (it runs one all-in-one container with redis commented out):
+#
+#   ┌─────────┐        ┌──────────────────┐   BullMQ    ┌─────────┐
+#   │ browser │ ─────▶ │ app  (web only)  │ ──────────▶ │  redis  │
+#   └─────────┘  :3001 │ PREVIEW_WORKER=  │             └────┬────┘
+#        │             │       off        │                  │ jobs
+#        │             └──────────────────┘                  ▼
+#        │                                        ┌────────────────────────┐
+#        │                                        │ worker                 │
+#        │                                        │ PREVIEW_WORKER=on      │
+#        │                                        │ RUN_CRONS=1 (warm cron)│
+#        │                                        └───────┬────────────────┘
+#        │                                                │ POST text/html
+#        │                                                ▼
+#        │  reads DCS directly                    ┌──────────────┐
+#        └──────────┐                             │  weasyprint  │ (base file)
+#                   ▼                             └──────────────┘
+#          http://dcs-local:3000  ← the native DCS dev instance on the HOST
+#
+# Why `dcs-local` and not `host.docker.internal`: rendered pages embed ABSOLUTE DCS
+# URLs ("Built with" links, TA diagrams), so the browser has to resolve the same name
+# the containers do. `dcs-local` resolves in containers via extra_hosts/host-gateway
+# and on the host via /etc/hosts (127.0.0.1 dcs-local). `host.docker.internal` would
+# only work inside the containers and produce dead links in the page.
+#
+# Prerequisites:
+#   1. Docker Desktop (or OrbStack) running.
+#   2. The local DCS listening on host port 3000 — from ~/repos/dcs: ./gitea web
+#   3. /etc/hosts contains: 127.0.0.1  dcs-local          (already present)
+#   4. cp .env.local-dcs.example .env   (or merge its keys into your existing .env)
+#
+# Prereqs 2–4 apply only when reading the LOCAL DCS. To run this same prod-like
+# topology against a real DCS, set DCS_HOST in .env (e.g. https://git.door43.org) and
+# skip them — no gitea/mysql needed, and APP_HOST_PORT can go back to 3000.
+#
+# Cache is forced to DISK here so a local warm cron can never write into the shared
+# S3 bucket named in .env. Both containers mount the same ./cached-files, which is
+# how they share a cache the way app+worker share S3 in production.
+services:
+  app:
+    environment:
+      # Which DCS to read. Defaults to the one running on this machine (see the note
+      # above about the hostname); set DCS_HOST in .env to point the same prod-like
+      # stack at a real DCS instead, e.g. DCS_HOST=https://git.door43.org.
+      - DCS_HOST=${DCS_HOST:-http://dcs-local:3000}
+      # BullMQ instead of the in-process queue — the production arrangement.
+      - REDIS_URL=redis://redis:6379
+      # Web only: enqueue PDF jobs, never render them. The worker does that.
+      - PREVIEW_WORKER=off
+      # Crons run on exactly ONE container (the worker). .env may set RUN_CRONS=1
+      # globally; blank it here so warming isn't scheduled twice.
+      - RUN_CRONS=
+      # Never let a local run write to the shared S3 bucket.
+      - PREVIEW_CACHE_BACKEND=disk
+      - DEBUG_MODE=1
+    extra_hosts:
+      - "dcs-local:host-gateway"
+    depends_on:
+      - redis
+
+  # Dedicated PDF renderer + the only container that runs crons. Same image and
+  # cache volume as `app`; no published ports (it serves no traffic).
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CACHE_DIR=/app/cached-files
+      - WEASYPRINT_SERVICE_URL=http://weasyprint:8080
+      - DCS_HOST=${DCS_HOST:-http://dcs-local:3000}
+      - REDIS_URL=redis://redis:6379
+      - PREVIEW_CACHE_BACKEND=disk
+      - DEBUG_MODE=1
+      # This container processes the queue.
+      - PREVIEW_WORKER=on
+      - PREVIEW_JOB_CONCURRENCY=${PREVIEW_JOB_CONCURRENCY:-2}
+      # Crons: master switch + the warming schedule.
+      #
+      # Heads up on WARM_MAX_ENQUEUE_PER_CYCLE: it is checked BETWEEN resources,
+      # after warmResource() has already queued ALL of one resource's missing PDFs
+      # (warm-cron.js:63). So a single big Bible (66 books + whole) enqueues ~67 jobs
+      # in one step and blows past a cap of 6 — expect a long backlog on the first
+      # cycle. Interactive PDFs still cut ahead (priority 1 vs 10); they wait only for
+      # renders already in flight. To keep it genuinely small locally, narrow WHICH
+      # resources get warmed rather than the cap, e.g.:
+      #   - WARM_SEARCH_QUERY=subject=Open Bible Stories
+      # Or drop RUN_CRONS when you aren't specifically exercising the cron.
+      # Note the `-` (not `:-`): setting RUN_CRONS_WORKER= empty in .env turns crons OFF,
+      # which is what you want while a bulk release-asset render owns the queue.
+      - RUN_CRONS=${RUN_CRONS_WORKER-1}
+      - WARM_INTERVAL_MS=${WARM_INTERVAL_MS:-900000}
+      # Blank = warm whatever DCS_HOST above points at (warm-cron.js falls back to the
+      # app default when WARM_DCS_HOST is unset). Set it only to warm a DIFFERENT host.
+      - WARM_DCS_HOST=${WARM_DCS_HOST:-}
+      - WARM_SEARCH_LIMIT=${WARM_SEARCH_LIMIT:-10}
+      - WARM_MAX_ENQUEUE_PER_CYCLE=${WARM_MAX_ENQUEUE_PER_CYCLE:-6}
+      - WARM_FIRST_DELAY_MS=${WARM_FIRST_DELAY_MS:-30000}
+      - WARM_PAGE_SIZES=${WARM_PAGE_SIZES:-A4_PORTRAIT}
+      - PREVIEW_VERIFICATION_KEY=${PREVIEW_VERIFICATION_KEY}
+      - DCS_READ_ONLY_TOKEN=${DCS_READ_ONLY_TOKEN}
+    env_file:
+      - .env
+    volumes:
+      - ./cached-files:/app/cached-files
+    extra_hosts:
+      - "dcs-local:host-gateway"
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - weasyprint
+
+  weasyprint:
+    # The base file only `expose`s 8080 (internal). Publish it locally so host dev
+    # (`pnpm dev:server` with WEASYPRINT_SERVICE_URL=http://localhost:8080) can share
+    # this same sidecar instead of needing a second one.
+    ports:
+      - "${WEASYPRINT_HOST_PORT:-8080}:8080"
+
+  # Queue backing store. Persisted to ./redis-data so a restart doesn't drop queued
+  # jobs — the property production relies on.
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - ./redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
