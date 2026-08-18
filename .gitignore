@@ -38,6 +38,7 @@ temp/*
 .venv
 venv
 cached-files/u
+cached-files/preview/
 
 # local preview cache (disk backend)
 cache/
