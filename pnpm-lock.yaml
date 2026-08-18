@@ -42,8 +42,8 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3
       '@unfoldingword/door43-preview-renderers':
-        specifier: ^1.5.2
-        version: 1.5.2(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^1.5.4
+        version: 1.5.4(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vivliostyle/react':
         specifier: ^2.42.1
         version: 2.42.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1992,8 +1992,8 @@ packages:
   '@types/yargs@11.1.8':
     resolution: {integrity: sha512-49Pmk3GBUOrs/ZKJodGMJeEeiulv2VdfAYpGgkTCSXpNWx7KCX36+PbrkItwzrjTDHO2QoEZDpbhFoMN1lxe9A==}
 
-  '@unfoldingword/door43-preview-renderers@1.5.2':
-    resolution: {integrity: sha512-wPw5RLAg0sPDdvgJBTalQXC6PUo5TrVycgVkUBSggdbLsoVbuPAJ2elyupzjF5b1cfAxWLWwYzZeHRkJPqRCiw==}
+  '@unfoldingword/door43-preview-renderers@1.5.4':
+    resolution: {integrity: sha512-TdF+LAAfNWiT+r1eped7Qy1S4NM2TTIqzzqKH7deWVBmmuS75CsdpWwLdZzdfzYk/HNizZG+ryJms6kD4waKWw==}
     engines: {node: '>=16.0.0', pnpm: '>=8.0.0'}
     hasBin: true
     peerDependencies:
@@ -2487,6 +2487,7 @@ packages:
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
+    deprecated: v4 is no longer maintained, upgrade to v5
 
   cross-spawn@6.0.6:
     resolution: {integrity: sha512-VqCUuhcd1iB+dsv8gxPttb5iZh/D0iubSP21g36KXdEuf6I5JiioesUVjpCdHV9MZRUfVFlvwtIUyPfxo5trtw==}
@@ -4499,8 +4500,8 @@ packages:
     peerDependencies:
       string-punctuation-tokenizer: ^2.0.0
 
-  tsv-quote-converters@1.1.21:
-    resolution: {integrity: sha512-gxBJvzgJh7rLtTSdFwx2BXKx5pm1esubMSm90o8ZCL+bN+cvHOhLjiZ04fgSrrZ1lbz1Cbso9wWQRRzD45r99w==}
+  tsv-quote-converters@1.1.22:
+    resolution: {integrity: sha512-5HRXbiFMiAg31TybsXrUoU+h11OWyHFsAQmNFjSEJGcalRDO6JS7BZA/PjN4F1cQ1Pp+lEMdkqLj47NBhkHcgw==}
 
   tsvtojson@1.0.1:
     resolution: {integrity: sha512-tcmQHJvwroh4EqkDoUan1UsYo0S5lTLjVc865zYxZ+hwfkDBr0Ljnqr4CywNqgsoS8313zoZ938uHyQEdBHY6A==}
@@ -6837,7 +6838,7 @@ snapshots:
 
   '@types/yargs@11.1.8': {}
 
-  '@unfoldingword/door43-preview-renderers@1.5.2(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@unfoldingword/door43-preview-renderers@1.5.4(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       axios: 1.16.1
       js-yaml: 4.1.1
@@ -6847,7 +6848,7 @@ snapshots:
       proskomma-json-tools: 0.8.12
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      tsv-quote-converters: 1.1.21(@babel/core@7.28.5)
+      tsv-quote-converters: 1.1.22(@babel/core@7.28.5)
       usfm-alignment-remover: 0.1.6
       usfm-js: 3.4.3
     transitivePeerDependencies:
@@ -9953,7 +9954,7 @@ snapshots:
       tsvtojson: 1.0.1
       uw-tsv-parser: 1.0.3
 
-  tsv-quote-converters@1.1.21(@babel/core@7.28.5):
+  tsv-quote-converters@1.1.22(@babel/core@7.28.5):
     dependencies:
       axios: 1.16.1
       buffer: 6.0.3

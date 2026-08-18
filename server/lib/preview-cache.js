@@ -12,9 +12,14 @@ import * as disk from './cache-disk.js';
 import * as s3 from './cache-s3.js';
 import { log } from './log.js';
 
-// Bump on renderer-output changes. r2: door43-preview-renderers 1.5.2 anchors
-// Psalm superscriptions (-front).
-export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r2';
+// Bump on renderer-output changes.
+//   r2: door43-preview-renderers 1.5.2 anchors Psalm superscriptions (-front).
+//   r3: 1.5.3 moves to tsv-quote-converters 1.1.22 — GL quote conversion output
+//       changes, so every TSV render (Notes/Questions/Words Links) differs.
+//   r4: 1.5.4 repairs two corrupt embedded cover logos (uta/utw). The cache key is
+//       content-derived and does not include the library version, so without this
+//       bump an existing cache keeps serving the broken-logo renders.
+export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r4';
 
 // Backend: PREVIEW_CACHE_BACKEND=disk|s3 forces it; otherwise S3 when AWS_S3_BUCKET
 // is set, else disk. Use disk for local dev — reading cached objects from S3 over a

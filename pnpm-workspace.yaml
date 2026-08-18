@@ -10,3 +10,4 @@ allowBuilds:
 # deps). Matched by package-name pattern, not name@version.
 minimumReleaseAgeExclude:
   - '@unfoldingword/door43-preview-renderers'
+  - tsv-quote-converters@1.1.22
