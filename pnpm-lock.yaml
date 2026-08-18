@@ -42,8 +42,8 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3
       '@unfoldingword/door43-preview-renderers':
-        specifier: ^1.5.4
-        version: 1.5.4(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^1.5.5
+        version: 1.5.5(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@vivliostyle/react':
         specifier: ^2.42.1
         version: 2.42.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1992,8 +1992,8 @@ packages:
   '@types/yargs@11.1.8':
     resolution: {integrity: sha512-49Pmk3GBUOrs/ZKJodGMJeEeiulv2VdfAYpGgkTCSXpNWx7KCX36+PbrkItwzrjTDHO2QoEZDpbhFoMN1lxe9A==}
 
-  '@unfoldingword/door43-preview-renderers@1.5.4':
-    resolution: {integrity: sha512-TdF+LAAfNWiT+r1eped7Qy1S4NM2TTIqzzqKH7deWVBmmuS75CsdpWwLdZzdfzYk/HNizZG+ryJms6kD4waKWw==}
+  '@unfoldingword/door43-preview-renderers@1.5.5':
+    resolution: {integrity: sha512-2Qb7osXCY5hX0SpAcZ50JvqyaV6QMUN1Gq7fvM9i2odNKiiPVTirCFMCkUMhwXARPXfauV04AfI5v0a+C3CqmQ==}
     engines: {node: '>=16.0.0', pnpm: '>=8.0.0'}
     hasBin: true
     peerDependencies:
@@ -6838,7 +6838,7 @@ snapshots:
 
   '@types/yargs@11.1.8': {}
 
-  '@unfoldingword/door43-preview-renderers@1.5.4(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@unfoldingword/door43-preview-renderers@1.5.5(@babel/core@7.28.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       axios: 1.16.1
       js-yaml: 4.1.1

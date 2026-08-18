@@ -19,7 +19,8 @@ import { log } from './log.js';
 //   r4: 1.5.4 repairs two corrupt embedded cover logos (uta/utw). The cache key is
 //       content-derived and does not include the library version, so without this
 //       bump an existing cache keeps serving the broken-logo renders.
-export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r4';
+//   r5: 1.5.5 changes rendered output again (header hierarchy, OBS frames in notes).
+export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r5';
 
 // Backend: PREVIEW_CACHE_BACKEND=disk|s3 forces it; otherwise S3 when AWS_S3_BUCKET
 // is set, else disk. Use disk for local dev — reading cached objects from S3 over a
