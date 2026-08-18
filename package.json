@@ -11,14 +11,18 @@
     "dev": "vite",
     "dev:server": "node server/index.js",
     "cache:clean": "node scripts/clean-cache.mjs",
+    "release:assets": "node scripts/publish-release-assets.mjs",
     "build": "vite build",
     "start": "NODE_ENV=production node server/index.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview",
     "docker:build": "docker build -t door43-preview-app .",
     "docker:run": "docker run -p 3000:3000 -e PORT=3000 --env-file .env door43-preview-app",
-    "docker:compose": "docker-compose up -d --build",
-    "docker:compose:down": "docker-compose down"
+    "docker:compose": "docker compose up -d --build",
+    "docker:compose:down": "docker compose down",
+    "docker:local": "docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build",
+    "docker:local:logs": "docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f",
+    "docker:local:down": "docker compose -f docker-compose.yml -f docker-compose.local.yml down"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1076.0",
