@@ -12,9 +12,19 @@ FROM cgr.dev/chainguard/python:latest-dev
 
 USER root
 
-# Native deps for WeasyPrint + a base font. cairo / glib / harfbuzz come in as
+# Native deps for WeasyPrint + fonts. cairo / glib / harfbuzz come in as
 # transitive deps of pango / gdk-pixbuf.
+#
+# Fonts matter here: the renderers' print CSS sets no font-family, so glyph choice is
+# whatever fontconfig can find. DejaVu (the base font) has Hebrew consonants and vowel
+# points but ZERO of the 31 cantillation marks in U+0591-05AF, and the Hebrew Bible
+# carries an accent on nearly every word — so UHB rendered one tofu box per word.
+# font-noto-hebrew supplies Noto Serif/Sans Hebrew (31/31 cantillation, 14/14 niqqud,
+# 27/27 consonants); culmus adds Shofar/SimpleCLM as a second complete family. Greek
+# (UGNT) rides on DejaVu, which already covers polytonic.
 RUN apk add --no-cache pango gdk-pixbuf fontconfig ttf-dejavu \
+      font-noto-hebrew culmus \
+ && fc-cache -f \
  && python -m venv /venv
 
 # OBS story images, baked into their own layer so WeasyPrint renders OBS PDFs

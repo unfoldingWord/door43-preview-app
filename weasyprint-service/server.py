@@ -69,10 +69,16 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(data)
 
     def do_GET(self):
-        if self.path in ("/health", "/"):
-            self._send(200, "ok")
-        else:
-            self._send(404, "not found")
+        # Guarded like do_POST: while a big document is rendering this process is
+        # GIL-bound and slow to answer, so the healthcheck client hits its own timeout
+        # and hangs up mid-reply. That is routine, not an error worth a traceback.
+        try:
+            if self.path in ("/health", "/"):
+                self._send(200, "ok")
+            else:
+                self._send(404, "not found")
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", "0") or "0")
@@ -87,7 +93,19 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001 - report any render failure to the caller
             return self._send(500, f"weasyprint failed: {exc}")
 
-        self._send(200, pdf, "application/pdf")
+        # Sending has to be guarded too, not just the render. A big document can outlive
+        # the caller's timeout; by the time the PDF is ready the client may be gone, and
+        # an unguarded write raises BrokenPipeError out of the handler. Swallow it here so
+        # one abandoned request stays one lost render instead of taking down the process
+        # (and every other render in flight on this threaded server) with it.
+        try:
+            self._send(200, pdf, "application/pdf")
+        except (BrokenPipeError, ConnectionResetError):
+            print(
+                f"client disconnected before the {len(pdf)}-byte PDF could be sent "
+                "(render completed; caller likely timed out)",
+                flush=True,
+            )
 
     def log_message(self, *args):  # quieter default logging
         pass
