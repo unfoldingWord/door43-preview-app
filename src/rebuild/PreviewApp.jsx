@@ -679,7 +679,10 @@ export default function PreviewApp() {
     stopStatusPoll();
     setStale(false);
     setError(null);
-    setPreviewUrl('');
+    // Deliberately DON'T clear previewUrl: a PDF can take minutes, and blanking the
+    // iframe would drop the reader to the "pick a resource" empty state for the whole
+    // render. The web view stays mounted and navigable (book/chapter/verse controls are
+    // not gated on pdfJob) until the finished PDF replaces it in showPdf().
     const descriptor = { owner: entry.owner, repo: entry.repo, ref: version, pageSize: 'A4_PORTRAIT' };
     if (book) descriptor.books = book;
     const srv = currentServerParam();
@@ -1116,6 +1119,13 @@ export default function PreviewApp() {
               <Typography variant="body2" sx={{ color: '#014263' }}>
                 {jobLabel(pdfJob)}
               </Typography>
+              {/* The web view below stays live during the render — say so, since the
+                  banner otherwise reads as "the page is busy, wait". */}
+              {previewUrl && (
+                <Typography variant="body2" sx={{ color: '#4b7d99' }}>
+                  · keep reading below; the PDF opens here when it&apos;s ready
+                </Typography>
+              )}
             </Stack>
           </Box>
         )}
@@ -1142,6 +1152,15 @@ export default function PreviewApp() {
               onLoad={() => setLoading(false)}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: 'block' }}
             />
+          ) : pdfJob ? (
+            // No web view to keep (PDF started before anything was rendered) — don't
+            // show the "pick a resource" copy, which reads as though nothing is running.
+            <Box sx={{ p: 4, color: 'text.secondary' }}>
+              <Typography>
+                Building your PDF — it will open here when it&apos;s ready. Large resources can take a few minutes
+                the first time; afterwards it&apos;s served from the cache instantly.
+              </Typography>
+            </Box>
           ) : (
             <Box sx={{ p: 4, color: 'text.secondary' }}>
               <Typography>
