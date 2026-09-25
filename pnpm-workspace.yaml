@@ -4,3 +4,5 @@ allowBuilds:
   core-js-pure: true
   es5-ext: true
   esbuild: true
+minimumReleaseAgeExclude:
+  - uw-quote-helpers@1.1.10
