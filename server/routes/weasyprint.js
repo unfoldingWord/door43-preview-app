@@ -8,6 +8,13 @@
 
 const SERVICE_URL = process.env.WEASYPRINT_SERVICE_URL || 'http://localhost:8080';
 
+// A full-book render (e.g. Romans TN) is synchronous and can take minutes.
+// Bound the upstream request explicitly: Node's global fetch (undici) defaults to
+// a ~300s headers timeout, which a 5-minute render sits right on the edge of. Give
+// a generous, configurable ceiling so long renders complete, while a genuinely
+// hung renderer still fails cleanly instead of hanging forever.
+const TIMEOUT_MS = Number(process.env.WEASYPRINT_TIMEOUT_MS) || 360000;
+
 export default async function weasyprint(req, res) {
   const html = typeof req.body === 'string' ? req.body : '';
   if (!html.trim()) {
@@ -21,6 +28,7 @@ export default async function weasyprint(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'text/html' },
       body: html,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
     if (!upstream.ok) {
@@ -36,8 +44,13 @@ export default async function weasyprint(req, res) {
     res.setHeader('Content-Length', pdf.length);
     res.end(pdf);
   } catch (e) {
+    const timedOut = e?.name === 'TimeoutError' || e?.name === 'AbortError';
     res
-      .status(502)
-      .json({ error: `weasyprint service unreachable at ${SERVICE_URL}: ${e.message}` });
+      .status(timedOut ? 504 : 502)
+      .json({
+        error: timedOut
+          ? `weasyprint service timed out after ${TIMEOUT_MS}ms rendering the PDF.`
+          : `weasyprint service unreachable at ${SERVICE_URL}: ${e.message}`,
+      });
   }
 }
