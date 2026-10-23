@@ -140,7 +140,7 @@ async function renderAndCache(d, key) {
   });
   const pdf = await renderPdf(htmlData, {
     pdfServiceUrl: WEASYPRINT_SERVICE_URL,
-    pageSize: d.pageSize,
+    print: { pageSize: d.pageSize },
     columns: d.columns,
     timeoutMs: PDF_TIMEOUT_MS,
   });

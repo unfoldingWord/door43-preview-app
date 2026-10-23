@@ -28,9 +28,10 @@ function descriptorFrom(req) {
   return { owner: src.owner, repo: src.repo, ref: src.ref || '', books: parseBooks(src.books), src };
 }
 
-// Build renderHTML() options from the request (applied to cached htmlData).
+// Build renderHTML() options from the request (applied to cached htmlData). The
+// request says "web" or "print"; the library's names are 'screen' and 'print'.
 function composeOptions(src) {
-  const opts = { media: src.media === 'print' ? 'print' : 'web' };
+  const opts = { media: src.media === 'print' ? 'print' : 'screen' };
   if (src.columns) opts.columns = Number(src.columns);
   return opts;
 }

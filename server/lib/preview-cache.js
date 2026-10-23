@@ -20,7 +20,10 @@ import { log } from './log.js';
 //       content-derived and does not include the library version, so without this
 //       bump an existing cache keeps serving the broken-logo renders.
 //   r5: 1.5.5 changes rendered output again (header hierarchy, OBS frames in notes).
-export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r5';
+//   r6: 2.0.0 (via 1.6.0 and 1.7.0): <html lang dir> from the resource, every quote
+//       in <bdi>, GL quotes computed in the library, Translation Words Links and
+//       OBS Words Links rendered, print layout fixes.
+export const CACHE_VERSION = process.env.PREVIEW_CACHE_VERSION || 'r6';
 
 // Backend: PREVIEW_CACHE_BACKEND=disk|s3 forces it; otherwise S3 when AWS_S3_BUCKET
 // is set, else disk. Use disk for local dev — reading cached objects from S3 over a

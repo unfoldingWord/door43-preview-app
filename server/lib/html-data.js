@@ -17,6 +17,9 @@ import { getCached, setCached, CACHE_VERSION } from './preview-cache.js';
 import { resolveDcsHost, dcsApiUrl, dcsHostLabel } from './dcs-host.js';
 import { log } from './log.js';
 
+// The library's logger: progress (info) is debug-level here, warnings stay warnings.
+const libraryLogger = { info: (...a) => log.debug(...a), warn: (...a) => log.warn(...a) };
+
 // Default DCS host when no per-request host is threaded in (env / QA default).
 const DEFAULT_API = dcsApiUrl(resolveDcsHost({}));
 
@@ -42,9 +45,12 @@ const inflightRenders = new Map();
 function renderFor({ owner, repo, version, sha, manifest, books, key, api }) {
   if (inflightRenders.has(key)) return inflightRenders.get(key);
   const p = (async () => {
+    // getResourceData throws a ResourceError (code, status, url) on any failure.
+    // Its warnings (e.g. a GL quote that could not be matched) go to our log;
+    // its progress lines (each URL fetched) only with DEBUG_MODE.
     const resourceData = await getResourceData(
       { owner, repo, ref: version, books },
-      { dcs_api_url: api, quiet: true }
+      { dcsApiUrl: api, logger: libraryLogger }
     );
     const htmlData = renderHtmlData(resourceData, { books });
     // Store the manifest alongside the render so a later request can show what this

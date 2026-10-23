@@ -11,13 +11,15 @@
 // Gathering (per resolution; TTL-cached like ref->sha, so HITs pay nothing):
 //   1. GET /catalog/bp/<owner>/<repo>/<ref>?book=<book> — entries + commit_sha +
 //      ingredient paths. The book param selects the right Bible (Greek vs Hebrew).
-//   2. Filter to the subjects the main resource needs (library's requiredSubjectsMap)
-//      + at most two Aligned Bibles (ult/glt + ust/gst).
+//   2. Filter to the entries the render uses, with the library's own rules
+//      (filterCatalogEntries: the main subject's required subjects, at most two
+//      Aligned Bibles, and no original-language Bible of a testament the books
+//      don't touch), so the identity covers exactly what getResourceData fetches.
 //   3. For each book-file repo: git/trees/<commit_sha> (immutable per commit ->
 //      cached forever) to read the book file's blob sha.
 //   4. composite = sha256(sorted per-resource contributions).
 import { createHash } from 'crypto';
-import { requiredSubjectsMap } from '@unfoldingword/door43-preview-renderers';
+import { filterCatalogEntries } from '@unfoldingword/door43-preview-renderers';
 import { resolveVersion } from './versions.js';
 
 const enc = (s) => encodeURIComponent(s);
@@ -46,36 +48,6 @@ function ttlFor(requestedRef) {
 }
 
 const normPath = (p) => String(p || '').replace(/^\.?\//, '');
-
-// --- filtered rendered set (mirrors the library's getFilteredCatalogEntries) ---
-function selectAlignedBibles(entries) {
-  if (entries.length <= 2) return entries;
-  const literal = entries.find((e) => ['ult', 'glt'].includes(e.abbreviation));
-  const simplified = entries.find((e) => ['ust', 'gst'].includes(e.abbreviation));
-  if (literal && simplified) return [literal, simplified];
-  if (literal) return [literal, entries.find((e) => e !== literal) || literal];
-  if (simplified) return [entries.find((e) => e !== simplified) || simplified, simplified];
-  return entries.slice(0, 2);
-}
-
-function selectEntries(catalogEntries) {
-  const main = catalogEntries[0];
-  if (!main) return [];
-  const required = requiredSubjectsMap[main.subject];
-  // No required subjects -> standalone render (Bible, Aligned Bible, TW, TA, OBS…):
-  // the library's handlers use only the main entry, so its identity is just itself.
-  if (!required || required.length === 0) return [main];
-  const bibles = [];
-  const others = [];
-  for (let i = 1; i < catalogEntries.length; i++) {
-    const e = catalogEntries[i];
-    if (!required.includes(e.subject)) continue;
-    if (e.subject === 'Aligned Bible') bibles.push(e);
-    else others.push(e);
-  }
-  const selBibles = required.includes('Aligned Bible') ? selectAlignedBibles(bibles) : [];
-  return [main, ...selBibles, ...others];
-}
 
 // --- blueprint fetch (with the book param, so the right Bible is chosen) ---
 const DEFAULT_API = 'https://qa.door43.org/api/v1';
@@ -219,7 +191,7 @@ export async function resolveRenderIdentity({ owner, repo, ref = '', books = [],
   if (!version) version = (await resolveVersion(owner, repo, '', api)).ref;
 
   const allEntries = await fetchBlueprint(owner, repo, version, bookList, api);
-  const entries = selectEntries(allEntries);
+  const entries = filterCatalogEntries(allEntries, { books: bookList });
   const { composite, manifest } = await computeIdentity(entries, bookList, api);
 
   const value = { version, composite, manifest };

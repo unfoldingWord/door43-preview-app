@@ -27,7 +27,7 @@ function navKey({ host, owner, repo, version, book }) {
 
 // Build the chapter/verse tree by scanning the rendered HTML's anchor ids.
 function buildNavTree(htmlData, book) {
-  const html = renderHTML(htmlData, { media: 'web' });
+  const html = renderHTML(htmlData, { media: 'screen' });
 
   // Element ids only (scroll targets), not href cross-references.
   const re = new RegExp(`\\bid=["']([a-z0-9]+)-${escapeRegex(book)}-([^"']+)["']`, 'gi');
