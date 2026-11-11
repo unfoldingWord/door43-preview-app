@@ -31,8 +31,8 @@ import { AppContext } from '@components/App.context';
 
 const webCss = `
 pre {
-    font-family: inherit;
-    font-size: inherit;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.85em;
     padding-left: 2rem;
     background-color: #f8f8f8;
     border-radius: 4px;
@@ -1280,10 +1280,17 @@ ${convertNoteFromMD2HTML(row.Note, expandedBooks[0], 'front')}
   useEffect(() => {
     if (html && copyright) {
       // Minify HTML by removing unnecessary whitespace while preserving content spacing
+      // <pre> blocks (e.g. text diagrams in notes) are set aside so their spaces and newlines survive
+      const preBlocks = [];
       const minifiedHtml = html
+        .replace(/<pre[\s>][\s\S]*?<\/pre>/g, (match) => {
+          preBlocks.push(match);
+          return `<!--pre-block-${preBlocks.length - 1}-->`;
+        })
         .replace(/>\s+</g, '><') // Remove whitespace between tags
         .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
-        .trim();
+        .trim()
+        .replace(/<!--pre-block-(\d+)-->/g, (match, index) => preBlocks[index]);
       
       setHtmlSections((prevState) => ({
         ...prevState,

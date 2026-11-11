@@ -443,10 +443,12 @@ export function AppContextProvider({ children }) {
         
         if (fastResponse.ok) {
           const result = await fastResponse.json();
-          if (result.cached && result.data) {
+          // The body is the cached book itself; older servers wrapped it as { cached: true, data }
+          const cb = result?.cached && result?.data ? result.data : result;
+          if (cb?.htmlSections) {
             console.log('✅ Using cached version from fast path');
-            setCachedBook(result.data);
-            setCachedHtmlSections(result.data?.htmlSections);
+            setCachedBook(cb);
+            setCachedHtmlSections(cb.htmlSections);
             setFetchingCachedBook(false);
             return;
           }
