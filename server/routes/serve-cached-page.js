@@ -1,15 +1,13 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import pako from 'pako';
 import { getVerificationKey } from '../verificationKey.js';
-import { version } from 'os';
-
-const CACHE_DIR = process.env.CACHE_DIR || './cached-files';
+import { resolveCachePath, sendCachedJson } from '../cacheFile.js';
 
 /**
  * Serve a fully rendered page from cache
- * Route: /u/:owner/:repo/:ref?
- * Query params: ?book=<bookId> (optional, defaults to 'default')
+ * Route: /api/cached-page?owner=&repo=&ref=&book=
+ * Query params: book is optional and defaults to 'default'
+ *
+ * On a hit the response body is the cached book JSON itself (the gzipped file on disk is
+ * streamed as-is, see sendCachedJson). On a miss it is a 404 with { cached: false }.
  */
 export default async function serveCachedPage(req, res) {
   try {
@@ -18,44 +16,38 @@ export default async function serveCachedPage(req, res) {
     const actualRef = ref || 'master';
 
     if (verification != getVerificationKey()) {
-      return res.status(401).json({ 
-        cached: false, 
-        message: 'Unauthorized '+verification+' '+getVerificationKey() 
+      return res.status(401).json({
+        cached: false,
+        message: 'Unauthorized',
       });
     }
 
-    const filePath = path.join(CACHE_DIR, 'u', owner, repo, actualRef, `${book}.json.gz`);
+    if (!owner || !repo) {
+      return res.status(400).json({ cached: false, message: 'Bad Request: Missing required parameters (owner, repo)' });
+    }
+
+    const filePath = resolveCachePath(`u/${owner}/${repo}/${actualRef}/${book}.json.gz`);
+    if (!filePath) {
+      return res.status(400).json({ cached: false, message: 'Invalid Parameters' });
+    }
 
     console.log(`Attempting to serve cached page: ${filePath}`);
 
-    // Check if file exists
-    try {
-      await fs.access(filePath);
-    } catch {
+    if (!(await sendCachedJson(req, res, filePath))) {
       console.log(`Cached file not found: ${filePath}`);
-      // File doesn't exist, return null to indicate React should handle it
-      return res.status(404).json({ 
-        cached: false, 
-        message: 'No cached version available, will render fresh' 
+      // File doesn't exist, tell React to render it fresh
+      return res.status(404).json({
+        cached: false,
+        message: 'No cached version available, will render fresh',
       });
     }
-
-    // Read and decompress the cached file
-    const compressedData = await fs.readFile(filePath);
-    const jsonString = pako.inflate(compressedData, { to: 'string' });
-    const cachedData = JSON.parse(jsonString);
-
-    // Return the cached data as JSON for React to use
-    res.json({
-      cached: true,
-      data: cachedData
-    });
-
   } catch (error) {
     console.error('Error serving cached page:', error);
-    res.status(500).json({ 
-      cached: false, 
-      error: error.message 
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        cached: false,
+        error: error.message,
+      });
+    }
   }
 }

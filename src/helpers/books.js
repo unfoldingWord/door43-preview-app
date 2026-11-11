@@ -1,6 +1,9 @@
 import { BibleBookData } from '@common/books';
 import pako from 'pako';
 
+// Max bytes of gzipped cache data sent per request; must stay under the reverse proxy's body limit (nginx default: 1MB)
+const CACHE_UPLOAD_CHUNK_SIZE = 768 * 1024;
+
 // supported books are books that are both in the ingredients of a catalog entry and have existing files in zip file
 export const getSupportedBooks = (catalogEntry, fileList = null, books = []) => {
   let supportedBooks = [];
@@ -58,23 +61,36 @@ export const uploadCachedBook = async (owner, repo, ref, bookId, previewVersion,
   });
 
   const jsonString = JSON.stringify(cachedBook);
-  const compressedData = pako.gzip(jsonString, { to: 'string' });
+  const compressedData = pako.gzip(jsonString);
   console.log('Compressed Data Size:', compressedData?.length);
 
   const path = `u/${owner}/${repo}/${ref}/${bookId}.json.gz`;
+  const baseUrl = `/api/save-html-to-cache?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verificationKey)}`;
+
+  // Large books are sent in several requests so no single request body exceeds the
+  // reverse proxy's body size limit (nginx's default is 1MB, anything over gets a 413).
+  const chunks = Math.max(1, Math.ceil(compressedData.length / CACHE_UPLOAD_CHUNK_SIZE));
+  const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 
   try {
-    const response = await fetch(`/api/save-html-to-cache?path=${encodeURIComponent(path)}&verification=${encodeURIComponent(verificationKey)}`, {
-      method: 'POST',
-      body: compressedData,
-      headers: {
-        'Content-Type': 'application/octet-stream',
-      },
-    });
+    let response;
+    for (let chunk = 0; chunk < chunks; chunk++) {
+      const url = chunks > 1 ? `${baseUrl}&uploadId=${uploadId}&chunk=${chunk}&chunks=${chunks}` : baseUrl;
+      response = await fetch(url, {
+        method: 'POST',
+        body: compressedData.subarray(chunk * CACHE_UPLOAD_CHUNK_SIZE, (chunk + 1) * CACHE_UPLOAD_CHUNK_SIZE),
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+      });
+      if (!response.ok) {
+        break;
+      }
+    }
     if (response.ok) {
       console.log('Upload Success', await response.json());
     } else {
-      console.log('UploadFailed', response);
+      console.log('UploadFailed', response.status, response.statusText);
     }
   } catch (err) {
     console.log('Upload Failed. Error: ', err);
